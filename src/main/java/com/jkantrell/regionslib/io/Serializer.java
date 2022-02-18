@@ -7,7 +7,6 @@ import com.jkantrell.regionslib.regions.Region;
 import com.jkantrell.regionslib.regions.Rule;
 import com.jkantrell.regionslib.regions.dataContainers.RegionData;
 import com.jkantrell.regionslib.regions.dataContainers.RegionDataContainer;
-import com.jkantrell.regionslib.totemElements.TotemStructure;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -30,15 +29,12 @@ public abstract class Serializer {
         builder.registerTypeAdapter(RegionDataContainer.class, new RegionDataContainer.JSerializer());
         builder.registerTypeAdapter(RegionDataContainer.class, new RegionDataContainer.JDeserializer());
 
-        builder.registerTypeAdapter(TotemStructure.class, new TotemStructure.JDeserializer());
-
         GSON = builder.create();
     }
 
     public static class FILES {
         public static final File REGIONS = new File(ConfigManager.getConfigPath(), "regions.json");
         public static final File HIERARCHIES = new File(ConfigManager.getConfigPath(), "hierarchies.json");
-        public static final File TOTEM_STRUCTURES = new File(ConfigManager.getConfigPath(), "totemStructures.json");
     }
 
     public static <T> T deserializeFile (File file, Class<T> typeOf) {

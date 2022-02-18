@@ -1,10 +1,9 @@
 package com.jkantrell.regionslib.io;
 
-import com.jkantrell.regionslib.Landlords;
+import com.jkantrell.regionslib.RegionsLib;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -112,7 +111,7 @@ public abstract class LangManager {
             String langFile = langCode + ext_;
             file = new File(getLangsPath() + "/" + langFile);
             if (!file.exists()) {
-                InputStream resource = Landlords.getMainInstance().getResource(langDirName_ + "/" + langFile);
+                InputStream resource = RegionsLib.getMain().getResource(langDirName_ + "/" + langFile);
                 if (resource != null) {
                     try {
                         OutputStream outputStream = new FileOutputStream(file);

@@ -1,13 +1,13 @@
 package com.jkantrell.regionslib.io;
 
-import com.jkantrell.regionslib.Landlords;
+import com.jkantrell.regionslib.RegionsLib;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionType;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,7 +16,7 @@ import java.util.List;
 
 public abstract class ConfigManager {
 
-    private static Landlords main_ = Landlords.getMainInstance();
+    private static Plugin main_ = RegionsLib.getMain();
     private static FileConfiguration configFile_ = new YamlConfiguration();
 
     public static void initialize() {
