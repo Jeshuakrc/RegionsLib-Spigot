@@ -6,6 +6,9 @@ import com.jkantrell.regionslib.abilities.Ability;
 import com.jkantrell.regionslib.abilities.AbilityHandler;
 import com.jkantrell.regionslib.abilities.AbilityList;
 import com.jkantrell.regionslib.io.Serializer;
+import org.bukkit.event.Event;
+import org.checkerframework.checker.units.qual.A;
+
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -155,7 +158,7 @@ public class Hierarchy {
             return name_;
         }
         public List<Ability<?>> getAbilities() {
-            return RegionsLib.getAbilityHandler().getRegisteredAbilities().getAll(this.abilities_);
+            return new ArrayList<>(RegionsLib.getAbilityHandler().getRegisteredAbilities().getAll(this.abilities_));
         }
         public Hierarchy getHierarchy() {
             return this.hierarchy_;
