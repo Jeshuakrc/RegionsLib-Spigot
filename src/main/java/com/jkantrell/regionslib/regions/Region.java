@@ -2,6 +2,7 @@ package com.jkantrell.regionslib.regions;
 
 import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
+import com.jkantrell.regionslib.abilities.Ability;
 import com.jkantrell.regionslib.regions.dataContainers.RegionDataContainer;
 import com.jkantrell.regionslib.io.ConfigManager;
 import com.jkantrell.regionslib.io.Serializer;
@@ -20,7 +21,7 @@ public class Region {
     //FIELDS
     private int id_;
     private double[] vertex_ = null;
-    private World.Environment dimension_ = null;
+    private World world_ = null;
     private Permission[] permissions_;
     private String name_;
     private boolean enabled_ = true;
@@ -34,9 +35,9 @@ public class Region {
     private final Region self_ = this;
 
     //CONSTRUCTORS
-    public Region(double[] vertex, World.Environment dimension, Permission[] permissions, String name, Hierarchy hierarchy) {
+    public Region(double[] vertex, World world, Permission[] permissions, String name, Hierarchy hierarchy) {
         this.setId(getHighestId(regions_.toArray(Region[]::new)) + 1);
-        this.setDimension(dimension);
+        this.setWorld(world);
         this.setVertex(vertex);
         this.setPermissions(permissions);
         this.setName(name);
@@ -60,8 +61,8 @@ public class Region {
         this.setBoundingBox_();
         this.attemptCalculateBoundaries_();
     }
-    public void setDimension(World.Environment dimension) {
-        dimension_ = dimension;
+    public void setWorld(World world) {
+        world_ = world;
         this.attemptCalculateBoundaries_();
     }
     public void setPermissions(Permission[] permissions) {
@@ -91,7 +92,7 @@ public class Region {
         return this.id_;
     }
     public World.Environment getDimension() {
-        return this.dimension_;
+        return this.world_.getEnvironment();
     }
     public String getName() {
         return this.name_;
@@ -117,16 +118,7 @@ public class Region {
         return this.getBoundingBox().getWidthZ();
     }
     public World getWorld() {
-
-        World world = null;
-        List<World> worlds = Bukkit.getWorlds();
-        for (World w : worlds) {
-            if (w.getEnvironment().equals(this.getDimension())) {
-                world = w;
-                break;
-            }
-        }
-        return world;
+        return this.world_;
     }
     public List<Player> getGroupLevelRagePlayers(int min, int max) {
        List <Player> r = new ArrayList<>();
@@ -168,28 +160,34 @@ public class Region {
     public static List<Region> getAll() {
         return regions_;
     }
-    public static Region[] getAllAt(double x, double y, double z, World.Environment dimension, Predicate<Region> checker){
+    public static Region[] getAt(double x, double y, double z, World world, Predicate<Region> checker){
         List<Region> l = new ArrayList<>(Collections.emptyList());
         for (Region r : regions_) {
-            if (r.contains(x, y, z, dimension) && checker.test(r)) {
+            if (r.contains(x, y, z, world) && checker.test(r)) {
                 l.add(r);
             }
         }
         return l.toArray(new Region[0]);
     }
-    public static Region[] getAllAt(Location location, Predicate<Region> checker){
-        return getAllAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()).getEnvironment(),checker);
+    public static Region[] getAt(Location location, Predicate<Region> checker){
+        return getAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()),checker);
     }
-    public static Region[] getAllAt(double x, double y, double z, World.Environment dimension) {
-        return getAllAt(x,y,z,dimension, Region::isEnabled);
+    public static Region[] getAt(double x, double y, double z, World world) {
+        return getAt(x, y, z, world, Region::isEnabled);
+    }
+    public static Region[] getAt(Location location) {
+        return getAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()));
+    }
+    public static Region[] getAllAt(double x, double y, double z, World world) {
+        return getAt(x,y,z,world, r -> true);
     }
     public static Region[] getAllAt(Location location) {
-        return getAllAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()).getEnvironment());
+        return getAllAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()));
     }
     public static Region[] getRuleContainersAt(String ruleName, Location location) {
-        return getAllAt(location, region -> region.hasRule(ruleName));
+        return getAt(location, region -> region.hasRule(ruleName));
     }
-    public static boolean checkAbilityInRegions(Region[] regions, Player player, Ability ability) {
+    public static boolean checkAbilityIn(Region[] regions, Player player, Ability<?> ability) {
 
         boolean r = true;
         List<Region> list = new ArrayList<>();
@@ -247,12 +245,12 @@ public class Region {
         }
         return r;
     }
-    public static boolean checkAbilityAt(Player player, Ability ability, double x, double y, double z, World.Environment environment) {
-        Region[] regions = getAllAt(x, y, z, environment);
-        return checkAbilityInRegions(regions, player, ability);
+    public static boolean checkAbilityAt(Player player, Ability<?> ability, double x, double y, double z, World world) {
+        Region[] regions = getAt(x, y, z, world);
+        return checkAbilityIn(regions, player, ability);
     }
-    public static boolean checkAbilityAt(Player player, Ability ability, Location location) {
-        return checkAbilityAt(player,ability,location.getX(),location.getY(),location.getZ(),location.getWorld().getEnvironment());
+    public static boolean checkAbilityAt(Player player, Ability<?> ability, Location location) {
+        return checkAbilityAt(player,ability,location.getX(),location.getY(),location.getZ(),location.getWorld());
     }
     public static int getHighestId(Region[] regions) {
 
@@ -290,7 +288,7 @@ public class Region {
     }
 
     //PUBLIC METHODS
-    public boolean checkAbility( Player player, Ability ability) {
+    public boolean checkAbility( Player player, Ability<?> ability) {
 
         if(!this.isEnabled()) { return true; }
         Permission perm = null;
@@ -304,14 +302,8 @@ public class Region {
         }
         return (perm == null) ? this.getHierarchy().checkAbility(ability) : this.getHierarchy().checkAbility(ability,perm.getGroup());
     }
-    public boolean contains(int x, int y, int z, World.Environment dimension) {
-
-        if(!this.getDimension().equals(dimension)) { return false; }
-        return this.getBoundingBox().contains(x+.5,y+.5,z+.5);
-    }
-    public boolean contains(double x, double y, double z, World.Environment dimension) {
-
-        if(!this.getDimension().equals(dimension)) { return false; }
+    public boolean contains(double x, double y, double z, World dimension) {
+        if(!this.getWorld().equals(dimension)) { return false; }
         return this.getBoundingBox().contains(x,y,z);
     }
     public void save() {
@@ -380,7 +372,7 @@ public class Region {
     //PRIVATE METHODS
     private void attemptCalculateBoundaries_() {
 
-        if(vertex_ != null && dimension_ != null){
+        if(vertex_ != null && world_ != null){
             if (boundary_ == null) {
                 boundary_ = new RegionBoundary(this);
             }else{
@@ -453,7 +445,7 @@ public class Region {
             jsonRegion.addProperty("id",src.getId());
             jsonRegion.addProperty("name",src.getName());
             jsonRegion.addProperty("hierarchy",src.getHierarchy().getId());
-            jsonRegion.addProperty("dimension",src.getDimension().toString());
+            jsonRegion.addProperty("world",src.getWorld().getName());
             jsonRegion.addProperty("enabled",src.isEnabled());
             jsonRegion.add("vertex", new Gson().toJsonTree(src.getVertex()));
 
@@ -502,7 +494,7 @@ public class Region {
 
             Region region = new Region(
                     gson.fromJson(jsonRegion.get("vertex"),double[].class),
-                    World.Environment.valueOf(jsonRegion.get("dimension").getAsString()),
+                    Bukkit.getWorld(jsonRegion.get("world").getAsString()),
                     permissions,
                     jsonRegion.get("name").getAsString(),
                     hierarchy

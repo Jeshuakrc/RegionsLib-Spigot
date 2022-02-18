@@ -1,6 +1,10 @@
 package com.jkantrell.regionslib.regions;
 
 import com.google.gson.*;
+import com.jkantrell.regionslib.RegionsLib;
+import com.jkantrell.regionslib.abilities.Ability;
+import com.jkantrell.regionslib.abilities.AbilityHandler;
+import com.jkantrell.regionslib.abilities.AbilityList;
 import com.jkantrell.regionslib.io.Serializer;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -83,7 +87,7 @@ public class Hierarchy {
     }
 
     //METHODS
-    public boolean checkAbility(Ability ability, int level) {
+    public boolean checkAbility(Ability<?> ability, int level) {
 
         boolean r;
         if(level > 1) {
@@ -107,10 +111,10 @@ public class Hierarchy {
         }
         return r;
     }
-    public boolean checkAbility(Ability ability) {
+    public boolean checkAbility(Ability<?> ability) {
         return this.checkAbility(ability, groups_.get(0).getLevel()+1);
     }
-    public boolean checkAbility(Ability ability, Hierarchy.Group group) {
+    public boolean checkAbility(Ability<?> ability, Hierarchy.Group group) {
         if (!group.getHierarchy().equals(this)) { return false; }
         return checkAbility(ability,group.getLevel());
     }
@@ -121,11 +125,11 @@ public class Hierarchy {
         //FIELDS
         private int level_;
         private String name_;
-        private List<Ability> abilities_;
+        private List<String> abilities_;
         private final Hierarchy hierarchy_;
 
         //CONSTRUCTORS
-        private Group(int level, String name, List<Ability> abilities, Hierarchy hierarchy) {
+        private Group(int level, String name, List<String> abilities, Hierarchy hierarchy) {
             this.setLevel(level);
             this.setName(name);
             this.setAbilities(abilities);
@@ -139,8 +143,8 @@ public class Hierarchy {
         protected void setName(String name_) {
             this.name_ = name_;
         }
-        protected void setAbilities(List<Ability> abilities_) {
-            this.abilities_ = abilities_;
+        protected void setAbilities(List<String> abilities) {
+            this.abilities_ = abilities;
         }
 
         //GETTERS
@@ -150,8 +154,8 @@ public class Hierarchy {
         public String getName() {
             return name_;
         }
-        public List<Ability> getAbilities() {
-            return new ArrayList<>(abilities_);
+        public List<Ability<?>> getAbilities() {
+            return RegionsLib.getAbilityHandler().getRegisteredAbilities().getAll(this.abilities_);
         }
         public Hierarchy getHierarchy() {
             return this.hierarchy_;
@@ -162,8 +166,11 @@ public class Hierarchy {
         public int compareTo(Group o) {
             return Integer.compare(level_, o.getLevel());
         }
-        public boolean allowedTo(Ability ability) {
-            return this.getAbilities().contains(ability);
+        public boolean allowedTo(String ability) {
+            return this.abilities_.contains(ability);
+        }
+        public boolean allowedTo(Ability<?> ability) {
+            return this.allowedTo(ability.name);
         }
     }
     public class Groups extends ArrayList<Group> {
@@ -186,13 +193,15 @@ public class Hierarchy {
             Collections.reverse(this);
             return r;
         }
-
-        public boolean add(String name, int level, List<Ability> abilities){
+        public boolean add(String name, int level, List<String> abilities){
             boolean r = super.add(new Group(
                     level, name, abilities, this.hierarchy_
             ));
             Collections.reverse(this);
             return r;
+        }
+        public boolean add(String name, int level, AbilityList abilities){
+            return this.add(name,level,abilities.getNames());
         }
     }
 
@@ -209,12 +218,12 @@ public class Hierarchy {
                     jsonHierarchy.get("name").getAsString()
             );
 
-            JsonObject jsonGroup; ArrayList<Ability> abilities;
+            JsonObject jsonGroup; ArrayList<String> abilities;
             for (JsonElement element : jsonHierarchy.get("groups").getAsJsonArray()) {
                 jsonGroup = element.getAsJsonObject();
                 abilities = new ArrayList<>();
                 for (JsonElement element1 : jsonGroup.get("abilities").getAsJsonArray()) {
-                    abilities.add(Ability.valueOf(element1.getAsString()));
+                    abilities.add(element1.getAsString());
                 }
                 hierarchy.getGroups().add(
                         jsonGroup.get("name").getAsString(),
