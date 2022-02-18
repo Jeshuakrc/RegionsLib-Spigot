@@ -2,12 +2,9 @@ package com.jkantrell.regionslib.regions;
 
 import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
-import com.jkantrell.regionslib.abilities.Ability;
-import com.jkantrell.regionslib.abilities.AbilityHandler;
-import com.jkantrell.regionslib.abilities.AbilityList;
+import com.jkantrell.regionslib.regions.abilities.Ability;
+import com.jkantrell.regionslib.regions.abilities.AbilityList;
 import com.jkantrell.regionslib.io.Serializer;
-import org.bukkit.event.Event;
-import org.checkerframework.checker.units.qual.A;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;

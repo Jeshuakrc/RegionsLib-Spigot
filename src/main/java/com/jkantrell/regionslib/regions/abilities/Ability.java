@@ -1,11 +1,9 @@
-package com.jkantrell.regionslib.abilities;
+package com.jkantrell.regionslib.regions.abilities;
 
 import com.jkantrell.regionslib.regions.Region;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
 import java.util.function.Function;
 import java.util.function.Predicate;

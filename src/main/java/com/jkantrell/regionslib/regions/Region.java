@@ -2,7 +2,7 @@ package com.jkantrell.regionslib.regions;
 
 import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
-import com.jkantrell.regionslib.abilities.Ability;
+import com.jkantrell.regionslib.regions.abilities.Ability;
 import com.jkantrell.regionslib.regions.dataContainers.RegionDataContainer;
 import com.jkantrell.regionslib.io.ConfigManager;
 import com.jkantrell.regionslib.io.Serializer;

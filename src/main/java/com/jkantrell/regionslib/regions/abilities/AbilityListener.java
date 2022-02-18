@@ -1,4 +1,4 @@
-package com.jkantrell.regionslib.abilities;
+package com.jkantrell.regionslib.regions.abilities;
 
 import com.jkantrell.regionslib.RegionsLib;
 import org.bukkit.Bukkit;

@@ -1,4 +1,4 @@
-package com.jkantrell.regionslib.abilities;
+package com.jkantrell.regionslib.regions.abilities;
 
 import org.bukkit.event.Event;
 import java.util.*;

@@ -1,7 +1,7 @@
 package com.jkantrell.regionslib;
 
-import com.jkantrell.regionslib.abilities.Ability;
-import com.jkantrell.regionslib.abilities.AbilityHandler;
+import com.jkantrell.regionslib.regions.abilities.Ability;
+import com.jkantrell.regionslib.regions.abilities.AbilityHandler;
 import com.jkantrell.regionslib.regions.Region;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
