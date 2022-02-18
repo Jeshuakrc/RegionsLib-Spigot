@@ -1,0 +1,8 @@
+name: RegionsLib Spigot
+version: '${project.version}'
+main: com.jkantrell.regionslibspigot.RegionsLibSpigot
+api-version: 1.18
+prefix: RegionsLib
+authors: [ TheJsUser ]
+description: A Spigot plugin / library that allows other plugins to easily implement 3D Minecraft world reagions in therir code.
+website: https://github.com/Jeshuakrc
