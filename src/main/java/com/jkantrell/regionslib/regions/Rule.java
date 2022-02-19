@@ -1,6 +1,9 @@
 package com.jkantrell.regionslib.regions;
 
 import com.google.gson.*;
+import com.jkantrell.regionslib.RegionsLib;
+import org.bukkit.Bukkit;
+
 import java.lang.reflect.Type;
 import java.util.*;
 
@@ -28,13 +31,16 @@ public class Rule {
         return true;
     }
     private void setKey(String name, Rule.DataType<?> dataType) {
+        RegionsLib.getMain().getLogger().info("Processing rule key " + name + ". Type: " + dataType.getClass().toString());
         if (keys_.containsKey(name)) {
             if (keys_.get(name).dataType.equals(dataType)) {
+                RegionsLib.getMain().getLogger().info("Key already exists.");
                 this.key_ = keys_.get(name);
                 return;
             }
             throw new IllegalArgumentException("Rule key already exists and DataType is not the same provided");
         }
+        RegionsLib.getMain().getLogger().info("Key doesn't exist. Adding it");
         this.key_ = new Rule.Key(name,dataType);
     }
 
@@ -116,9 +122,14 @@ public class Rule {
 
         @Override
         public JsonElement serialize(Rule src, Type typeOfSrc, JsonSerializationContext context) {
-            JsonObject jsonRule = new JsonObject();
-            jsonRule.add(src.name,src.key_.dataType.serialize(src.valueHolder_.value_));
 
+            JsonObject jsonRule = new JsonObject();
+            try {
+                jsonRule.add(src.name, src.key_.dataType.serialize(src.valueHolder_.value_));
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+            }
+            jsonRule.addProperty("rule","xd");
             return jsonRule;
         }
     }

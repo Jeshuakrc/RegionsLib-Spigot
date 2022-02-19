@@ -2,15 +2,23 @@ package com.jkantrell.regionslib.regions.abilities;
 
 import com.jkantrell.regionslib.RegionsLib;
 import org.bukkit.Bukkit;
-import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
+import org.bukkit.event.*;
+import org.bukkit.plugin.EventExecutor;
 
-class AbilityListener<E extends Event> implements Listener {
 
-    AbilityListener () {
-        Bukkit.getServer().getPluginManager().registerEvents(this, RegionsLib.getMain());
+class AbilityListener<E extends Event> implements EventExecutor {
+
+    private static final Listener voidListener_ = new Listener(){};
+
+    AbilityListener(Class<E> eventClass) {
+        Bukkit.getServer().getPluginManager().registerEvent(
+                eventClass,
+                voidListener_,
+                EventPriority.NORMAL,
+                this,
+                RegionsLib.getMain(),
+                false
+        );
     }
 
     final AbilityList<E> abilities = new AbilityList<>();
@@ -19,7 +27,6 @@ class AbilityListener<E extends Event> implements Listener {
         abilities.add(ability);
     }
 
-    @EventHandler
     public void onEvent(E e) {
         boolean cancel = false;
         AbilityList<E> validAbilities = this.abilities.clone();
@@ -28,5 +35,10 @@ class AbilityListener<E extends Event> implements Listener {
             cancel = ability.isAllowed(e);
         }
         if (e instanceof Cancellable toCancel) { toCancel.setCancelled(cancel); }
+    }
+
+    @Override
+    public void execute(Listener listener, Event event) throws EventException {
+        this.onEvent((E) event);
     }
 }

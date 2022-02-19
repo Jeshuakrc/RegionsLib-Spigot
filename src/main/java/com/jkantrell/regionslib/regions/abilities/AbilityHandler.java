@@ -1,5 +1,8 @@
 package com.jkantrell.regionslib.regions.abilities;
 
+import com.jkantrell.regionslib.RegionsLib;
+import com.jkantrell.regionslib.regions.Region;
+import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import java.util.HashMap;
@@ -16,16 +19,20 @@ public class AbilityHandler {
         return this.abilities_.clone();
     }
 
-    public <E extends Event> void register(Ability<E> ability, Class<E> eventClass) {
+    public <E extends Event> void register(Ability<E> ability) {
+        this.abilities_.add(ability);
+
         AbilityListener<E> listener;
-        if (this.listeners_.containsKey(eventClass)) {
-            listener = (AbilityListener<E>) this.listeners_.get(eventClass);
+        RegionsLib.getMain().getLogger().info("Registering new Ability. Event: " + ability.eventClass.toString());
+        if (this.listeners_.containsKey(ability.eventClass)) {
+            RegionsLib.getMain().getLogger().info("Adding to existing listener");
+            listener = (AbilityListener<E>) this.listeners_.get(ability.eventClass);
         } else {
-            listener = new AbilityListener<E>();
-            this.listeners_.put(eventClass,listener);
+            RegionsLib.getMain().getLogger().info("No listener for this event. Creating a new one.");
+            listener = new AbilityListener<E>(ability.eventClass);
+            this.listeners_.put(ability.eventClass,listener);
         }
         listener.add(ability);
-        this.abilities_.add(ability);
     }
 
     public void unregister(Ability<?> ability) {
@@ -39,7 +46,6 @@ public class AbilityHandler {
         this.abilities_.remove(ability.name);
         if (listener == null) { return; }
         if (listener.abilities.isEmpty()) {
-            HandlerList.unregisterAll(listener);
             this.listeners_.remove(clazz);
         }
     }
