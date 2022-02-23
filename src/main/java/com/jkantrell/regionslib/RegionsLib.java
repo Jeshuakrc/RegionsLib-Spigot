@@ -2,14 +2,10 @@ package com.jkantrell.regionslib;
 
 import com.jkantrell.regionslib.io.ConfigManager;
 import com.jkantrell.regionslib.regions.Hierarchy;
-import com.jkantrell.regionslib.regions.Rule;
-import com.jkantrell.regionslib.regions.abilities.Ability;
 import com.jkantrell.regionslib.regions.abilities.AbilityHandler;
 import com.jkantrell.regionslib.regions.Region;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.List;
 
 public final class RegionsLib extends JavaPlugin {
 
@@ -31,6 +27,7 @@ public final class RegionsLib extends JavaPlugin {
         RegionsLib.registerPlugin(plugin);
         ConfigManager.initialize();
         Hierarchy.loadAll();
+        plugin.getServer().getPluginManager().registerEvents(new RegionsLibEventListener(), RegionsLib.getMain());
         if (Region.loadAll().isEmpty()) {RegionsLib.getMain().getLogger().info("No regions lo load!"); }
     }
 
