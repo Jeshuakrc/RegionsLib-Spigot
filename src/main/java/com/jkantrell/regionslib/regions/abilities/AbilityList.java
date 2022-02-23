@@ -1,6 +1,8 @@
 package com.jkantrell.regionslib.regions.abilities;
 
 import org.bukkit.event.Event;
+
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -8,6 +10,7 @@ public class AbilityList<E extends Event> {
 
     private final HashMap<String, Ability<E>> abilities_ = new HashMap<>();
 
+    //ADD METHODS
     public void add(Ability<E> ability) {
         if (this.abilities_.containsKey(ability.name)) {
             throw new IllegalArgumentException("An ability with this name already exists!");
@@ -20,6 +23,7 @@ public class AbilityList<E extends Event> {
         }
     }
 
+    //CONTAIN CHECK METHODS
     public boolean contains(Ability<E> ability) {
         return this.abilities_.containsValue(ability);
     }
@@ -27,6 +31,7 @@ public class AbilityList<E extends Event> {
         return this.abilities_.containsKey(name);
     }
 
+    //REMOVE METHODS
     private boolean remove(String name, Predicate<HashMap<String ,Ability<E>>> checker) {
         if (checker.test(this.abilities_)) {
             this.abilities_.remove(name);
@@ -42,15 +47,17 @@ public class AbilityList<E extends Event> {
     }
     public boolean removeIf(Predicate<Ability<E>> conditional) {
         boolean removed = false;
-        for (Ability<E> ability : this.abilities_.values()) {
-            if (conditional.test(ability)) {
-                this.abilities_.remove(ability.name);
+        ArrayList<Ability<E>> list = new ArrayList<>(this.abilities_.values());
+        for (int i = 0; i < list.size(); i++) {
+            if (conditional.test(list.get(i))) {
+                this.abilities_.remove(list.get(i).name);
                 removed = true;
             }
         }
         return removed;
     }
 
+    //GET METHODS
     public Ability<E> get(String name) {
         return this.abilities_.get(name);
     }
@@ -63,14 +70,30 @@ public class AbilityList<E extends Event> {
         }
         return r;
     }
-    public List<Ability<E>> toList() {
-        return new ArrayList<Ability<E>>(this.abilities_.values());
-    }
     public List<String> getNames() { return new ArrayList<>(this.abilities_.keySet()); }
     public boolean isEmpty() {
         return this.abilities_.isEmpty();
     }
+    public AbilityList<E> getRemovedIf(Predicate<Ability<E>> conditional) {
+        AbilityList<E> newList = this.clone();
+        newList.removeIf(conditional);
+        return newList;
+    }
 
+    //LIST METHODS
+    public int size() {
+        return this.abilities_.size();
+    }
+    public List<Ability<E>> toList() {
+        return new ArrayList<Ability<E>>(this.abilities_.values());
+    }
+    public List<Ability<E>> prioritize() {
+        List<Ability<E>> list = this.toList();
+        Collections.sort(list);
+        return list;
+    }
+
+    //MISCELLANEOUS METHODS
     @Override
     protected AbilityList<E> clone() {
         AbilityList<E> list = new AbilityList<>();

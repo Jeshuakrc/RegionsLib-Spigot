@@ -1,44 +1,50 @@
 package com.jkantrell.regionslib.regions.abilities;
 
 import com.jkantrell.regionslib.RegionsLib;
+import com.jkantrell.regionslib.regions.Region;
 import org.bukkit.Bukkit;
 import org.bukkit.event.*;
-import org.bukkit.plugin.EventExecutor;
 
 
-class AbilityListener<E extends Event> implements EventExecutor {
+class AbilityListener<E extends Event> {
 
     private static final Listener voidListener_ = new Listener(){};
+    private final AbilityHandler abilityHandler_;
+    final AbilityList<E> abilities = new AbilityList<>();
+    final EventPriority priority;
 
-    AbilityListener(Class<E> eventClass) {
+    AbilityListener(Class<E> eventClass, AbilityHandler abilityHandler, EventPriority priority) {
+        this.abilityHandler_ = abilityHandler;
+        this.priority = priority;
         Bukkit.getServer().getPluginManager().registerEvent(
                 eventClass,
                 voidListener_,
-                EventPriority.NORMAL,
-                this,
+                priority,
+                (l,e) -> onEvent((E) e),
                 RegionsLib.getMain(),
                 false
         );
     }
 
-    final AbilityList<E> abilities = new AbilityList<>();
-
-    public void add(Ability<E> ability) {
+    void add(Ability<E> ability) {
         abilities.add(ability);
     }
 
-    public void onEvent(E e) {
-        boolean cancel = false;
-        AbilityList<E> validAbilities = this.abilities.clone();
-        validAbilities.removeIf(a -> !a.isValid(e));
-        for (Ability<E> ability : validAbilities.toList()) {
-            cancel = ability.isAllowed(e);
-        }
-        if (e instanceof Cancellable toCancel) { toCancel.setCancelled(cancel); }
-    }
+    private void onEvent(E e) {
 
-    @Override
-    public void execute(Listener listener, Event event) throws EventException {
-        this.onEvent((E) event);
+        boolean cancel = false;
+        AbilityList<E> validAbilities = this.abilities.getRemovedIf(a -> !a.isValid(e));
+        for (Ability<E> ability : validAbilities.prioritize()) {
+            RegionsLib.getMain().getLogger().info("Ability " + ability.name + " is valid in this context.");
+            cancel = !ability.isAllowed(e);
+            RegionsLib.getMain().getLogger().info((cancel) ? "not allowed" : "allowed");
+            ability.invalidateTargets(e);
+        }
+        if (cancel) {
+            if (e instanceof Cancellable toCancel) {
+                RegionsLib.getMain().getLogger().info("Cancelling " + e.getClass().getName());
+                toCancel.setCancelled(true);
+            }
+        }
     }
 }
