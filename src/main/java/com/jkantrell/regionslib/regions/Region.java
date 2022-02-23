@@ -250,6 +250,7 @@ public class Region {
         return checkAbilityIn(regions, player, ability);
     }
     public static boolean checkAbilityAt(Player player, Ability<?> ability, Location location) {
+        if (location == null) { return true; }
         return checkAbilityAt(player,ability,location.getX(),location.getY(),location.getZ(),location.getWorld());
     }
     public static int getHighestId(Region[] regions) {
