@@ -1,16 +1,20 @@
 package com.jkantrell.regionslib.regions.abilities;
 
 import com.jkantrell.regionslib.RegionsLib;
-import com.jkantrell.regionslib.regions.Region;
 import org.bukkit.Bukkit;
 import org.bukkit.event.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 
 
 class AbilityListener<E extends Event> {
 
     private static final Listener voidListener_ = new Listener(){};
     private final AbilityHandler abilityHandler_;
-    final AbilityList<E> abilities = new AbilityList<>();
+    private final AbilityList<E> abilities_ = new AbilityList<>();
     final EventPriority priority;
 
     AbilityListener(Class<E> eventClass, AbilityHandler abilityHandler, EventPriority priority) {
@@ -27,14 +31,31 @@ class AbilityListener<E extends Event> {
     }
 
     void add(Ability<E> ability) {
-        abilities.add(ability);
+        abilities_.add(ability);
+    }
+    void remove(Ability<E> ability) {
+        if (this.abilities_.contains(ability)) {
+            this.abilities_.remove(ability);
+        }
     }
 
     private void onEvent(E e) {
 
         boolean cancel = false;
-        AbilityList<E> validAbilities = this.abilities.getRemovedIf(a -> !a.isValid(e));
-        for (Ability<E> ability : validAbilities.prioritize()) {
+        List<Ability<E>> validAbilities = this.abilities_.prioritize();
+        List<Ability<?>> toRemove = new ArrayList<>();
+        Iterator<Ability<E>> iterator = validAbilities.iterator();
+        while (iterator.hasNext()) {
+            Ability<E> ability = iterator.next();
+            if (!ability.isValid(e) || toRemove.contains(ability)) {
+                iterator.remove();
+                AbilityList<E> subAbilities = Ability.getSubAbilities(ability);
+                if (subAbilities != null) {
+                    toRemove.addAll(subAbilities.toList());
+                }
+            }
+        }
+        for (Ability<E> ability : validAbilities) {
             RegionsLib.getMain().getLogger().info("Ability " + ability.name + " is valid in this context.");
             cancel = !ability.isAllowed(e);
             RegionsLib.getMain().getLogger().info((cancel) ? "not allowed" : "allowed");

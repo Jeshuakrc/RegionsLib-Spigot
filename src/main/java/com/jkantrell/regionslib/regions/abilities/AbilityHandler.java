@@ -1,30 +1,29 @@
 package com.jkantrell.regionslib.regions.abilities;
 
 import com.jkantrell.regionslib.RegionsLib;
-import com.jkantrell.regionslib.regions.Region;
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class AbilityHandler {
 
     //Field
     private final AbilityList abilities_ = new AbilityList<>();
-    private final AbilityListenerList listenerList_ = new AbilityListenerList();
-    private final HashMap<Class<? extends Event>, AbilityListener<? extends Event>> listeners_ = new HashMap<>();
+    private final AbilityListenerList listeners_ = new AbilityListenerList();
+    private final HashMap<Ability<? extends Event>,ArrayList<Ability<? extends Event>>> extensions_ = new HashMap<>();
 
     //GETTERS
     public AbilityList<? extends Event> getRegisteredAbilities () {
         return this.abilities_.clone();
     }
     public List<AbilityListener<? extends Event>> getRegisteredListeners() {
-        return this.listenerList_.toList();
+        return this.listeners_.toList();
+    }
+    public boolean isRegistered(Ability<? extends Event> ability) {
+        return this.abilities_.contains(ability);
     }
 
     public <E extends Event> void register(Ability<E> ability) {
@@ -42,11 +41,11 @@ public class AbilityHandler {
                 .append("\nEvent: ")
                 .append(ability.eventClass.toString()).append("\n");
         try {
-            AbilityListener<E> listener = (AbilityListener<E>) this.listenerList_.get(ability.eventClass,ability.getBukkitPriority());
+            AbilityListener<E> listener = (AbilityListener<E>) this.listeners_.get(ability.eventClass,ability.getBukkitPriority());
             if (listener == null) {
                 log.append("No listener for this event. Creating a new one.");
                 listener = new AbilityListener<E>(ability.eventClass,this,ability.getBukkitPriority());
-                this.listenerList_.add(ability.eventClass,listener);
+                this.listeners_.add(ability.eventClass,listener);
             } else {
                 log.append("Adding to existing listener");
             }
@@ -59,10 +58,11 @@ public class AbilityHandler {
             RegionsLib.getMain().getLogger().info(s);
         }
     }
-
-    public void unregister(Ability<?> ability) {
-        for (AbilityListener<? extends Event> listener : this.listenerList_.toList()) {
-            if (listener.abilities.removeIf(a -> a.name.equals(ability.name))) { break; }
+    public <E extends Event> void unregister(Ability<E> ability) {
+        AbilityListener<?> genericListener = this.listeners_.get(ability.eventClass,ability.getBukkitPriority());
+        if (genericListener != null) {
+            AbilityListener<E> listener = (AbilityListener<E>) genericListener;
+            listener.remove(ability);
         }
         this.abilities_.remove(ability.name);
     }

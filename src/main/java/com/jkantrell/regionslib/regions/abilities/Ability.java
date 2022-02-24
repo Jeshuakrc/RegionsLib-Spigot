@@ -10,17 +10,25 @@ import org.bukkit.event.block.BlockEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class Ability<E extends Event> implements Comparable<Ability<E>> {
 
+    //STATIC FIELDS
+    private static final HashMap<Ability<? extends Event>, AbilityList<? extends Event>> superMap_ = new HashMap<>();
+
+    //FIELDS
     private int priority_ = 0;
     private EventPriority bukkitPriority_ = EventPriority.NORMAL;
     private Ability<?>[] invalidates_ = {};
+    private Ability<E> superAbility_ = null;
     private final ArrayList<Player> invalidated_ = new ArrayList<>();
     boolean registrable = true;
     public final Class<E> eventClass;
@@ -44,6 +52,34 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
         this(eventClass,name,validation,null,null);
     }
 
+    //STATIC METHODS
+    public static <E extends Event> AbilityList<E> getSubAbilities(Ability<E> ability) {
+        return (AbilityList<E>) Ability.superMap_.get(ability);
+    }
+    private static <E extends Event> void addToSupperMap_(Ability<E> ability) {
+        Ability<E> superAbility = ability.getSuperAbility();
+        if (superAbility != null) {
+            AbilityList<E> subAbilities = Ability.getSubAbilities(superAbility);
+            if (subAbilities == null) {
+                subAbilities = new AbilityList<>();
+                Ability.superMap_.put(superAbility,subAbilities);
+            }
+            subAbilities.add(ability);
+        }
+    }
+    private static <E extends Event> void removeFromSupperMap_(Ability<E> ability) {
+        Ability<E> superAbility = ability.getSuperAbility();
+        if (superAbility != null) {
+            AbilityList<E> subAbilities = Ability.getSubAbilities(superAbility);
+            if (subAbilities != null) {
+                subAbilities.remove(ability);
+                if (subAbilities.isEmpty()) {
+                    Ability.superMap_.remove(superAbility);
+                }
+            }
+        }
+    }
+
     //GETTERS
     public int getPriority() {
         return this.priority_;
@@ -51,22 +87,48 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
     public EventPriority getBukkitPriority() {
         return this.bukkitPriority_;
     }
+    public Ability<E> getSuperAbility() {
+        return this.superAbility_;
+    }
+    public boolean isRegistered() {
+        return RegionsLib.getAbilityHandler().isRegistered(this);
+    }
 
     //SETTERS
     public Ability<E> setPriority(int priority) {
+        if (this.superAbility_ != null) {
+            if (priority <= this.superAbility_.getPriority()) {
+                throw new IllegalArgumentException(
+                    this.name+"'s priority cannot be lower than "+this.superAbility_.name+"'s."
+                );
+            }
+        }
+
         this.priority_ = priority;
+
+        AbilityList<E> subAbilities = Ability.getSubAbilities(this);
+        if (subAbilities != null) {
+            for (Ability<E> subAbility : subAbilities.toList()) {
+                subAbility.recalculatePriority_();
+            }
+        }
         return this;
     }
     public Ability<E> setBukkitPriority(EventPriority priority) {
         this.bukkitPriority_ = priority;
-        if (RegionsLib.getAbilityHandler().getRegisteredAbilities().contains(this.name)) {
-            this.unregister();
-            this.register();
-        }
+        this.refreshRegistration_();
         return this;
     }
     public Ability<E> invalidates(Ability<?>... toInvalidate) {
         this.invalidates_ = toInvalidate;
+        this.refreshRegistration_();
+        return this;
+    }
+    public Ability<E> extend(@Nullable Ability<E> superAbility){
+        Ability.removeFromSupperMap_(this);
+        this.superAbility_ = superAbility;
+        Ability.addToSupperMap_(this);
+        this.recalculatePriority_();
         return this;
     }
     private void invalidate(Player player) {
@@ -147,6 +209,22 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
             registrable = false;
         }
         return locGetter;
+    }
+
+    //PRIVATE METHODS
+    private void refreshRegistration_() {
+        if (this.isRegistered()) {
+            this.unregister();
+            this.register();
+        }
+    }
+    private void recalculatePriority_() {
+        if (this.superAbility_ != null) {
+            int superPriority = this.superAbility_.getPriority();
+            if (this.getPriority() <= superPriority) {
+                this.setPriority(superPriority + 1);
+            }
+        }
     }
 
     //COMPARING
