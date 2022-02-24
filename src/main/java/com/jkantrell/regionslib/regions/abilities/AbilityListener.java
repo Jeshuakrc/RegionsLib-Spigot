@@ -49,10 +49,8 @@ class AbilityListener<E extends Event> {
             Ability<E> ability = iterator.next();
             if (!ability.isValid(e) || toRemove.contains(ability)) {
                 iterator.remove();
-                AbilityList<E> subAbilities = Ability.getSubAbilities(ability);
-                if (subAbilities != null) {
-                    toRemove.addAll(subAbilities.toList());
-                }
+                AbilityList<E> subAbilities = ability.getSubAbilities();
+                toRemove.addAll(subAbilities.toList());
             }
         }
         for (Ability<E> ability : validAbilities) {
