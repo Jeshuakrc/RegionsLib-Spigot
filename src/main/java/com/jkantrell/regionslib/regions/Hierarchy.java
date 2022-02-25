@@ -5,6 +5,7 @@ import com.jkantrell.regionslib.RegionsLib;
 import com.jkantrell.regionslib.regions.abilities.Ability;
 import com.jkantrell.regionslib.regions.abilities.AbilityList;
 import com.jkantrell.regionslib.io.Serializer;
+import org.apache.commons.lang.StringUtils;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -167,7 +168,7 @@ public class Hierarchy {
             return Integer.compare(level_, o.getLevel());
         }
         public boolean allowedTo(String ability) {
-            return this.abilities_.contains(ability);
+            return this.abilities_.contains(StringUtils.normalizeSpace(ability.toLowerCase()));
         }
         public boolean allowedTo(Ability<?> ability) {
             return this.allowedTo(ability.name);
@@ -222,8 +223,10 @@ public class Hierarchy {
             for (JsonElement element : jsonHierarchy.get("groups").getAsJsonArray()) {
                 jsonGroup = element.getAsJsonObject();
                 abilities = new ArrayList<>();
+                String ability;
                 for (JsonElement element1 : jsonGroup.get("abilities").getAsJsonArray()) {
-                    abilities.add(element1.getAsString());
+                    ability = StringUtils.normalizeSpace(element1.getAsString().toLowerCase());
+                    abilities.add(ability);
                 }
                 hierarchy.getGroups().add(
                         jsonGroup.get("name").getAsString(),
