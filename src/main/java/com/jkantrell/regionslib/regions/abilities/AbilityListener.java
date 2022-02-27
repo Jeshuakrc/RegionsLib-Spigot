@@ -24,7 +24,12 @@ class AbilityListener<E extends Event> {
                 eventClass,
                 voidListener_,
                 priority,
-                (l,e) -> onEvent((E) e),
+                (l,e) -> {
+                    try {
+                        E event = (E) e;
+                        this.onEvent(event);
+                     } catch (ClassCastException ex) {}
+                },
                 RegionsLib.getMain(),
                 false
         );

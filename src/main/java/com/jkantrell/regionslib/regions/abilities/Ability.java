@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockEvent;
+import org.bukkit.event.entity.EntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import javax.annotation.Nonnull;
@@ -14,12 +15,32 @@ import javax.annotation.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class Ability<E extends Event> implements Comparable<Ability<E>> {
+
+    //STATIC METHODS
+    public static <E extends Event,T extends Enum<?>> AbilityList<E> enumBuilder(
+            Class<E> eventClass,
+            Function<E,T> enumGetter,
+            Map<String,T> map,
+            Function<E,Player> playerGetter,
+            Function<E,Location> locationGetter
+    ) {
+        AbilityList<E> list = new AbilityList<>();
+        for (Map.Entry<String,T> entry : map.entrySet()) {
+            list.add(new Ability<E>(
+                    eventClass,
+                    entry.getKey(),
+                    e -> enumGetter.apply(e).equals(entry.getValue()),
+                    playerGetter,
+                    locationGetter
+            ));
+        }
+        return list;
+    }
 
     //FIELDS
     private int priority_ = 0;
@@ -48,6 +69,9 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
     }
     public Ability(@Nonnull Class<E> eventClass, String name,@Nonnull Predicate<E> validation) {
         this(eventClass,name,validation,null,null);
+    }
+    public Ability(@Nonnull Ability<E> baseAbility, String name, Predicate<E> validator) {
+        this(baseAbility.eventClass, name,validator, baseAbility.playerGetter, baseAbility.locationGetter);
     }
 
     //GETTERS
@@ -186,9 +210,11 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
                     return null;
                 }
             };
+        } else if (EntityEvent.class.isAssignableFrom(eventClass)) {
+            locGetter = e -> ((EntityEvent) e).getEntity().getLocation();
         } else {
             RegionsLib.getMain().getLogger().warning(this.name + " ability is unregistrable!");
-            RegionsLib.getMain().getLogger().warning(eventClass.getName() + " is not a BlockEvent. Unable to infer location. Please define a locationGetter lambda directly.");
+            RegionsLib.getMain().getLogger().warning(eventClass.getName() + " is not a BlockEvent or an EntityEvent. Unable to infer location. Please define a locationGetter lambda directly.");
             locGetter = null;
             registrable = false;
         }
