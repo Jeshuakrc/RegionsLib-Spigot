@@ -4,9 +4,11 @@ import com.jkantrell.regionslib.RegionsLib;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.event.Event;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 public class AbilityHandler {
 
@@ -65,5 +67,20 @@ public class AbilityHandler {
             listener.remove(ability);
         }
         this.abilities_.remove(ability.name);
+    }
+
+    public void registerAll(Class<?> abilityHolder) throws IllegalAccessException {
+        int i = 0;
+        for (Field field : abilityHolder.getFields()) {
+            if (!field.isAnnotationPresent(AbilityRegistration.class)) { continue; }
+            Object obj = field.get(null);
+            if (obj instanceof Ability ability) {
+                this.register(ability);
+                i ++;
+            } else {
+                RegionsLib.getMain().getLogger().severe("The " + field.getName() + " field is not of Ability type. Unable to register.");
+            }
+        }
+        RegionsLib.getMain().getLogger().info(i + " abilities registered from class " + abilityHolder.getName());
     }
 }
