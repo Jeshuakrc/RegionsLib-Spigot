@@ -8,7 +8,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 
 public class AbilityHandler {
 
@@ -75,19 +74,26 @@ public class AbilityHandler {
         this.abilities_.remove(ability.getName());
     }
 
-    public void registerAll(Class<?> abilityHolder) throws IllegalAccessException {
+    public void registerAll(Class<?> abilityHolder) {
         int i = 0;
         for (Field field : abilityHolder.getFields()) {
-            if (!field.isAnnotationPresent(AbilityRegistration.class)) { continue; }
-            Object obj = field.get(null);
-            if (obj instanceof Ability ability) {
-                if (ability.getName() == null) {
-                    ability.setName(field.getName());
+
+            try {
+                if (!field.isAnnotationPresent(AbilityRegistration.class)) {
+                    continue;
                 }
-                this.register(ability);
-                i ++;
-            } else {
-                RegionsLib.getMain().getLogger().severe("The " + field.getName() + " field is not of Ability type. Unable to register.");
+                Object obj = field.get(null);
+                if (obj instanceof Ability ability) {
+                    if (ability.getName() == null) {
+                        ability.setName(field.getName());
+                    }
+                    this.register(ability);
+                    i++;
+                } else {
+                    RegionsLib.getMain().getLogger().severe("The " + field.getName() + " field is not of Ability type. Unable to register.");
+                }
+            } catch (IllegalAccessException ex) {
+                ex.printStackTrace();
             }
         }
         RegionsLib.getMain().getLogger().info(i + " abilities registered from class " + abilityHolder.getName());

@@ -2,6 +2,7 @@ package com.jkantrell.regionslib;
 
 import com.jkantrell.regionslib.io.ConfigManager;
 import com.jkantrell.regionslib.regions.Hierarchy;
+import com.jkantrell.regionslib.regions.abilities.Abilities;
 import com.jkantrell.regionslib.regions.abilities.AbilityHandler;
 import com.jkantrell.regionslib.regions.Region;
 import org.bukkit.plugin.Plugin;
@@ -10,6 +11,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class RegionsLib extends JavaPlugin {
 
     //FIELDS
+    public static boolean enableBuildInAbilities = true;
+
     private static Plugin mainInstance_;
     private static AbilityHandler abilityHandler_ = new AbilityHandler();
 
@@ -28,6 +31,7 @@ public final class RegionsLib extends JavaPlugin {
         ConfigManager.initialize();
         Hierarchy.loadAll();
         plugin.getServer().getPluginManager().registerEvents(new RegionsLibEventListener(), RegionsLib.getMain());
+        RegionsLib.getAbilityHandler().registerAll(Abilities.class);
         if (Region.loadAll().isEmpty()) {RegionsLib.getMain().getLogger().info("No regions lo load!"); }
     }
 
