@@ -49,9 +49,9 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
     private Ability<E> superAbility_ = null;
     private final AbilityList<E> subAbilities_ = new AbilityList<>();
     private final ArrayList<Player> invalidated_ = new ArrayList<>();
+    private String name_;
     boolean registrable = true;
     public final Class<E> eventClass;
-    public final String name;
     public final Predicate<E> validator;
     public final Function<E,Player> playerGetter;
     public final Function<E,Location> locationGetter;
@@ -59,7 +59,7 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
     //CONSTRUCTORS
     public Ability(@Nonnull Class<E> eventClass, String name, @Nonnull Predicate<E> validation, Function<E,Player> playerGetter, Function<E,Location> locationGetter) {
         this.eventClass = eventClass;
-        this.name = name;
+        this.name_ = name;
         this.validator = validation;
         this.playerGetter = (playerGetter == null) ? this.getPlayerGetter_() : playerGetter;
         this.locationGetter = (locationGetter == null) ? this.getLocationGetter_() : locationGetter;
@@ -73,8 +73,23 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
     public Ability(@Nonnull Ability<E> baseAbility, String name, Predicate<E> validator) {
         this(baseAbility.eventClass, name,validator, baseAbility.playerGetter, baseAbility.locationGetter);
     }
+    public Ability(@Nonnull Class<E> eventClass, @Nonnull Predicate<E> validation, Function<E,Player> playerGetter, Function<E,Location> locationGetter) {
+        this(eventClass,null,validation,playerGetter,locationGetter);
+    }
+    public Ability(@Nonnull Class<E> eventClass, @Nonnull Predicate<E> validation, Function<E,Location> locationGetter) {
+        this(eventClass,null,validation,null,locationGetter);
+    }
+    public Ability(@Nonnull Class<E> eventClass, @Nonnull Predicate<E> validation) {
+        this(eventClass,null,validation,null,null);
+    }
+    public Ability(@Nonnull Ability<E> baseAbility, Predicate<E> validator) {
+        this(baseAbility.eventClass, null,validator, baseAbility.playerGetter, baseAbility.locationGetter);
+    }
 
     //GETTERS
+    public String getName() {
+        return this.name_;
+    }
     public int getPriority() {
         return this.priority_;
     }
@@ -92,11 +107,14 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
     }
 
     //SETTERS
+    void setName(String name) {
+        this.name_ = name;
+    }
     public Ability<E> setPriority(int priority) {
         if (this.superAbility_ != null) {
             if (priority <= this.superAbility_.getPriority()) {
                 throw new IllegalArgumentException(
-                    this.name+"'s priority cannot be lower than "+this.superAbility_.name+"'s."
+                    this.name_ +"'s priority cannot be lower than "+this.superAbility_.name_ +"'s."
                 );
             }
         }
@@ -170,7 +188,7 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
         } catch (Exception e) {
             if (!(e instanceof NullPointerException)) {
                 RegionsLib.getMain().getLogger().warning(
-                "Ability " + name + " failed validation due to " + e.getClass().getName()
+                "Ability " + name_ + " failed validation due to " + e.getClass().getName()
                 );
             }
             return false;
@@ -191,7 +209,7 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
             Method getPlayer = eventClass.getMethod("getPlayer");
             getter = new GenericPlayerGetter(getPlayer);
         } catch (NoSuchMethodException e) {
-            RegionsLib.getMain().getLogger().warning(this.name + " ability is unregistrable!");
+            RegionsLib.getMain().getLogger().warning(this.name_ + " ability is unregistrable!");
             RegionsLib.getMain().getLogger().warning(eventClass.getName() + " doesn't have a 'getPlayer' method, please define a playerGetter lambda directly.");
             getter = null;
             registrable = false;
@@ -213,7 +231,7 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
         } else if (EntityEvent.class.isAssignableFrom(eventClass)) {
             locGetter = e -> ((EntityEvent) e).getEntity().getLocation();
         } else {
-            RegionsLib.getMain().getLogger().warning(this.name + " ability is unregistrable!");
+            RegionsLib.getMain().getLogger().warning(this.name_ + " ability is unregistrable!");
             RegionsLib.getMain().getLogger().warning(eventClass.getName() + " is not a BlockEvent or an EntityEvent. Unable to infer location. Please define a locationGetter lambda directly.");
             locGetter = null;
             registrable = false;
@@ -250,7 +268,7 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
                 return (Player) getter_.invoke(e);
             } catch (InvocationTargetException | IllegalAccessException ex) {
                 RegionsLib.getMain().getLogger().warning(
-                "Unable to execute getPlayer method in " + getter_.getDeclaringClass().getName() + " in " + name + " ability!"
+                "Unable to execute getPlayer method in " + getter_.getDeclaringClass().getName() + " in " + name_ + " ability!"
                 );
                 ex.printStackTrace();
                 RegionsLib.getMain().getLogger().warning("Unregistering ability. Please declare the playerGetter directly.");

@@ -33,5 +33,8 @@ public class AbilityEnumBuilder<E extends Event,T extends Enum> {
                 this.locationGetter
         );
     }
+    public Ability<E> build(T member) {
+        return this.build(null,member);
+    }
 
 }

@@ -59,7 +59,7 @@ class AbilityListener<E extends Event> {
             }
         }
         for (Ability<E> ability : validAbilities) {
-            RegionsLib.getMain().getLogger().info("Ability " + ability.name + " is valid in this context.");
+            RegionsLib.getMain().getLogger().info("Ability " + ability.getName() + " is valid in this context.");
             cancel = !ability.isAllowed(e);
             RegionsLib.getMain().getLogger().info((cancel) ? "not allowed" : "allowed");
             ability.invalidateTargets(e);

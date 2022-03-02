@@ -31,13 +31,19 @@ public class AbilityHandler {
     public <E extends Event> void register(Ability<E> ability) {
         if (! ability.registrable) {
             RegionsLib.getMain().getLogger().warning(
-            "Ability " + ability.name + " wasn't registered, as it's been marked as unregistrable!"
+            "Ability " + ability.getName() + " wasn't registered, as it's been marked as unregistrable!"
+            );
+            return;
+        }
+        if (ability.getName() == null) {
+            RegionsLib.getMain().getLogger().warning(
+                    "Ability " + ability.getName() + " wasn't registered as has no name!"
             );
             return;
         }
         StringBuilder log = new StringBuilder();
         log.append("Registering new Ability.\nName: ")
-                .append(ability.name)
+                .append(ability.getName())
                 .append("\nBukkit priority: ")
                 .append(ability.getBukkitPriority().toString())
                 .append("\nEvent: ")
@@ -66,7 +72,7 @@ public class AbilityHandler {
             AbilityListener<E> listener = (AbilityListener<E>) genericListener;
             listener.remove(ability);
         }
-        this.abilities_.remove(ability.name);
+        this.abilities_.remove(ability.getName());
     }
 
     public void registerAll(Class<?> abilityHolder) throws IllegalAccessException {
@@ -75,6 +81,9 @@ public class AbilityHandler {
             if (!field.isAnnotationPresent(AbilityRegistration.class)) { continue; }
             Object obj = field.get(null);
             if (obj instanceof Ability ability) {
+                if (ability.getName() == null) {
+                    ability.setName(field.getName());
+                }
                 this.register(ability);
                 i ++;
             } else {

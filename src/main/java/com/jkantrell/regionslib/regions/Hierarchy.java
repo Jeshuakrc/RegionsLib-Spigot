@@ -171,7 +171,7 @@ public class Hierarchy {
             return this.abilities_.contains(StringUtils.normalizeSpace(ability.toLowerCase()));
         }
         public boolean allowedTo(Ability<?> ability) {
-            return this.allowedTo(ability.name);
+            return this.allowedTo(ability.getName());
         }
     }
     public class Groups extends ArrayList<Group> {

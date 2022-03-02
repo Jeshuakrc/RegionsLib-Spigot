@@ -12,10 +12,10 @@ public class AbilityList<E extends Event> {
 
     //ADD METHODS
     public void add(Ability<E> ability) {
-        if (this.abilities_.containsKey(ability.name)) {
+        if (this.abilities_.containsKey(ability.getName())) {
             throw new IllegalArgumentException("An ability with this name already exists!");
         }
-        this.abilities_.put(ability.name, ability);
+        this.abilities_.put(ability.getName(), ability);
     }
     public void addAll(Collection<Ability<E>> abilities) {
         for (Ability<E> ability : abilities) {
@@ -40,7 +40,7 @@ public class AbilityList<E extends Event> {
         return false;
     }
     public boolean remove(Ability<E> ability) {
-        return this.remove(ability.name,m -> m.containsValue(ability));
+        return this.remove(ability.getName(),m -> m.containsValue(ability));
     }
     public boolean remove(String name) {
         return this.remove(name,m -> m.containsKey(name));
@@ -50,7 +50,7 @@ public class AbilityList<E extends Event> {
         ArrayList<Ability<E>> list = new ArrayList<>(this.abilities_.values());
         for (int i = 0; i < list.size(); i++) {
             if (conditional.test(list.get(i))) {
-                this.abilities_.remove(list.get(i).name);
+                this.abilities_.remove(list.get(i).getName());
                 removed = true;
             }
         }
