@@ -1,8 +1,7 @@
 package com.jkantrell.regionslib.regions;
 
-import com.jkantrell.regionslib.io.ConfigManager;
+import com.jkantrell.regionslib.RegionsLib;
 import org.bukkit.Location;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,7 +10,7 @@ public class RegionBoundary {
     //FIELDS
     private Region region_;
     private List<Location> boundaries_;
-    private int borderResolution_ = ConfigManager.getTotemBorderResolution() + 1;
+    private int borderResolution_ = RegionsLib.CONFIG.regionBorderResolution + 1;
 
     //CONSTRUCTORS
     RegionBoundary(Region region){

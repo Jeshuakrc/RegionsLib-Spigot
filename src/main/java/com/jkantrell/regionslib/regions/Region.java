@@ -2,9 +2,9 @@ package com.jkantrell.regionslib.regions;
 
 import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
+import com.jkantrell.regionslib.io.Config;
 import com.jkantrell.regionslib.regions.abilities.Ability;
 import com.jkantrell.regionslib.regions.dataContainers.RegionDataContainer;
-import com.jkantrell.regionslib.io.ConfigManager;
 import com.jkantrell.regionslib.io.Serializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -31,7 +31,7 @@ public class Region {
     private BoundaryDisplayer boundaryDisplayer_ = null;
     private Hierarchy hierarchy_;
     private final List<Rule> rules_ = new ArrayList<>();
-    private final ConfigManager.ParticleData boundaryParticle_ = ConfigManager.getRegionBorderParticle();
+    private final Config.ParticleData boundaryParticle_ = RegionsLib.CONFIG.regionBorderParticle;
     private final Region self_ = this;
 
     //CONSTRUCTORS
@@ -200,7 +200,7 @@ public class Region {
 
         if (regions.length > 0) {
             int pos = 0;
-            switch (ConfigManager.getOverlappingRegionMode()) {
+            switch (RegionsLib.CONFIG.overlappingPermissionsMode) {
                 case all -> {
                     r = true;
                     for (Region i : regions) {

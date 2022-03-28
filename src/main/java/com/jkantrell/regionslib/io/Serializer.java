@@ -1,6 +1,7 @@
 package com.jkantrell.regionslib.io;
 
 import com.google.gson.*;
+import com.jkantrell.regionslib.RegionsLib;
 import com.jkantrell.regionslib.regions.Hierarchy;
 import com.jkantrell.regionslib.regions.Permission;
 import com.jkantrell.regionslib.regions.Region;
@@ -33,8 +34,8 @@ public abstract class Serializer {
     }
 
     public static class FILES {
-        public static final File REGIONS = new File(ConfigManager.getConfigPath(), "regions.json");
-        public static final File HIERARCHIES = new File(ConfigManager.getConfigPath(), "hierarchies.json");
+        public static final File REGIONS = new File(RegionsLib.CONFIG.configPath, "regions.json");
+        public static final File HIERARCHIES = new File(RegionsLib.CONFIG.configPath, "hierarchies.json");
     }
 
     public static <T> T deserializeFile (File file, Class<T> typeOf) {
