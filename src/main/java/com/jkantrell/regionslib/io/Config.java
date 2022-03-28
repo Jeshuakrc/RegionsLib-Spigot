@@ -42,22 +42,22 @@ public class Config extends AbstractYamlConfig {
     //FIELDS
     public String configPath;
 
-    @ConfigField
+    @ConfigField(path = "overlapping_permissions_mode")
     public Config.OverlappingPermissionsMode overlappingPermissionsMode = Config.OverlappingPermissionsMode.all;
 
-    @ConfigField
+    @ConfigField(path = "plantable_blocks")
     public List<Material> plantableBlocks = List.of(Material.WHEAT, Material.CARROTS, Material.POTATOES, Material.BEETROOTS, Material.KELP, Material.BAMBOO_SAPLING,
             Material.SUGAR_CANE, Material.BROWN_MUSHROOM, Material.RED_MUSHROOM, Material.NETHER_WART, Material.ACACIA_SAPLING,
             Material.SPRUCE_SAPLING, Material.BIRCH_SAPLING, Material.DARK_OAK_SAPLING, Material.JUNGLE_SAPLING, Material.OAK_SAPLING
     );
 
-    @ConfigField
+    @ConfigField(path = "breakable_redstone_blocks")
     public List<Material> breakableRedstoneBlocks = List.of(Material.REDSTONE_WIRE);
 
-    @ConfigField(path = "regionBorderParticle.resolution")
+    @ConfigField(path = "border_particle.resolution")
     public int regionBorderResolution = 1;
 
-    @ConfigField
+    @ConfigField(path = "border_particle")
     public ParticleData regionBorderParticle = new ParticleData(Particle.NAUTILUS, 1, new int[] {0,0,0});
 
 }
