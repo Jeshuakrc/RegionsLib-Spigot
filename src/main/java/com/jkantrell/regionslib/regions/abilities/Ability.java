@@ -80,10 +80,10 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
         this(eventClass,null,validation,null,locationGetter);
     }
     public Ability(@Nonnull Class<E> eventClass, @Nonnull Predicate<E> validation) {
-        this(eventClass,null,validation,null,null);
+        this(eventClass,null, validation,null,null);
     }
     public Ability(@Nonnull Ability<E> baseAbility, Predicate<E> validator) {
-        this(baseAbility.eventClass, null,validator, baseAbility.playerGetter, baseAbility.locationGetter);
+        this(baseAbility.eventClass, null, validator, baseAbility.playerGetter, baseAbility.locationGetter);
     }
 
     //GETTERS
@@ -276,5 +276,9 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
                 return null;
             }
         }
+    }
+    @Override
+    public String toString(){
+        return this.getName();
     }
 }
