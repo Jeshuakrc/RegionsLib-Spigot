@@ -2,8 +2,6 @@ package com.jkantrell.regionslib.regions;
 
 import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
-import org.bukkit.Bukkit;
-
 import java.lang.reflect.Type;
 import java.util.*;
 
@@ -32,6 +30,7 @@ public class Rule {
     }
     private void setKey(String name, Rule.DataType<?> dataType) {
         RegionsLib.getMain().getLogger().info("Processing rule key " + name + ". Type: " + dataType.getClass().toString());
+
         if (keys_.containsKey(name)) {
             if (keys_.get(name).dataType.equals(dataType)) {
                 RegionsLib.getMain().getLogger().info("Key already exists.");

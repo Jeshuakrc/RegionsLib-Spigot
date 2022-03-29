@@ -3,7 +3,6 @@ package com.jkantrell.regionslib.regions.abilities;
 import com.jkantrell.regionslib.RegionsLib;
 import org.apache.commons.lang.StringUtils;
 import org.bukkit.event.Event;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,11 +76,9 @@ public class AbilityHandler {
     public void registerAll(Class<?> abilityHolder) {
         int i = 0;
         for (Field field : abilityHolder.getFields()) {
+            if (!field.isAnnotationPresent(AbilityRegistration.class)) { continue; }
 
             try {
-                if (!field.isAnnotationPresent(AbilityRegistration.class)) {
-                    continue;
-                }
                 Object obj = field.get(null);
                 if (obj instanceof Ability ability) {
                     if (ability.getName() == null) {
