@@ -8,14 +8,11 @@ import java.util.function.Predicate;
 
 public class AbilityList<E extends Event> {
 
-    private final HashMap<String, Ability<E>> abilities_ = new HashMap<>();
+    private final ArrayList<Ability<E>> abilities_ = new ArrayList<>();
 
     //ADD METHODS
     public void add(Ability<E> ability) {
-        if (this.abilities_.containsKey(ability.getName())) {
-            throw new IllegalArgumentException("An ability with this name already exists!");
-        }
-        this.abilities_.put(ability.getName(), ability);
+        this.abilities_.add(ability);
     }
     public void addAll(Collection<Ability<E>> abilities) {
         for (Ability<E> ability : abilities) {
@@ -25,32 +22,37 @@ public class AbilityList<E extends Event> {
 
     //CONTAIN CHECK METHODS
     public boolean contains(Ability<E> ability) {
-        return this.abilities_.containsValue(ability);
+        return this.abilities_.contains(ability);
     }
     public boolean contains(String name) {
-        return this.abilities_.containsKey(name);
+        for (Ability<E> ability : this.abilities_) {
+            if (ability.getName().equals(name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     //REMOVE METHODS
-    private boolean remove(String name, Predicate<HashMap<String ,Ability<E>>> checker) {
+    private boolean remove(Ability<E> ability, Predicate<ArrayList<Ability<E>>> checker) {
         if (checker.test(this.abilities_)) {
-            this.abilities_.remove(name);
+            this.abilities_.remove(ability);
             return true;
         }
         return false;
     }
     public boolean remove(Ability<E> ability) {
-        return this.remove(ability.getName(),m -> m.containsValue(ability));
+        return this.remove(ability,m -> m.contains(ability));
     }
     public boolean remove(String name) {
-        return this.remove(name,m -> m.containsKey(name));
+        Ability<E> ability = this.get(name);
+        return this.remove(ability,m -> m.contains(ability));
     }
     public boolean removeIf(Predicate<Ability<E>> conditional) {
         boolean removed = false;
-        ArrayList<Ability<E>> list = new ArrayList<>(this.abilities_.values());
-        for (int i = 0; i < list.size(); i++) {
-            if (conditional.test(list.get(i))) {
-                this.abilities_.remove(list.get(i).getName());
+        for (Ability<E> ability : this.abilities_) {
+            if (conditional.test(ability)) {
+                this.abilities_.remove(ability);
                 removed = true;
             }
         }
@@ -59,7 +61,12 @@ public class AbilityList<E extends Event> {
 
     //GET METHODS
     public Ability<E> get(String name) {
-        return this.abilities_.get(name);
+        for (Ability<E> ability : this.abilities_) {
+            if (ability.getName().equals(name)) {
+                return ability;
+            }
+        }
+        return null;
     }
     public List<Ability<E>> getAll(Collection<String> names) {
         ArrayList<Ability<E>> r = new ArrayList<>();
@@ -70,7 +77,13 @@ public class AbilityList<E extends Event> {
         }
         return r;
     }
-    public List<String> getNames() { return new ArrayList<>(this.abilities_.keySet()); }
+    public List<String> getNames() {
+        ArrayList<String> list = new ArrayList<>();
+        for (Ability<E> ability : abilities_) {
+            list.add(ability.getName());
+        }
+        return list;
+    }
     public boolean isEmpty() {
         return this.abilities_.isEmpty();
     }
@@ -85,7 +98,7 @@ public class AbilityList<E extends Event> {
         return this.abilities_.size();
     }
     public List<Ability<E>> toList() {
-        return new ArrayList<Ability<E>>(this.abilities_.values());
+        return new ArrayList<>(this.abilities_);
     }
     public List<Ability<E>> prioritize() {
         List<Ability<E>> list = this.toList();
@@ -97,7 +110,7 @@ public class AbilityList<E extends Event> {
     @Override
     protected AbilityList<E> clone() {
         AbilityList<E> list = new AbilityList<>();
-        list.addAll(this.abilities_.values());
+        list.addAll(this.abilities_);
         return list;
     }
 }
