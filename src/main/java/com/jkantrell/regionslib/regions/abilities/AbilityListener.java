@@ -3,9 +3,7 @@ package com.jkantrell.regionslib.regions.abilities;
 import com.jkantrell.regionslib.RegionsLib;
 import org.bukkit.Bukkit;
 import org.bukkit.event.*;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -52,7 +50,7 @@ class AbilityListener<E extends Event> {
         Iterator<Ability<E>> iterator = validAbilities.iterator();
         while (iterator.hasNext()) {
             Ability<E> ability = iterator.next();
-            if (!ability.isValid(e) || toRemove.contains(ability)) {
+            if (toRemove.contains(ability) || !ability.isValid(e)) {
                 iterator.remove();
                 AbilityList<E> subAbilities = ability.getSubAbilities();
                 toRemove.addAll(subAbilities.toList());
