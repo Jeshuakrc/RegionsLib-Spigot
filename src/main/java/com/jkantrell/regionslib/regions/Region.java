@@ -151,6 +151,15 @@ public class Region {
             return null;
         }
     }
+    public List<Player> getInsidePlayers() {
+        LinkedList<Player> r = new LinkedList<>();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (this.contains(player.getLocation())) {
+                r.add(player);
+            }
+        }
+        return r;
+    }
 
     //STATIC METHODS
     public static List<Region> loadAll() {
@@ -302,6 +311,9 @@ public class Region {
             }
         }
         return (perm == null) ? this.getHierarchy().checkAbility(ability) : this.getHierarchy().checkAbility(ability,perm.getGroup());
+    }
+    public boolean contains(Location location) {
+        return this.contains(location.getX(),location.getY(),location.getZ(),location.getWorld());
     }
     public boolean contains(double x, double y, double z, World dimension) {
         if(!this.getWorld().equals(dimension)) { return false; }
