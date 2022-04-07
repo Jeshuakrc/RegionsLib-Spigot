@@ -138,7 +138,7 @@ public class Region {
     }
     public <T> Rule getRule(String name, Rule.DataType<T> dataType) {
         for (Rule rule : this.rules_) {
-            if (rule.name.equals(name) && rule.getKey().dataType.equals(dataType)) {
+            if (rule.name.equals(name) && rule.getDatatype().equals(dataType)) {
                return rule;
             }
         }
