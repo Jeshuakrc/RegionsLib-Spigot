@@ -4,52 +4,39 @@ import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.function.Function;
+import java.util.logging.Logger;
 
 public class Rule {
 
     //FIELDS
     public final String name;
     private ValueHolder valueHolder_;
-    private Rule.Key key_;
 
-    private static final HashMap<String,Rule.Key> keys_ = new HashMap<>();
+    private static final HashMap<String,Rule.DataType> keys_ = new HashMap<>();
 
     //CONSTRUCTORS
     public <T> Rule(String name,Rule.DataType<T> dataType, T value) {
-        this.setKey(name,dataType);
+        Rule.registerKey(name,dataType);
         this.valueHolder_ = new ValueHolder<T>(value);
         this.name = name;
     }
 
     //SETTERS
     public <T> boolean set(T value) {
-        if (this.key_.dataType == null) { return false; }
-        if (valueHolder_.value_.getClass().isAssignableFrom(value.getClass())) { return false; }
+        if (!valueHolder_.value_.getClass().isAssignableFrom(value.getClass())) { return false; }
         this.valueHolder_ = new ValueHolder<T>(value);
         return true;
-    }
-    private void setKey(String name, Rule.DataType<?> dataType) {
-        RegionsLib.getMain().getLogger().info("Processing rule key " + name + ". Type: " + dataType.getClass().toString());
-
-        if (keys_.containsKey(name)) {
-            if (keys_.get(name).dataType.equals(dataType)) {
-                RegionsLib.getMain().getLogger().info("Key already exists.");
-                this.key_ = keys_.get(name);
-                return;
-            }
-            throw new IllegalArgumentException("Rule key already exists and DataType is not the same provided");
-        }
-        RegionsLib.getMain().getLogger().info("Key doesn't exist. Adding it");
-        this.key_ = new Rule.Key(name,dataType);
     }
 
     //GETTERS
     public <T> T getValue(Rule.DataType<T> dataType) {
-        if (!this.key_.dataType.equals(dataType)) { return null; }
+        if (!Rule.keys_.get(this.name).equals(dataType)) { return null; }
         return (T) valueHolder_.value_;
     }
-    public Rule.Key getKey() {
-        return this.key_;
+
+    public DataType<?> getDatatype() {
+        return keys_.get(name);
     }
 
     private static class ValueHolder <T> {
@@ -60,59 +47,64 @@ public class Rule {
         }
     }
 
-    public static class Key {
-
-        public final String name;
-        public final Rule.DataType dataType;
-
-        public Key(String name, Rule.DataType<?> dataType) {
-            this.name = name;
-            this.dataType = dataType;
-            if (Rule.keys_.containsKey(name)) { throw new IllegalArgumentException("Key with tha name " + name + " already exists"); }
-            Rule.keys_.putIfAbsent(name,this);
+    //STATIC METHODS
+    public static void registerKey(String name, Rule.DataType<?> dataType) {
+        Logger logger = RegionsLib.getMain().getLogger();
+        String type = dataType.getClazz().getSimpleName();
+        if (keys_.containsKey(name)) {
+            if (keys_.get(name).equals(dataType)) {
+                logger.finer("Key '" + name + "' of type '" + type + "' already exists.");
+                return;
+            }
+            String oldType = keys_.get(name).getClazz().getSimpleName();
+            keys_.remove(name);
+            keys_.put(name,dataType);
+            logger.info("Rule key '" + name + "' already existed with type '" + oldType + "'. Replacing with type '" + type + "'.");
+            return;
         }
-
+        logger.fine("Registering new rule key of name '" + name + "' with type '" + type + "'.");
+        Rule.keys_.put(name,dataType);
     }
+
     public static class DataType<T> {
 
         //CONSTANTS
-        public static final Rule.DataType<String> STRING = new Rule.DataType<>(JsonPrimitive::new, JsonElement::getAsString);
-        public static final Rule.DataType<Integer> INT = new Rule.DataType<>(JsonPrimitive::new, JsonElement::getAsInt);
-        public static final Rule.DataType<Double> DOUBLE = new Rule.DataType<>(JsonPrimitive::new, JsonElement::getAsDouble);
-        public static final Rule.DataType<Boolean> BOOL = new Rule.DataType<>(JsonPrimitive::new, JsonElement::getAsBoolean);
-        public static final Rule.DataType<JsonElement> JSON = new DataType<>(j -> j, j -> j);
+        public static final Rule.DataType<String> STRING = new Rule.DataType<>(String.class, JsonPrimitive::new, JsonElement::getAsString);
+        public static final Rule.DataType<Integer> INT = new Rule.DataType<>(Integer.class, JsonPrimitive::new, JsonElement::getAsInt);
+        public static final Rule.DataType<Double> DOUBLE = new Rule.DataType<>(Double.class, JsonPrimitive::new, JsonElement::getAsDouble);
+        public static final Rule.DataType<Boolean> BOOL = new Rule.DataType<>(Boolean.class, JsonPrimitive::new, JsonElement::getAsBoolean);
+        public static final Rule.DataType<JsonElement> JSON = new DataType<>(JsonElement.class, j -> j, j -> j);
 
         //FIELDS
-        private final OnSerialize<T> onSerialize_;
-        private final OnDeserialize<T> onDeserialize_;
+        private final Function<T,JsonElement> onSerialize_;
+        private final Function<JsonElement,T> onDeserialize_;
+        private final Class<T> type_;
 
         //CONSTRUCTOR
-        public DataType(OnSerialize<T> onSerialize, OnDeserialize<T> onDeserialize){
+        public DataType(Class<T>type, Function<T,JsonElement> onSerialize, Function<JsonElement,T> onDeserialize){
+            this.type_ = type;
             this.onSerialize_ = onSerialize;
             this.onDeserialize_ = onDeserialize;
         }
-        //METHODS
-        private JsonElement serialize(T val) {
-            return onSerialize_.serialize(val);
-        }
-        private T deserialize(JsonElement json) {
-            return onDeserialize_.deserialize(json);
+
+        //GETTERS
+        public Class<T> getClazz() {
+            return this.type_;
         }
 
-        //INTERFACES
-        @FunctionalInterface
-        public interface OnSerialize<T> {
-            JsonElement serialize(T val);
+        //METHODS
+        private JsonElement serialize(T val) {
+            return onSerialize_.apply(val);
         }
-        @FunctionalInterface
-        public interface OnDeserialize<T> {
-            T deserialize(JsonElement json);
+        private T deserialize(JsonElement json) {
+            return onDeserialize_.apply(json);
         }
+
     }
     public static class EnumDataType<E extends Enum<E>> extends DataType<E> {
 
         public EnumDataType(Class<E> enumType) {
-            super(e -> new JsonPrimitive(e.toString()), j -> E.valueOf(enumType, j.getAsString()));
+            super(enumType,e -> new JsonPrimitive(e.toString()), j -> E.valueOf(enumType, j.getAsString()));
         }
     }
 
@@ -124,11 +116,10 @@ public class Rule {
 
             JsonObject jsonRule = new JsonObject();
             try {
-                jsonRule.add(src.name, src.key_.dataType.serialize(src.valueHolder_.value_));
+                jsonRule.add(src.name, Rule.keys_.get(src.name).serialize(src.valueHolder_.value_));
             } catch (NullPointerException e) {
                 e.printStackTrace();
             }
-            jsonRule.addProperty("rule","xd");
             return jsonRule;
         }
     }
@@ -142,7 +133,7 @@ public class Rule {
             JsonElement jsonValueElm = jsonRule.get(name);
             Rule.DataType dataType;
             if (Rule.keys_.containsKey(name)) {
-                dataType = Rule.keys_.get(name).dataType;
+                dataType = Rule.keys_.get(name);
             } else {
                 if (jsonValueElm.isJsonPrimitive()) {
                     JsonPrimitive jsonValue = jsonValueElm.getAsJsonPrimitive();
