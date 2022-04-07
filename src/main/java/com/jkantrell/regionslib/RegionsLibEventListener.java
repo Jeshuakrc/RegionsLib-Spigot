@@ -1,20 +1,25 @@
 package com.jkantrell.regionslib;
 
-import com.jkantrell.regionslib.events.BlockRightClickedEvent;
-import com.jkantrell.regionslib.events.CopperBlockInteractEvent;
-import com.jkantrell.regionslib.events.LiquidRemoveEvent;
+import com.jkantrell.regionslib.events.*;
+import com.jkantrell.regionslib.regions.Region;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Levelled;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scheduler.BukkitRunnable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 class RegionsLibEventListener implements Listener {
 
+    //LISTENERS
     @EventHandler
     private void onPlayerInteraction(PlayerInteractEvent e) {
         if (e.getAction().equals(Action.RIGHT_CLICK_BLOCK) && e.getClickedBlock() != null) {
@@ -81,4 +86,36 @@ class RegionsLibEventListener implements Listener {
              }
          }
     }
+
+     static BukkitRunnable playerSampler = new BukkitRunnable() {
+
+        private Map<Region,List<Player>> prevCapture = new HashMap<>(), newCapture = new HashMap<>();
+
+        @Override
+        public void run() {
+            this.newCapture.clear();
+            for (Region region : Region.getAll()) {
+                List<Player>    newPlayers = region.getInsidePlayers(),
+                                prevPlayers = this.prevCapture.get(region);
+
+                this.newCapture.put(region,newPlayers);
+
+                boolean wasMapped = this.prevCapture.containsKey(region);
+                for (Player player : newPlayers) {
+                    if (!(wasMapped && prevPlayers.contains(player))) {
+                        RegionsLib.getMain().getServer().getPluginManager().callEvent(new PlayerEnterRegionEvent(player, region));
+                        prevPlayers.remove(player);
+                    }
+                }
+                if (!wasMapped) { continue; }
+                for (Player player : prevPlayers) {
+                    if (!newPlayers.contains(player)) {
+                        RegionsLib.getMain().getServer().getPluginManager().callEvent(new PlayerLeaveRegionEvent(player, region));
+                    }
+                }
+            }
+            this.prevCapture.clear();
+            this.prevCapture.putAll(this.newCapture);
+        }
+    };
 }

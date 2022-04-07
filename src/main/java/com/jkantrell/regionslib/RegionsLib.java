@@ -49,6 +49,10 @@ public final class RegionsLib extends JavaPlugin {
 
         //Registering the EventListener class
         plugin.getServer().getPluginManager().registerEvents(new RegionsLibEventListener(), RegionsLib.getMain());
+        int sampleRate = RegionsLib.CONFIG.playerSamplingRate;
+        if (sampleRate > 0) {
+            RegionsLibEventListener.playerSampler.runTaskTimer(plugin, 0, sampleRate);
+        }
 
         //Registering built-in abilities if enabled.
         if (RegionsLib.enableBuildInAbilities) { RegionsLib.getAbilityHandler().registerAll(Abilities.class); }
