@@ -1,6 +1,7 @@
 package com.jkantrell.regionslib.regions.abilities;
 
 import com.jkantrell.regionslib.RegionsLib;
+import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.*;
 import java.util.ArrayList;
@@ -26,7 +27,7 @@ class AbilityListener<E extends Event> {
                     try {
                         E event = (E) e;
                         this.onEvent(event);
-                     } catch (ClassCastException ex) {}
+                     } catch (ClassCastException ignored) {}
                 },
                 RegionsLib.getMain(),
                 false
@@ -48,6 +49,8 @@ class AbilityListener<E extends Event> {
         List<Ability<E>> validAbilities = this.abilities_.prioritize();
         List<Ability<?>> toRemove = new ArrayList<>();
         Iterator<Ability<E>> iterator = validAbilities.iterator();
+        StringBuilder log = new StringBuilder();
+
         while (iterator.hasNext()) {
             Ability<E> ability = iterator.next();
             if (toRemove.contains(ability) || !ability.isValid(e)) {
@@ -56,16 +59,29 @@ class AbilityListener<E extends Event> {
                 toRemove.addAll(subAbilities.toList());
             }
         }
-        for (Ability<E> ability : validAbilities) {
-            RegionsLib.getMain().getLogger().info("Ability " + ability.getName() + " is valid in this context.");
-            cancel = !ability.isAllowed(e);
-            RegionsLib.getMain().getLogger().info((cancel) ? "not allowed" : "allowed");
-            ability.invalidateTargets(e);
-        }
-        if (cancel) {
+        if (!validAbilities.isEmpty()) {
+            String name = validAbilities.get(0).playerGetter.apply(e).getName();
+            log.append(name).append(" has fired abilities:\n");
+            for (Ability<E> ability : validAbilities) {
+                cancel = !ability.isAllowed(e);
+                ability.invalidateTargets(e);
+                log.append("     ").append(ability.getName()).append(" - ").append(cancel ? "Not allowed" : "Allowed").append("\n");
+            }
+            log.append("     ");
             if (e instanceof Cancellable toCancel) {
-                RegionsLib.getMain().getLogger().info("Cancelling " + e.getClass().getName());
-                toCancel.setCancelled(true);
+                toCancel.setCancelled(cancel);
+                log
+                        .append(cancel ? "Cancelling" : "Keeping")
+                        .append(" event ")
+                        .append(e.getClass().getSimpleName());
+            } else {
+                log
+                        .append("Event ")
+                        .append(e.getClass().getSimpleName())
+                        .append(" is not cacellable");
+            }
+            for (String s : StringUtils.split(log.toString(),'\n')) {
+                RegionsLib.getMain().getLogger().finest(s);
             }
         }
     }

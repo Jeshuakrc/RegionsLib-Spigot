@@ -7,6 +7,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
 
 public class AbilityHandler {
 
@@ -35,17 +36,18 @@ public class AbilityHandler {
         }
         if (ability.getName() == null) {
             RegionsLib.getMain().getLogger().warning(
-                    "Ability " + ability.getName() + " wasn't registered as has no name!"
+            "Unable to register ability as it has no name!"
             );
             return;
         }
         StringBuilder log = new StringBuilder();
-        log.append("Registering new Ability.\nName: ")
+        Level logLevel = Level.FINE;
+        log.append("Registering new Ability.\n - Name: ")
                 .append(ability.getName())
-                .append("\nBukkit priority: ")
+                .append("\n - Bukkit priority: ")
                 .append(ability.getBukkitPriority().toString())
-                .append("\nEvent: ")
-                .append(ability.eventClass.toString()).append("\n");
+                .append("\n - Event: ")
+                .append(ability.eventClass.getSimpleName()).append("\n - ");
         try {
             AbilityListener<E> listener = (AbilityListener<E>) this.listeners_.get(ability.eventClass,ability.getBukkitPriority());
             if (listener == null) {
@@ -59,9 +61,10 @@ public class AbilityHandler {
             this.abilities_.add(ability);
         } catch (Exception e) {
             log.append("Unable to register. ").append(e.getMessage());
+            logLevel = Level.WARNING;
         }
         for (String s : StringUtils.split(log.toString(),"\n")) {
-            RegionsLib.getMain().getLogger().info(s);
+            RegionsLib.getMain().getLogger().log(logLevel,s);
         }
     }
     public <E extends Event> void unregister(Ability<E> ability) {
@@ -93,6 +96,6 @@ public class AbilityHandler {
                 ex.printStackTrace();
             }
         }
-        RegionsLib.getMain().getLogger().info(i + " abilities registered from class " + abilityHolder.getName());
+        RegionsLib.getMain().getLogger().info(i + " abilities registered from class " + abilityHolder.getSimpleName());
     }
 }
