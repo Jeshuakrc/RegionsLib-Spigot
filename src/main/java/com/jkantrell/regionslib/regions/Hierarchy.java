@@ -24,9 +24,18 @@ public class Hierarchy {
 
     //CONSTRUCTORS
     public Hierarchy (int id, String name) {
+
+        Hierarchy testHierarchy = Hierarchy.get(id);
+        if (testHierarchy != null) {
+            throw new IllegalArgumentException("There's already Hierarchy registered under ID " + id + ". Name: " + testHierarchy.getName() + ".");
+        }
+        testHierarchy = Hierarchy.get(name);
+        if (testHierarchy != null) {
+            throw new IllegalArgumentException("There's already Hierarchy registered under name '" + name + "'. ID: " + testHierarchy.getId() + ".");
+        }
+
         this.setId(id);
         this.setName(name);
-
         hierarchies_.add(this);
     }
 
@@ -75,8 +84,20 @@ public class Hierarchy {
 
     //STATIC METHODS
     public static ArrayList<Hierarchy> loadAll() {
+        Hierarchy.hierarchies_.clear();
         Serializer.deserializeFileList(Serializer.FILES.HIERARCHIES,Hierarchy.class);
-        return hierarchies_;
+        return Hierarchy.hierarchies_;
+    }
+    public static ArrayList<Hierarchy> getAll() {
+        return Hierarchy.hierarchies_;
+    }
+    public static Hierarchy get(String name) {
+        for (Hierarchy hierarchy : Hierarchy.hierarchies_) {
+            if (hierarchy.getName().equals(name)) {
+                return hierarchy;
+            }
+        }
+        return null;
     }
     public static Hierarchy get(int id) {
         for (Hierarchy hierarchy : hierarchies_) {
