@@ -1,5 +1,9 @@
 package com.jkantrell.regionslib;
 
+import com.jkantrell.commander.command.Commander;
+import com.jkantrell.regionslib.commands.RegionCommand;
+import com.jkantrell.regionslib.commands.commanderProviders.HierarchyProvider;
+import com.jkantrell.regionslib.commands.commanderProviders.RegionProvider;
 import com.jkantrell.regionslib.io.Config;
 import com.jkantrell.regionslib.regions.Hierarchy;
 import com.jkantrell.regionslib.regions.abilities.Abilities;
@@ -29,7 +33,7 @@ public final class RegionsLib extends JavaPlugin {
         // Plugin shutdown logic
     }
 
-    public static void enable(Plugin plugin) {
+    public static void enable(JavaPlugin plugin) {
 
         //Registering the parent plugin. Registers itself if it's running stand-alone.
         RegionsLib.registerPlugin(plugin);
@@ -56,6 +60,12 @@ public final class RegionsLib extends JavaPlugin {
 
         //Registering built-in abilities if enabled.
         if (RegionsLib.enableBuildInAbilities) { RegionsLib.getAbilityHandler().registerAll(Abilities.class); }
+
+        //Initializing commands
+        Commander commander = new Commander(plugin);
+        commander.registerProvider(Hierarchy.class,new HierarchyProvider());
+        commander.registerProvider(Region.class,new RegionProvider());
+        commander.register(new RegionCommand());
     }
 
     public static Plugin getMain() { return mainInstance_; }

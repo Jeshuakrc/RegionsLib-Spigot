@@ -163,6 +163,26 @@ public class Region implements Comparable<Region> {
     }
 
     //STATIC METHODS
+    public static Region get(int id) {
+
+        Region r = null;
+        for (Region i : getAll()) {
+            if (i.getId() == id) {
+                r = i;
+                break;
+            }
+        }
+        return r;
+    }
+    public static Region[] get(String name) {
+        LinkedList<Region> r = new LinkedList<>();
+        for (Region region : getAll()) {
+            if (region.getName().equals(name)) {
+                r.add(region);
+            }
+        }
+        return r.toArray(new Region[0]);
+    }
     public static List<Region> loadAll() {
         regions_ = Serializer.deserializeFileList(Serializer.FILES.REGIONS, Region.class);
         return regions_;
@@ -205,17 +225,6 @@ public class Region implements Comparable<Region> {
             max = Math.max(max, i.getId());
         }
         return max;
-    }
-    public static Region getFromId(int id) {
-
-        Region r = null;
-        for (Region i : getAll()) {
-            if (i.getId() == id) {
-                r = i;
-                break;
-            }
-        }
-        return r;
     }
     public static void addRegion(Region region) {
         regions_.add(region);
