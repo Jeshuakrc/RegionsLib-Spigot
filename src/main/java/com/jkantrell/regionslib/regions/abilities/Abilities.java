@@ -56,7 +56,7 @@ public final class Abilities {
 
     //BlockRightClickedEvent
     @AbilityRegistration
-    public final static Ability<BlockRightClickedEvent> RIGHT_CLICK_BLOCS = new Ability<>(BlockRightClickedEvent.class,e -> true).setPriority(-1);
+    public final static Ability<BlockRightClickedEvent> RIGHT_CLICK_BLOCKS = new Ability<>(BlockRightClickedEvent.class,e -> true).setPriority(-1);
     private static final AbilityEnumBuilder<BlockRightClickedEvent,Material> placeEntityBuilder = new AbilityEnumBuilder<>(
             BlockRightClickedEvent.class,
             (e,m) -> e.getItem().getType().equals(m),
@@ -105,7 +105,7 @@ public final class Abilities {
                 return !((Lectern) e.getBlock().getBlockData()).hasBook();
             }
     ).setPriority(1).invalidates(Abilities.PLACE_BLOCKS).extend(Abilities.ACCESS_LECTERNS),
-    PEN_CHESTS = new Ability<>(
+    OPEN_CHESTS = new Ability<>(
             BlockRightClickedEvent.class,
             e ->
                     (e.getClickedBlock().getType().equals(Material.CHEST) || e.getClickedBlock().getType().equals(Material.TRAPPED_CHEST))
@@ -294,7 +294,7 @@ public final class Abilities {
     ),
     TELEPORT_OUT = new Ability<>(
             PlayerTeleportEvent.class,
-            Abilities.TELEPORT_IN::isAllowed,
+            e -> true,
             PlayerTeleportEvent::getPlayer,
             PlayerTeleportEvent::getFrom
     ).extend(Abilities.TELEPORT_IN);

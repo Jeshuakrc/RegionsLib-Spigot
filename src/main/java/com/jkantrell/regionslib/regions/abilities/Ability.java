@@ -1,9 +1,12 @@
 package com.jkantrell.regionslib.regions.abilities;
 
 import com.jkantrell.regionslib.RegionsLib;
+import com.jkantrell.regionslib.events.AbilityTriggeredEvent;
 import com.jkantrell.regionslib.regions.Region;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockEvent;
@@ -40,6 +43,26 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
             ));
         }
         return list;
+    }
+
+    private static boolean overlappingPermissionCheck_(boolean[] bools) {
+        switch (RegionsLib.CONFIG.overlappingPermissionsMode) {
+            case newest: return bools[0];
+            case oldest: return bools[bools.length - 1];
+            case all: {
+                for (boolean b : bools) {
+                    if (!b) { return false; }
+                }
+                return true;
+            }
+            case any: {
+                for (boolean b : bools) {
+                    if (b) { return true; }
+                }
+                return false;
+            }
+        }
+        return true;
     }
 
     //FIELDS
@@ -105,6 +128,22 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
     public AbilityList<E> getSubAbilities() {
         return this.subAbilities_.clone();
     }
+    public boolean isAllowedIn(Region[] regions, Player player) {
+        boolean[] results = new boolean[regions.length];
+        for (int i = 0; i < regions.length; i++) {
+            results[i] = regions[i].checkAbility(player,this);
+        }
+        return Ability.overlappingPermissionCheck_(results);
+    }
+    public boolean isAllowedIn(Region region, Player player) {
+        return this.isAllowedIn(new Region[] {region},player);
+    }
+    public boolean isAllowedAt(double x, double y, double z, World world, Player player) {
+        return this.isAllowedIn(Region.getAt(x,y,z,world),player);
+    }
+    public boolean isAllowedAt(Location location, Player player) {
+        return this.isAllowedIn(Region.getAt(location),player);
+    }
 
     //SETTERS
     void setName(String name) {
@@ -168,6 +207,12 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
     }
 
     //REGISTRATION METHODS
+    public boolean isTriggeredBy(Class<? extends Event> event) {
+        return eventClass.equals(event);
+    }
+    public boolean isTriggeredBy(Event event) {
+        return this.isTriggeredBy(event.getClass());
+    }
     public void register() {
         RegionsLib.getAbilityHandler().register(this);
     }
@@ -194,12 +239,33 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
             return false;
         }
     }
-    public boolean isAllowed(E event) {
-        return Region.checkAbilityAt(
-            this.playerGetter.apply(event),
-            this,
-            this.locationGetter.apply(event)
-        );
+    public boolean fire(E trigger) {
+        if (!(trigger instanceof Cancellable)) { throw new ClassCastException("The event must be cancellable"); }
+
+        Player player = this.playerGetter.apply(trigger);
+        Location location = this.locationGetter.apply(trigger);
+        Region[] regions = Region.getAt(location);
+        if (regions.length < 1) { return true; }
+        boolean[] results = new boolean[regions.length];
+
+        int i = 0;
+        for (Region region : regions) {
+            AbilityTriggeredEvent event = new AbilityTriggeredEvent(
+                    this,
+                    player,
+                    region.checkAbility(player,this),
+                    region,
+                    location,
+                    trigger
+            );
+            RegionsLib.getMain().getServer().getPluginManager().callEvent(event);
+            results[i] = event.isAllowed();
+            i++;
+        }
+
+        boolean r = Ability.overlappingPermissionCheck_(results);
+        ((Cancellable) trigger).setCancelled(!r);
+        return r;
     }
 
     //INFERRING METHODS

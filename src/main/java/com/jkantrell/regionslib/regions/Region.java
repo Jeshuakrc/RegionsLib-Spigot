@@ -12,11 +12,12 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
+import javax.annotation.Nonnull;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Predicate;
 
-public class Region {
+public class Region implements Comparable<Region> {
 
     //FIELDS
     private int id_;
@@ -170,12 +171,13 @@ public class Region {
         return regions_;
     }
     public static Region[] getAt(double x, double y, double z, World world, Predicate<Region> checker){
-        List<Region> l = new ArrayList<>(Collections.emptyList());
+        List<Region> l = new ArrayList<>();
         for (Region r : regions_) {
             if (r.contains(x, y, z, world) && checker.test(r)) {
                 l.add(r);
             }
         }
+        Collections.sort(l);
         return l.toArray(new Region[0]);
     }
     public static Region[] getAt(Location location, Predicate<Region> checker){
@@ -195,72 +197,6 @@ public class Region {
     }
     public static Region[] getRuleContainersAt(String ruleName, Location location) {
         return getAt(location, region -> region.hasRule(ruleName));
-    }
-    public static boolean checkAbilityIn(Region[] regions, Player player, Ability<?> ability) {
-
-        boolean r = true;
-        List<Region> list = new ArrayList<>();
-        for(Region i : regions){
-            if(i.isEnabled()){
-                list.add(i);
-            }
-        }
-        regions=list.toArray(new Region[0]);
-
-        if (regions.length > 0) {
-            int pos = 0;
-            switch (RegionsLib.CONFIG.overlappingPermissionsMode) {
-                case all -> {
-                    r = true;
-                    for (Region i : regions) {
-                        if (!i.checkAbility(player, ability)) {
-                            r = false;
-                            break;
-                        }
-                    }
-                }
-                case any -> {
-                    r = false;
-                    for (Region i : regions) {
-                        if (i.checkAbility(player, ability)) {
-                            r = true;
-                            break;
-                        }
-                    }
-                }
-                case oldest -> {
-                    int min = getHighestId(regions);
-                    for (int i = 0; i < regions.length; i++) {
-                        if (regions[i].getId() < min) {
-                            min = regions[i].getId();
-                            pos = i;
-                        }
-                    }
-                    r = regions[pos].checkAbility(player, ability);
-                }
-                case newest -> {
-                    int max = 0;
-                    for (int i = 0; i < regions.length; i++) {
-                        if (regions[i].getId() > max) {
-                            max = regions[i].getId();
-                            pos = i;
-                        }
-                    }
-                    r = regions[pos].checkAbility(player, ability);
-                }
-                default -> {
-                }
-            }
-        }
-        return r;
-    }
-    public static boolean checkAbilityAt(Player player, Ability<?> ability, double x, double y, double z, World world) {
-        Region[] regions = getAt(x, y, z, world);
-        return checkAbilityIn(regions, player, ability);
-    }
-    public static boolean checkAbilityAt(Player player, Ability<?> ability, Location location) {
-        if (location == null) { return true; }
-        return checkAbilityAt(player,ability,location.getX(),location.getY(),location.getZ(),location.getWorld());
     }
     public static int getHighestId(Region[] regions) {
 
@@ -380,6 +316,10 @@ public class Region {
             }
         }
         return false;
+    }
+    @Override
+    public int compareTo(@Nonnull Region otherRegion) {
+        return Integer.compare(this.getId(), otherRegion.getId());
     }
 
     //PRIVATE METHODS
