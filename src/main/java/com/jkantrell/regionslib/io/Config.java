@@ -42,6 +42,12 @@ public class Config extends AbstractYamlConfig {
     //FIELDS
     public String configPath;
 
+    @ConfigField(path = "names_length_limit.max")
+    public int maxNameLength = 24;
+
+    @ConfigField(path = "names_length_limit.min")
+    public int minNameLength = 4;
+
     @ConfigField(path = "overlapping_permissions_mode")
     public Config.OverlappingPermissionsMode overlappingPermissionsMode = Config.OverlappingPermissionsMode.all;
 

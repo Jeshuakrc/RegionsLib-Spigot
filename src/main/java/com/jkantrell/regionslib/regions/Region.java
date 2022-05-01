@@ -15,6 +15,7 @@ import org.bukkit.util.BoundingBox;
 import javax.annotation.Nonnull;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 public class Region implements Comparable<Region> {
@@ -23,7 +24,7 @@ public class Region implements Comparable<Region> {
     private int id_;
     private double[] vertex_ = null;
     private World world_ = null;
-    private Permission[] permissions_;
+    private final ArrayList<Permission> permissions_ = new ArrayList<>();
     private String name_;
     private boolean enabled_ = true;
     private RegionBoundary boundary_ = null;
@@ -67,12 +68,21 @@ public class Region implements Comparable<Region> {
         this.attemptCalculateBoundaries_();
     }
     public void setPermissions(Permission[] permissions) {
-        permissions_ = permissions;
+        this.permissions_.clear();
+        this.permissions_.addAll(Arrays.asList(permissions));
     }
     public void setId(int id) {
         id_ = id;
     }
     public void setName(String name) {
+        int l = name.length();
+
+        int compare = RegionsLib.CONFIG.minNameLength;
+        if (l < compare) { throw new IllegalArgumentException("The name is too short! Regions names may have a minimum of " + compare + " characters."); }
+
+        compare = RegionsLib.CONFIG.maxNameLength;
+        if (l > compare && compare > 0) { throw new IllegalArgumentException("The name is too long! Regions names may have a maximum of " + compare + " characters."); }
+
         name_ = name;
     }
     public void enabled(boolean bool) {
@@ -86,9 +96,6 @@ public class Region implements Comparable<Region> {
     }
 
     //GETTERS
-    public Permission[] getPermissions() {
-        return this.permissions_;
-    }
     public int getId() {
         return this.id_;
     }
@@ -160,6 +167,18 @@ public class Region implements Comparable<Region> {
             }
         }
         return r;
+    }
+    public Permission[] getPermissions() {
+        return this.permissions_.toArray(new Permission[0]);
+    }
+    public Permission[] getPermissions(Player player) {
+        return this.permissions_.stream().filter(p -> p.getPlayerName().equals(player.getName())).toList().toArray(new Permission[0]);
+    }
+    public Permission getPermission(Player player) {
+        return this.permissions_.stream().filter(p -> p.getPlayerName().equals(player.getName())).findFirst().orElse(null);
+    }
+    public Hierarchy.Group getGroup(Player player) {
+        return this.getPermission(player).getGroup();
     }
 
     //STATIC METHODS
@@ -325,6 +344,26 @@ public class Region implements Comparable<Region> {
             }
         }
         return false;
+    }
+    public void clearPermissions() {
+        this.permissions_.clear();
+    }
+    public void addPermission(Player player, int level) {
+        this.permissions_.add(new Permission(player.getName(),this.hierarchy_,level));
+    }
+    public void addPermission(Player player, Hierarchy.Group group) {
+        if (!this.hierarchy_.getGroups().contains(group)) { throw new IllegalArgumentException(
+                "Group " + group.getName() + " is not present in " + this.getName() + "'s hierarchy."
+        ); }
+        this.addPermission(player,group.getLevel());
+    }
+    public boolean removePermission(Permission permission) {
+        return this.permissions_.remove(permission);
+    }
+    public boolean removePermissions(Player player) {
+        AtomicBoolean r = new AtomicBoolean(false);
+        Arrays.stream(this.getPermissions(player)).forEach(p -> { r.set(true); this.permissions_.remove(p); });
+        return r.get();
     }
     @Override
     public int compareTo(@Nonnull Region otherRegion) {
