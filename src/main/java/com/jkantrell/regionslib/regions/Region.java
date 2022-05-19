@@ -3,6 +3,8 @@ package com.jkantrell.regionslib.regions;
 import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
 import com.jkantrell.regionslib.RegionsLibEventListener;
+import com.jkantrell.regionslib.events.RegionCreateEvent;
+import com.jkantrell.regionslib.events.RegionDestroyEvent;
 import com.jkantrell.regionslib.io.Config;
 import com.jkantrell.regionslib.regions.abilities.Ability;
 import com.jkantrell.regionslib.regions.dataContainers.RegionDataContainer;
@@ -13,10 +15,12 @@ import com.jkantrell.regionslib.regions.rules.RuleKey;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Predicate;
@@ -30,6 +34,7 @@ public class Region implements Comparable<Region> {
     private final ArrayList<Permission> permissions_ = new ArrayList<>();
     private String name_;
     private boolean enabled_ = true;
+    private boolean isDestroyed_ = false;
     private RegionBoundary boundary_ = null;
     private RegionDataContainer dataContainer_ = new RegionDataContainer();
     private RegionBoundingBox boundingBox_;
@@ -40,12 +45,23 @@ public class Region implements Comparable<Region> {
     private final Region self_ = this;
 
     //CONSTRUCTORS
-    public Region(double[] vertex, World world, String name, Hierarchy hierarchy) {
-        this.setId(getHighestId(regions_.toArray(Region[]::new)) + 1);
+    public Region(double[] vertex, World world, String name, Hierarchy hierarchy, @Nullable Entity creator) {
+        this.setId(Region.getHighestId() + 1);
         this.setWorld(world);
         this.setVertex(vertex);
         this.setName(name);
         this.setHierarchy(hierarchy);
+
+        if (creator instanceof Player player) {
+            this.addPermission(player,1);
+        }
+
+        RegionCreateEvent event = new RegionCreateEvent(this, creator);
+        RegionsLib.getMain().getServer().getPluginManager().callEvent(event);
+        if (event.isCancelled()) { this.destroy(); }
+    }
+    public Region(double[] vertex, World world, String name, Hierarchy hierarchy) {
+        this(vertex, world, name, hierarchy, null);
     }
 
     //STATIC FIELDS
@@ -74,7 +90,10 @@ public class Region implements Comparable<Region> {
         Arrays.stream(permissions).forEach(this::addPermission);
     }
     public void setId(int id) {
-        id_ = id;
+        if (Region.regions_.stream().anyMatch(r -> r.getId() == id)) {
+            throw new IllegalArgumentException("A region with Id " + id + " already exists." );
+        }
+        this.id_ = id;
     }
     public void setName(String name) {
         int l = name.length();
@@ -112,6 +131,9 @@ public class Region implements Comparable<Region> {
     }
     public boolean isEnabled() {
         return this.enabled_;
+    }
+    public boolean isDestroyed() {
+        return this.isDestroyed_;
     }
     public RegionBoundary getBoundary(){ return boundary_; }
     public RegionDataContainer getDataContainer(){ return dataContainer_; }
@@ -233,13 +255,8 @@ public class Region implements Comparable<Region> {
     public static Region[] getRuleContainersAt(String ruleName, RuleDataType dataType, Location location) {
         return getAt(location, region -> region.hasRule(ruleName, dataType));
     }
-    public static int getHighestId(Region[] regions) {
-
-        int max = 0;
-        for (Region i : regions) {
-            max = Math.max(max, i.getId());
-        }
-        return max;
+    public static int getHighestId() {
+        return Region.regions_.stream().map(Region::getId).max(Integer::compare).orElse(0);
     }
     public static void addRegion(Region region) {
         regions_.add(region);
@@ -280,6 +297,10 @@ public class Region implements Comparable<Region> {
         return this.getBoundingBox().contains(x,y,z);
     }
     public void save() {
+        if (this.isDestroyed_) {
+            RegionsLib.getMain().getLogger().fine("Region '" + this.getName() + "' cannot be saved as it has been destroyed.");
+            return;
+        }
         if (!regions_.contains(this)) {
             Region.addRegion(this);
         }
@@ -291,14 +312,23 @@ public class Region implements Comparable<Region> {
         l.remove(this);
         return l;
     }
-    public void destroy() {
+    public void destroy(@Nullable Entity destructor) {
+        RegionDestroyEvent event = new RegionDestroyEvent(this, destructor);
+        RegionsLib.getMain().getServer().getPluginManager().callEvent(event);
+        if (event.isCancelled()) { return; }
+
         if(boundaryDisplayer_ != null) {
             if (!boundaryDisplayer_.displayer.isCancelled()) {
                 this.boundaryDisplayer_.cancel();
             }
         }
-        regions_.remove(this);
-        Serializer.serializeToFile(Serializer.FILES.REGIONS, regions_);
+        if (regions_.remove(this)) {
+            Serializer.serializeToFile(Serializer.FILES.REGIONS, Region.regions_);
+        }
+        this.isDestroyed_ = true;
+    }
+    public void destroy() {
+        this.destroy(null);
     }
     public void displayBoundaries(int frequency ,long persistence) {
         if(boundaryDisplayer_ != null) { boundaryDisplayer_.cancel(); }

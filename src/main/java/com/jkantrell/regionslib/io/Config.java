@@ -28,7 +28,9 @@ public class Config extends AbstractYamlConfig {
     @Override
     public void load() throws FileNotFoundException {
         super.load();
-        this.configPath = "plugins/" + RegionsLib.getMain().getName();
+        if (this.configPath == null) {
+            this.configPath = "plugins/" + RegionsLib.getMain().getName();
+        }
     }
 
     //ENUMS
@@ -40,7 +42,7 @@ public class Config extends AbstractYamlConfig {
     public record ParticleData(Particle particle, int count, int[] delta) {}
 
     //FIELDS
-    public String configPath;
+    public String configPath = null;
 
     @ConfigField(path = "names_length_limit.max")
     public int maxNameLength = 24;

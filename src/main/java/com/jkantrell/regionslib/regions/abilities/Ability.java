@@ -244,8 +244,11 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
 
         Player player = this.playerGetter.apply(trigger);
         Location location = this.locationGetter.apply(trigger);
+        if (player == null || location == null) { return true; }
+
         Region[] regions = Region.getAt(location);
         if (regions.length < 1) { return true; }
+
         boolean[] results = new boolean[regions.length];
 
         int i = 0;
