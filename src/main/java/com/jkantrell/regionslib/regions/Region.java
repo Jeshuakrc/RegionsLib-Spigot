@@ -2,10 +2,14 @@ package com.jkantrell.regionslib.regions;
 
 import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
+import com.jkantrell.regionslib.RegionsLibEventListener;
 import com.jkantrell.regionslib.io.Config;
 import com.jkantrell.regionslib.regions.abilities.Ability;
 import com.jkantrell.regionslib.regions.dataContainers.RegionDataContainer;
 import com.jkantrell.regionslib.io.Serializer;
+import com.jkantrell.regionslib.regions.rules.Rule;
+import com.jkantrell.regionslib.regions.rules.RuleDataType;
+import com.jkantrell.regionslib.regions.rules.RuleKey;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -15,7 +19,6 @@ import org.bukkit.util.BoundingBox;
 import javax.annotation.Nonnull;
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 public class Region implements Comparable<Region> {
@@ -37,11 +40,10 @@ public class Region implements Comparable<Region> {
     private final Region self_ = this;
 
     //CONSTRUCTORS
-    public Region(double[] vertex, World world, Permission[] permissions, String name, Hierarchy hierarchy) {
+    public Region(double[] vertex, World world, String name, Hierarchy hierarchy) {
         this.setId(getHighestId(regions_.toArray(Region[]::new)) + 1);
         this.setWorld(world);
         this.setVertex(vertex);
-        this.setPermissions(permissions);
         this.setName(name);
         this.setHierarchy(hierarchy);
     }
@@ -69,7 +71,7 @@ public class Region implements Comparable<Region> {
     }
     public void setPermissions(Permission[] permissions) {
         this.permissions_.clear();
-        this.permissions_.addAll(Arrays.asList(permissions));
+        Arrays.stream(permissions).forEach(this::addPermission);
     }
     public void setId(int id) {
         id_ = id;
@@ -144,20 +146,14 @@ public class Region implements Comparable<Region> {
     public Rule[] getRules() {
         return this.rules_.toArray(new Rule[0]);
     }
-    public <T> Rule getRule(String name, Rule.DataType<T> dataType) {
-        for (Rule rule : this.rules_) {
-            if (rule.name.equals(name) && rule.getDatatype().equals(dataType)) {
-               return rule;
-            }
-        }
-        return null;
+    public Rule getRule(String name) {
+        return this.rules_.stream().filter(r -> r.getLabel().equals(name)).findFirst().orElse(null);
     }
-    public <T> T getRuleValue(String name, Rule.DataType<T> dataType) {
-        try {
-            return this.getRule(name, dataType).getValue(dataType);
-        } catch (NullPointerException e) {
-            return null;
-        }
+    public <T> T getRuleValue(String name, RuleDataType<T> dataType) {
+        Rule rule = this.getRule(name);
+        if (rule == null) return null;
+        if (!rule.getDatatype().equals(dataType)) { return null; }
+        return rule.getValue(dataType);
     }
     public List<Player> getInsidePlayers() {
         LinkedList<Player> r = new LinkedList<>();
@@ -234,8 +230,8 @@ public class Region implements Comparable<Region> {
     public static Region[] getAllAt(Location location) {
         return getAllAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()));
     }
-    public static Region[] getRuleContainersAt(String ruleName, Location location) {
-        return getAt(location, region -> region.hasRule(ruleName));
+    public static Region[] getRuleContainersAt(String ruleName, RuleDataType dataType, Location location) {
+        return getAt(location, region -> region.hasRule(ruleName, dataType));
     }
     public static int getHighestId(Region[] regions) {
 
@@ -321,35 +317,37 @@ public class Region implements Comparable<Region> {
     public void clearRules() {
         this.rules_.clear();
     }
-    public boolean removeRule(String name) {
-        for (int i = 0; i < this.rules_.size(); i++) {
-            Rule rule = this.rules_.get(i);
-            if (rule.name.equals(name)) {
-                this.rules_.remove(rule);
-                return true;
-            }
-        }
-        return false;
+    public boolean removeRule(String label) {
+        return this.rules_.removeIf(r -> r.getLabel().equals(label));
     }
     public void addRule(Rule rule) {
         this.rules_.add(rule);
     }
-    public <T> void  addRule(String name, Rule.DataType<T> dataType, T value) {
+    public <T> void  addRule(String name, RuleDataType<T> dataType, T value) {
         this.rules_.add(new Rule(name,dataType,value));
     }
-    public Boolean hasRule(String name) {
-        for (Rule rule : this.rules_) {
-            if (rule.name.equals(name)) {
-                return true;
-            }
-        }
-        return false;
+    public boolean hasRule(RuleKey key) {
+        return this.hasRule(key.getLabel(),key.getDataType());
+    }
+    public boolean hasRule(String name, RuleDataType<?> dataType) {
+        return this.rules_.stream().anyMatch(r -> r.getLabel().equals(name) && r.getDatatype().equals(dataType));
     }
     public void clearPermissions() {
         this.permissions_.clear();
     }
+    public void addPermission(Permission permission) {
+        this.permissions_.add(permission);
+
+        if (permission.getGroup().getLevel() > 1 || !this.hasRule("localMod", RuleDataType.BOOL)) { return; }
+        if (!this.getRule("localMod").getValue(RuleDataType.BOOL)) { return; }
+
+        RegionsLibEventListener.addPermissionRegistration(permission.getPlayerName(),"regions.mod.local");
+        RegionsLib.getMain().getLogger().info(
+        permission.getPlayerName() + " has been marker for \"regions.mod.local\" permissions. as is local mod of " + this.getName() + "."
+        );
+    }
     public void addPermission(Player player, int level) {
-        this.permissions_.add(new Permission(player.getName(),this.hierarchy_,level));
+        this.addPermission(new Permission(player.getName(),this.hierarchy_,level));
     }
     public void addPermission(Player player, Hierarchy.Group group) {
         if (!this.hierarchy_.getGroups().contains(group)) { throw new IllegalArgumentException(
@@ -358,12 +356,14 @@ public class Region implements Comparable<Region> {
         this.addPermission(player,group.getLevel());
     }
     public boolean removePermission(Permission permission) {
-        return this.permissions_.remove(permission);
+        boolean r = this.permissions_.remove(permission);
+        if (!r) { return false; }
+        if (permission.getGroup().getLevel() > 1) { return true; }
+        RegionsLibEventListener.removePermissionRegistration(permission.getPlayerName(),"regions.mod.local");
+        return true;
     }
     public boolean removePermissions(Player player) {
-        AtomicBoolean r = new AtomicBoolean(false);
-        Arrays.stream(this.getPermissions(player)).forEach(p -> { r.set(true); this.permissions_.remove(p); });
-        return r.get();
+        return Arrays.stream(this.getPermissions(player)).anyMatch(this::removePermission);
     }
     @Override
     public int compareTo(@Nonnull Region otherRegion) {
@@ -496,7 +496,6 @@ public class Region implements Comparable<Region> {
             Region region = new Region(
                     gson.fromJson(jsonRegion.get("vertex"),double[].class),
                     Bukkit.getWorld(jsonRegion.get("world").getAsString()),
-                    permissions,
                     jsonRegion.get("name").getAsString(),
                     hierarchy
             );
@@ -515,6 +514,9 @@ public class Region implements Comparable<Region> {
                     region.addRule(gson.fromJson(jsonRule,Rule.class));
                 }
             }
+
+            region.setPermissions(permissions);
+
             return region;
         }
     }
