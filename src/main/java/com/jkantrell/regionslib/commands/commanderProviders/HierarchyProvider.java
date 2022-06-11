@@ -3,10 +3,9 @@ package com.jkantrell.regionslib.commands.commanderProviders;
 import com.jkantrell.commander.command.Argument;
 import com.jkantrell.commander.exception.CommandArgumentException;
 import com.jkantrell.commander.exception.CommandException;
-import com.jkantrell.commander.provider.CommandProvider;
+import com.jkantrell.commander.command.provider.CommandProvider;
 import com.jkantrell.regionslib.regions.Hierarchy;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,7 +17,9 @@ public class HierarchyProvider extends CommandProvider<Hierarchy> {
     //OVERWRITES
     @Override
     public List<String> suggest() {
-        return Hierarchy.getAll().stream().map(Hierarchy::getName).collect(Collectors.toCollection(LinkedList::new));
+        return Hierarchy.getAll().stream()
+                .map(Hierarchy::getName)
+                .collect(Collectors.toList());
     }
 
     @Override

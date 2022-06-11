@@ -2,6 +2,7 @@ package com.jkantrell.regionslib;
 
 import com.jkantrell.regionslib.events.*;
 import com.jkantrell.regionslib.regions.Region;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -11,16 +12,20 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.scheduler.BukkitRunnable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-class RegionsLibEventListener implements Listener {
+import java.util.*;
+
+public class RegionsLibEventListener implements Listener {
+
+    //FIELDS
+    private static final List<Map.Entry<String,String>> permissionsMap_ = new LinkedList<>();
 
     //LISTENERS
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     private void onPlayerInteraction(PlayerInteractEvent e) {
         if (e.getAction().equals(Action.RIGHT_CLICK_BLOCK) && e.getClickedBlock() != null) {
             BlockRightClickedEvent rightClickedEvent = new BlockRightClickedEvent(
@@ -87,7 +92,62 @@ class RegionsLibEventListener implements Listener {
          }
     }
 
-     static BukkitRunnable playerSampler = new BukkitRunnable() {
+    @EventHandler
+    private void onPlayerJoin(PlayerJoinEvent e) {
+        RegionsLib.removePermissionAttachment(e.getPlayer());
+        RegionsLibEventListener.setPermissions_(e.getPlayer());
+    }
+
+    //STATIC METHODS
+    public static void addPermissionRegistration(String playerName, String permission) {
+        RegionsLibEventListener.permissionsMap_.add(Map.entry(playerName,permission));
+
+        Player player = Bukkit.getPlayer(playerName);
+        if (player == null) { return; }
+        RegionsLibEventListener.setPermissions_(player);
+    }
+    public static void removePermissionRegistration(String playerName, String permission) {
+        RegionsLibEventListener.permissionsMap_.stream()
+                .filter(e -> e.getKey().equals(playerName) && e.getValue().equals(permission))
+                .findFirst()
+                .ifPresent(RegionsLibEventListener.permissionsMap_::remove);
+        Player player = Bukkit.getPlayer(playerName);
+        if (player == null) { return; }
+        RegionsLibEventListener.setPermissions_(player);
+    }
+
+    private static void setPermissions_(Player player) {
+
+        List<String> perms = RegionsLibEventListener.permissionsMap_.stream()
+                .filter(e -> e.getKey().equals(player.getName()))
+                .map(Map.Entry::getValue)
+                .distinct()
+                .toList();
+
+        PermissionAttachment attachment = RegionsLib.getPermissionAttachment(player);
+
+        attachment.getPermissions().entrySet().stream()
+                .filter(e -> !perms.contains(e.getKey()) && e.getValue())
+                .map(Map.Entry::getKey)
+                .forEach(p -> {
+                    attachment.unsetPermission(p);
+                    RegionsLib.getMain().getLogger().fine("Removed \"" + p + "\" permission from " + player.getName() + ".");
+                });
+
+        Map<String,Boolean> newPermission = attachment.getPermissions();
+
+        perms.stream()
+                .filter(p -> {
+                    if (!newPermission.containsKey(p)) { return true; }
+                    return !newPermission.get(p);
+                })
+                .forEach(p -> {
+                    attachment.setPermission(p,true);
+                    RegionsLib.getMain().getLogger().fine("Granted \"" + p + "\" to " + player.getName() + ".");
+                });
+    }
+
+    static BukkitRunnable playerSampler = new BukkitRunnable() {
 
         private Map<Region,List<Player>> prevCapture = new HashMap<>(), newCapture = new HashMap<>();
 

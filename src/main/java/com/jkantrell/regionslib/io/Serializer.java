@@ -5,7 +5,7 @@ import com.jkantrell.regionslib.RegionsLib;
 import com.jkantrell.regionslib.regions.Hierarchy;
 import com.jkantrell.regionslib.regions.Permission;
 import com.jkantrell.regionslib.regions.Region;
-import com.jkantrell.regionslib.regions.Rule;
+import com.jkantrell.regionslib.regions.rules.Rule;
 import com.jkantrell.regionslib.regions.dataContainers.RegionData;
 import com.jkantrell.regionslib.regions.dataContainers.RegionDataContainer;
 

@@ -28,6 +28,10 @@ public class AbilityHandler {
     }
 
     public <E extends Event> void register(Ability<E> ability) {
+        if (!RegionsLib.isInitialized()) {
+            RegionsLib.addPostEnableTask(() -> this.register(ability));
+            return;
+        }
         if (! ability.registrable) {
             RegionsLib.getMain().getLogger().warning(
             "Ability " + ability.getName() + " wasn't registered, as it's been marked as unregistrable!"
@@ -68,6 +72,10 @@ public class AbilityHandler {
         }
     }
     public <E extends Event> void unregister(Ability<E> ability) {
+        if (!RegionsLib.isInitialized()) {
+            RegionsLib.addPostEnableTask(() -> unregister(ability));
+            return;
+        }
         AbilityListener<?> genericListener = this.listeners_.get(ability.eventClass,ability.getBukkitPriority());
         if (genericListener != null) {
             AbilityListener<E> listener = (AbilityListener<E>) genericListener;
@@ -77,6 +85,10 @@ public class AbilityHandler {
     }
 
     public void registerAll(Class<?> abilityHolder) {
+        if (!RegionsLib.isInitialized()) {
+            RegionsLib.addPostEnableTask(() -> this.registerAll(abilityHolder));
+            return;
+        }
         int i = 0;
         for (Field field : abilityHolder.getFields()) {
             if (!field.isAnnotationPresent(AbilityRegistration.class)) { continue; }

@@ -3,10 +3,8 @@ package com.jkantrell.regionslib.commands.commanderProviders;
 import com.jkantrell.commander.command.Argument;
 import com.jkantrell.commander.exception.CommandArgumentException;
 import com.jkantrell.commander.exception.CommandException;
-import com.jkantrell.commander.provider.CommandProvider;
+import com.jkantrell.commander.command.provider.CommandProvider;
 import com.jkantrell.regionslib.regions.Region;
-
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,7 +15,12 @@ public class RegionProvider extends CommandProvider<Region> {
 
     @Override
     public List<String> suggest() {
-        return Region.getAll().stream().map(Region::getName).collect(Collectors.toCollection(LinkedList::new));
+        return Region.getAll().stream()
+                .map(region -> {
+                    String name = region.getName();
+                    return (name.contains(" ") ? "\"" + name + "\"" : name);
+                })
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -25,14 +28,14 @@ public class RegionProvider extends CommandProvider<Region> {
         if (argument.isInt()) {
             Region region = Region.get(argument.getInt());
             if (region == null) {
-                throw new CommandArgumentException(argument, "There's no region under the ID + " + argument.getInt() + ".");
+                throw new CommandArgumentException(argument, "There's no region under the ID " + argument.getInt() + ".");
             }
             this.region_ = region;
             return true;
         }
         Region[] regions = Region.get(argument.getString());
         if (regions.length < 1) {
-            throw new CommandArgumentException(argument, "There's no region under the name + '" + argument.getString() + "'.");
+            throw new CommandArgumentException(argument, "There's no region under the name '" + argument.getString() + "'.");
         } else if (regions.length > 1) {
             StringBuilder builder = new StringBuilder();
             builder.append("Regions under IDs ");

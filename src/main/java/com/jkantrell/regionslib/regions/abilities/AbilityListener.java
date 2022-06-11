@@ -31,7 +31,7 @@ class AbilityListener<E extends Event> {
                      } catch (ClassCastException ignored) {}
                 },
                 RegionsLib.getMain(),
-                false
+                true
         );
     }
 
