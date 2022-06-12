@@ -224,33 +224,35 @@ public class Region implements Comparable<Region> {
         regions_ = Serializer.deserializeFileList(Serializer.FILES.REGIONS, Region.class);
         return regions_;
     }
-    public static List<Region> getAll() {
-        return regions_;
+    public static Region[] getAll() {
+        return Region.getAll(r -> true);
     }
-    public static Region[] getAt(double x, double y, double z, World world, Predicate<Region> checker){
-        List<Region> l = new ArrayList<>();
-        for (Region r : regions_) {
-            if (r.contains(x, y, z, world) && checker.test(r)) {
-                l.add(r);
-            }
-        }
-        Collections.sort(l);
-        return l.toArray(new Region[0]);
+    public static Region[] getAll(Predicate<Region> condition) {
+        return Region.regions_.stream().filter(condition).toArray(Region[]::new);
     }
-    public static Region[] getAt(Location location, Predicate<Region> checker){
-        return getAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()),checker);
+    public static Region[] getAt(double x, double y, double z, World world, Predicate<Region> condition){
+        return Region.getAllAt(x,y,z,world, r -> r.isEnabled() && condition.test(r));
+    }
+    public static Region[] getAt(Location location, Predicate<Region> condition){
+        return Region.getAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()),condition);
     }
     public static Region[] getAt(double x, double y, double z, World world) {
-        return getAt(x, y, z, world, Region::isEnabled);
+        return Region.getAt(x, y, z, world, r -> true);
     }
     public static Region[] getAt(Location location) {
-        return getAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()));
+        return Region.getAt(location, r -> true);
     }
     public static Region[] getAllAt(double x, double y, double z, World world) {
-        return getAt(x,y,z,world, r -> true);
+        return Region.getAllAt(x,y,z,world, r -> true);
     }
     public static Region[] getAllAt(Location location) {
-        return getAllAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()));
+        return Region.getAllAt(location, r -> true);
+    }
+    public static Region[] getAllAt(double x, double y, double z, World world, Predicate<Region> condition) {
+        return Region.getAll(r -> r.contains(x,y,z,world) && condition.test(r));
+    }
+    public static Region[] getAllAt(Location location, Predicate<Region> condition) {
+        return Region.getAllAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()),condition);
     }
     public static Region[] getRuleContainersAt(String ruleName, RuleDataType dataType, Location location) {
         return getAt(location, region -> region.hasRule(ruleName, dataType));

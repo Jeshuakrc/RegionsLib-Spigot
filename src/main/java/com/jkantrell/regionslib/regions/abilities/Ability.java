@@ -229,6 +229,10 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
     public boolean isValid(E event) {
         if (invalidated_.contains(playerGetter.apply(event))) { return false; }
         try {
+            Player player = this.playerGetter.apply(event);
+            Location location = this.locationGetter.apply(event);
+            if (player == null || location == null) { return false; }
+
             return this.validator.test(event);
         } catch (Exception e) {
             if (!(e instanceof NullPointerException)) {

@@ -1,7 +1,7 @@
 package com.jkantrell.regionslib.regions.abilities;
 
 import com.jkantrell.regionslib.RegionsLib;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.bukkit.event.Event;
 import java.lang.reflect.Field;
 import java.util.ArrayList;

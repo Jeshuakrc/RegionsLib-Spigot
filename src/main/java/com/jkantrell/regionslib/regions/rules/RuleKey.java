@@ -19,16 +19,18 @@ public class RuleKey {
     private final RuleDataType<?> dataType_;
     private boolean isDisposable_ = false;
     private String accessPermission_ = null;
+    public boolean registered_ = false;
 
     //CONSTRUCTORS
-    private RuleKey(JavaPlugin plugin, String label, RuleDataType<?> dataType) {
+    public RuleKey(JavaPlugin plugin, String label, RuleDataType<?> dataType) {
         this.plugin_ = plugin;
         this.label_ = label;
         this.dataType_ = dataType;
     }
 
     //Static methods
-    public static RuleKey registerNew(JavaPlugin plugin, String label, RuleDataType<?> dataType) {
+    public static RuleKey registerNew (RuleKey ruleKey) {
+        String label = ruleKey.getLabel();
         if (RuleKey.allRuleKeys_.containsKey(label)) {
             RuleKey key = RuleKey.allRuleKeys_.get(label);
             if (!key.isDisposable()) {
@@ -36,9 +38,12 @@ public class RuleKey {
             }
             RuleKey.allRuleKeys_.remove(label);
         }
-        RuleKey r = new RuleKey(plugin,label,dataType);
-        RuleKey.allRuleKeys_.put(label, r);
-        return r;
+        RuleKey.allRuleKeys_.put(label, ruleKey);
+        ruleKey.registered_ = true;
+        return ruleKey;
+    }
+    public static RuleKey registerNew(JavaPlugin plugin, String label, RuleDataType<?> dataType) {
+        return RuleKey.registerNew(new RuleKey(plugin,label,dataType));
     }
     public static boolean exists(String label, RuleDataType<?> dataType) {
         if (!RuleKey.allRuleKeys_.containsKey(label)) { return false; }
@@ -66,6 +71,9 @@ public class RuleKey {
     //GETTERS
     boolean isDisposable() {
         return this.isDisposable_;
+    }
+    public boolean isRegistered() {
+        return this.registered_;
     }
     public String getLabel() {
         return this.label_;

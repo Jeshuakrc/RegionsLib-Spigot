@@ -5,6 +5,8 @@ import com.jkantrell.commander.exception.CommandArgumentException;
 import com.jkantrell.commander.exception.CommandException;
 import com.jkantrell.commander.command.provider.CommandProvider;
 import com.jkantrell.regionslib.regions.Region;
+
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,7 +17,7 @@ public class RegionProvider extends CommandProvider<Region> {
 
     @Override
     public List<String> suggest() {
-        return Region.getAll().stream()
+        return Arrays.stream(Region.getAll())
                 .map(region -> {
                     String name = region.getName();
                     return (name.contains(" ") ? "\"" + name + "\"" : name);

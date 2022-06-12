@@ -5,8 +5,7 @@ import com.jkantrell.regionslib.RegionsLib;
 import com.jkantrell.regionslib.regions.abilities.Ability;
 import com.jkantrell.regionslib.regions.abilities.AbilityList;
 import com.jkantrell.regionslib.io.Serializer;
-import org.apache.commons.lang.StringUtils;
-
+import org.apache.commons.lang3.StringUtils;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
