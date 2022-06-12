@@ -3,6 +3,8 @@ package com.jkantrell.regionslib.regions;
 import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
 import com.jkantrell.regionslib.RegionsLibEventListener;
+import com.jkantrell.regionslib.events.PlayerEnterRegionEvent;
+import com.jkantrell.regionslib.events.PlayerLeaveRegionEvent;
 import com.jkantrell.regionslib.events.RegionCreateEvent;
 import com.jkantrell.regionslib.events.RegionDestroyEvent;
 import com.jkantrell.regionslib.io.Config;
@@ -43,6 +45,7 @@ public class Region implements Comparable<Region> {
     private final List<Rule> rules_ = new ArrayList<>();
     private final Config.ParticleData boundaryParticle_ = RegionsLib.CONFIG.regionBorderParticle;
     private final Region self_ = this;
+    private final LinkedList<Player> insidePlayers_ = new LinkedList<>();
 
     //CONSTRUCTORS
     public Region(double[] vertex, World world, String name, Hierarchy hierarchy, @Nullable Entity creator) {
@@ -66,6 +69,7 @@ public class Region implements Comparable<Region> {
 
     //STATIC FIELDS
     private static List<Region> regions_ = new ArrayList<>();
+    private static BukkitRunnable playerSampler_ = null;
 
     //SETTERS
     public void setVertex(double[] vertex) {
@@ -201,28 +205,14 @@ public class Region implements Comparable<Region> {
 
     //STATIC METHODS
     public static Region get(int id) {
-
-        Region r = null;
-        for (Region i : getAll()) {
-            if (i.getId() == id) {
-                r = i;
-                break;
-            }
-        }
-        return r;
+        return Region.regions_.stream().filter(r -> r.getId() == id).findFirst().orElse(null);
     }
     public static Region[] get(String name) {
-        LinkedList<Region> r = new LinkedList<>();
-        for (Region region : getAll()) {
-            if (region.getName().equals(name)) {
-                r.add(region);
-            }
-        }
-        return r.toArray(new Region[0]);
+        return Region.getAll(r -> r.getName().equals(name));
     }
-    public static List<Region> loadAll() {
-        regions_ = Serializer.deserializeFileList(Serializer.FILES.REGIONS, Region.class);
-        return regions_;
+    public static Region[] loadAll() {
+        Region.regions_ = Serializer.deserializeFileList(Serializer.FILES.REGIONS, Region.class);
+        return Region.regions_.toArray(new Region[0]);
     }
     public static Region[] getAll() {
         return Region.getAll(r -> true);
@@ -260,9 +250,6 @@ public class Region implements Comparable<Region> {
     public static int getHighestId() {
         return Region.regions_.stream().map(Region::getId).max(Integer::compare).orElse(0);
     }
-    public static void addRegion(Region region) {
-        regions_.add(region);
-    }
     public static List<Region> getRegionsOverlapping(double[] vertex) {
 
         List<Region> r = new ArrayList<>();
@@ -274,6 +261,21 @@ public class Region implements Comparable<Region> {
             }
         }
         return r;
+    }
+    public static void setPlayerSampling(long rate) {
+        if (Region.playerSampler_ != null) { Region.playerSampler_.cancel(); }
+        Region.playerSampler_ = new BukkitRunnable() {
+            @Override
+            public void run() {
+                Region.regions_.forEach(
+                    r -> r.setInsidePlayers_(
+                        Bukkit.getOnlinePlayers().stream().filter(p -> r.contains(p.getLocation())).toList()
+                    )
+                );
+            }
+        };
+        Region.playerSampler_.runTaskTimer(RegionsLib.getMain(),0, rate);
+
     }
 
     //PUBLIC METHODS
@@ -303,9 +305,7 @@ public class Region implements Comparable<Region> {
             RegionsLib.getMain().getLogger().fine("Region '" + this.getName() + "' cannot be saved as it has been destroyed.");
             return;
         }
-        if (!regions_.contains(this)) {
-            Region.addRegion(this);
-        }
+        Region.regions_.add(this);
         Serializer.serializeToFile(Serializer.FILES.REGIONS,regions_);
     }
     public List<Region> getOverlappingRegions() {
@@ -319,14 +319,11 @@ public class Region implements Comparable<Region> {
         RegionsLib.getMain().getServer().getPluginManager().callEvent(event);
         if (event.isCancelled()) { return; }
 
-        if(boundaryDisplayer_ != null) {
-            if (!boundaryDisplayer_.displayer.isCancelled()) {
-                this.boundaryDisplayer_.cancel();
-            }
-        }
-        if (regions_.remove(this)) {
+        if(boundaryDisplayer_ != null && !boundaryDisplayer_.displayer.isCancelled()) { this.boundaryDisplayer_.cancel(); }
+        if (Region.regions_.remove(this)) {
             Serializer.serializeToFile(Serializer.FILES.REGIONS, Region.regions_);
         }
+        this.insidePlayers_.clear();
         this.isDestroyed_ = true;
     }
     public void destroy() {
@@ -422,6 +419,21 @@ public class Region implements Comparable<Region> {
             double[] v = this.getVertex();
             boundingBox_ = new RegionBoundingBox(v[0], v[1], v[2], v[3], v[4], v[5], this);
         }
+    }
+    private void setInsidePlayers_(List<? extends Player> players) {
+        Iterator<? extends Player> i = this.insidePlayers_.iterator();
+        players = new LinkedList<>(players);
+        Player p;
+        while (i.hasNext()) {
+            p = i.next();
+            if (players.remove(p)) { continue; }
+            i.remove();
+            RegionsLib.getMain().getServer().getPluginManager().callEvent(new PlayerLeaveRegionEvent(p,this));
+        }
+        players.forEach(pl -> {
+            this.insidePlayers_.add(pl);
+            RegionsLib.getMain().getServer().getPluginManager().callEvent(new PlayerEnterRegionEvent(pl,this));
+        });
     }
 
     //PRIVATE CLASSES

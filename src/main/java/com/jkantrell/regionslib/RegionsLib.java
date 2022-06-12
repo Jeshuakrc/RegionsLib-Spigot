@@ -62,14 +62,14 @@ public final class RegionsLib extends JavaPlugin {
         //Registering the EventListener class
         plugin.getServer().getPluginManager().registerEvents(new RegionsLibEventListener(), RegionsLib.getMain());
         int sampleRate = RegionsLib.CONFIG.playerSamplingRate;
-        //if (sampleRate > 0) { RegionsLibEventListener.playerSampler.runTaskTimer(plugin, 0, sampleRate); }
+        if (sampleRate > 0) { Region.setPlayerSampling(sampleRate); }
 
         //Running post-enabled tasks
         RegionsLib.postEnableTasks_.forEach(Runnable::run);
 
         //Loading all Hierarchies and regions
         Hierarchy.loadAll();
-        if (Region.loadAll().isEmpty()) {RegionsLib.getMain().getLogger().info("No regions lo load!"); }
+        if (Region.loadAll().length < 1) {RegionsLib.getMain().getLogger().info("No regions lo load!"); }
 
         //Registering rules.
         RuleKey.registerNew(RegionsLib.getMain(),"localMod", RuleDataType.BOOL).setAccessPermission("regions.mod");
@@ -95,6 +95,7 @@ public final class RegionsLib extends JavaPlugin {
         return RegionsLib.abilityHandler_;
     }
     public static void addPostEnableTask(Runnable task) {
+        if (RegionsLib.isInitialized()) { task.run(); return; }
         RegionsLib.postEnableTasks_.add(task);
     }
     public static PermissionAttachment getPermissionAttachment(Player target) {

@@ -147,35 +147,4 @@ public class RegionsLibEventListener implements Listener {
                 });
     }
 
-    static BukkitRunnable playerSampler = new BukkitRunnable() {
-
-        private Map<Region,List<Player>> prevCapture = new HashMap<>(), newCapture = new HashMap<>();
-
-        @Override
-        public void run() {
-            this.newCapture.clear();
-            for (Region region : Region.getAll()) {
-                List<Player>    newPlayers = region.getInsidePlayers(),
-                                prevPlayers = this.prevCapture.get(region);
-
-                this.newCapture.put(region,newPlayers);
-
-                boolean wasMapped = this.prevCapture.containsKey(region);
-                for (Player player : newPlayers) {
-                    if (!(wasMapped && prevPlayers.contains(player))) {
-                        RegionsLib.getMain().getServer().getPluginManager().callEvent(new PlayerEnterRegionEvent(player, region));
-                        prevPlayers.remove(player);
-                    }
-                }
-                if (!wasMapped) { continue; }
-                for (Player player : prevPlayers) {
-                    if (!newPlayers.contains(player)) {
-                        RegionsLib.getMain().getServer().getPluginManager().callEvent(new PlayerLeaveRegionEvent(player, region));
-                    }
-                }
-            }
-            this.prevCapture.clear();
-            this.prevCapture.putAll(this.newCapture);
-        }
-    };
 }
