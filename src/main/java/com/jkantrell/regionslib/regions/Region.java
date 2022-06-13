@@ -305,7 +305,7 @@ public class Region implements Comparable<Region> {
             RegionsLib.getMain().getLogger().fine("Region '" + this.getName() + "' cannot be saved as it has been destroyed.");
             return;
         }
-        Region.regions_.add(this);
+        if (!Region.regions_.contains(this)) { Region.regions_.add(this); }
         Serializer.serializeToFile(Serializer.FILES.REGIONS,regions_);
     }
     public List<Region> getOverlappingRegions() {
@@ -314,16 +314,16 @@ public class Region implements Comparable<Region> {
         l.remove(this);
         return l;
     }
-    public void destroy(@Nullable Entity destructor) {
+    public void destroy(@Nullable Entity destructor){
         RegionDestroyEvent event = new RegionDestroyEvent(this, destructor);
         RegionsLib.getMain().getServer().getPluginManager().callEvent(event);
         if (event.isCancelled()) { return; }
 
         if(boundaryDisplayer_ != null && !boundaryDisplayer_.displayer.isCancelled()) { this.boundaryDisplayer_.cancel(); }
+        this.insidePlayers_.clear();
         if (Region.regions_.remove(this)) {
             Serializer.serializeToFile(Serializer.FILES.REGIONS, Region.regions_);
         }
-        this.insidePlayers_.clear();
         this.isDestroyed_ = true;
     }
     public void destroy() {
