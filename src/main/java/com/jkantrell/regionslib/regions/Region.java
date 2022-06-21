@@ -16,11 +16,14 @@ import com.jkantrell.regionslib.regions.rules.RuleDataType;
 import com.jkantrell.regionslib.regions.rules.RuleKey;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Particle;
 import org.bukkit.World;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
@@ -31,15 +34,13 @@ public class Region implements Comparable<Region> {
 
     //FIELDS
     private int id_;
-    private double[] vertex_ = null;
     private World world_ = null;
     private final ArrayList<Permission> permissions_ = new ArrayList<>();
     private String name_;
     private boolean enabled_ = true;
     private boolean isDestroyed_ = false;
-    private RegionBoundary boundary_ = null;
     private RegionDataContainer dataContainer_ = new RegionDataContainer();
-    private RegionBoundingBox boundingBox_;
+    private BoundingBox boundingBox_ = new BoundingBox();
     private BoundaryDisplayer boundaryDisplayer_ = null;
     private Hierarchy hierarchy_;
     private final List<Rule> rules_ = new ArrayList<>();
@@ -51,7 +52,7 @@ public class Region implements Comparable<Region> {
     public Region(double[] vertex, World world, String name, Hierarchy hierarchy, @Nullable Entity creator) {
         this.setId(Region.getHighestId() + 1);
         this.setWorld(world);
-        this.setVertex(vertex);
+        this.resize(vertex);
         this.setName(name);
         this.setHierarchy(hierarchy);
 
@@ -72,22 +73,8 @@ public class Region implements Comparable<Region> {
     private static BukkitRunnable playerSampler_ = null;
 
     //SETTERS
-    public void setVertex(double[] vertex) {
-
-        double min, max;
-        for (int i = 0; i < 3; i++) {
-            min = Math.min(vertex[i], vertex[i + 3]);
-            max = Math.max(vertex[i], vertex[i + 3]);
-            vertex[i] = min; vertex[i+3] = max;
-        }
-
-        vertex_ = vertex;
-        this.setBoundingBox_();
-        this.attemptCalculateBoundaries_();
-    }
     public void setWorld(World world) {
         world_ = world;
-        this.attemptCalculateBoundaries_();
     }
     public void setPermissions(Permission[] permissions) {
         this.permissions_.clear();
@@ -130,8 +117,9 @@ public class Region implements Comparable<Region> {
     public String getName() {
         return this.name_;
     }
-    public double[] getVertex() {
-        return this.vertex_;
+    public double[] getCorners() {
+        BoundingBox box = this.boundingBox_;
+        return new double[] { box.getMinX(), box.getMinY(), box.getMinZ(), box.getMaxX(), box.getMaxY(), box.getMaxZ() };
     }
     public boolean isEnabled() {
         return this.enabled_;
@@ -139,19 +127,36 @@ public class Region implements Comparable<Region> {
     public boolean isDestroyed() {
         return this.isDestroyed_;
     }
-    public RegionBoundary getBoundary(){ return boundary_; }
     public RegionDataContainer getDataContainer(){ return dataContainer_; }
-    public RegionBoundingBox getBoundingBox(){
-        return boundingBox_;
+    public BoundingBox getBoundingBox(){
+        return new BoundingBox().copy(this.boundingBox_);
     }
     public double getHeight(){
-        return this.getBoundingBox().getHeight();
+        return this.boundingBox_.getHeight();
     }
     public double getWidthX(){
-        return this.getBoundingBox().getWidthX();
+        return this.boundingBox_.getWidthX();
     }
     public double getWidthZ(){
-        return this.getBoundingBox().getWidthZ();
+        return this.boundingBox_.getWidthZ();
+    }
+    public double getMinX() {
+        return this.boundingBox_.getMinX();
+    }
+    public double getMinY() {
+        return this.boundingBox_.getMinY();
+    }
+    public double getMinZ() {
+        return this.boundingBox_.getMinZ();
+    }
+    public double getMaxX() {
+        return this.boundingBox_.getMaxX();
+    }
+    public double getMaxY() {
+        return this.boundingBox_.getMaxY();
+    }
+    public double getMaxZ() {
+        return this.boundingBox_.getMaxZ();
     }
     public World getWorld() {
         return this.world_;
@@ -244,23 +249,29 @@ public class Region implements Comparable<Region> {
     public static Region[] getAllAt(Location location, Predicate<Region> condition) {
         return Region.getAllAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()),condition);
     }
+    public static Region[] getIn(BoundingBox boundingBox, World world, Predicate<Region> condition) {
+        return Region.getAllIn(boundingBox, world, r -> r.isEnabled() && condition.test(r));
+    }
+    public static Region[] getIn(double x1, double y1, double z1, double x2, double y2, double z2, World world) {
+        return Region.getIn(new BoundingBox(x1, y1, z1, x2, y2, z2), world);
+    }
+    public static Region[] getIn(Region region) {
+        return Region.getIn(region.getBoundingBox(),region.getWorld(), r -> !r.equals(region));
+    }
+    public static Region[] getIn(BoundingBox boundingBox, World world) {
+        return Region.getIn(boundingBox, world, r -> true);
+    }
+    public static Region[] getAllIn(BoundingBox boundingBox, World world, Predicate<Region> condition) {
+        return Region.getAll(r -> r.getBoundingBox().overlaps(boundingBox) && r.getWorld().equals(world) && condition.test(r));
+    }
+    public static Region[] getAllIn(BoundingBox boundingBox, World world) {
+        return Region.getAllIn(boundingBox, world, r -> true);
+    }
     public static Region[] getRuleContainersAt(String ruleName, RuleDataType dataType, Location location) {
         return getAt(location, region -> region.hasRule(ruleName, dataType));
     }
     public static int getHighestId() {
         return Region.regions_.stream().map(Region::getId).max(Integer::compare).orElse(0);
-    }
-    public static List<Region> getRegionsOverlapping(double[] vertex) {
-
-        List<Region> r = new ArrayList<>();
-        BoundingBox box1 = new BoundingBox(vertex[0],vertex[1],vertex[2],vertex[3],vertex[4],vertex[5]);
-        for (Region i : Region.getAll()) {
-            RegionBoundingBox box2 = i.getBoundingBox();
-            if(box2.overlaps(box1)){
-                r.add(i);
-            }
-        }
-        return r;
     }
     public static void setPlayerSampling(long rate) {
         if (Region.playerSampler_ != null) { Region.playerSampler_.cancel(); }
@@ -296,8 +307,8 @@ public class Region implements Comparable<Region> {
     public boolean contains(Location location) {
         return this.contains(location.getX(),location.getY(),location.getZ(),location.getWorld());
     }
-    public boolean contains(double x, double y, double z, World dimension) {
-        if(!this.getWorld().equals(dimension)) { return false; }
+    public boolean contains(double x, double y, double z, World world) {
+        if(!this.getWorld().equals(world)) { return false; }
         return this.getBoundingBox().contains(x,y,z);
     }
     public void save() {
@@ -308,11 +319,8 @@ public class Region implements Comparable<Region> {
         if (!Region.regions_.contains(this)) { Region.regions_.add(this); }
         Serializer.serializeToFile(Serializer.FILES.REGIONS,regions_);
     }
-    public List<Region> getOverlappingRegions() {
-
-        List<Region> l = Region.getRegionsOverlapping(this.getVertex());
-        l.remove(this);
-        return l;
+    public Region[] getOverlappingRegions() {
+        return Region.getIn(this);
     }
     public void destroy(@Nullable Entity destructor){
         RegionDestroyEvent event = new RegionDestroyEvent(this, destructor);
@@ -394,32 +402,41 @@ public class Region implements Comparable<Region> {
     public boolean removePermissions(Player player) {
         return Arrays.stream(this.getPermissions(player)).anyMatch(this::removePermission);
     }
-    @Override
-    public int compareTo(@Nonnull Region otherRegion) {
+    public void resize(double[] corners) {
+        this.boundingBox_.resize(corners[0],corners[1],corners[2],corners[3],corners[4],corners[5]);
+    }
+    public void expand(double negativeX, double negativeY, double negativeZ, double positiveX, double positiveY, double positiveZ) {
+        this.boundingBox_.expand(negativeX, negativeY, negativeZ, positiveX, positiveY, positiveZ);
+    }
+    public void expand(double x, double y, double z) {
+        this.boundingBox_.expand(x, y, z);
+    }
+    public void expand(Vector expansion) {
+        this.boundingBox_.expand(expansion);
+    }
+    public void expand(double expansion) {
+        this.boundingBox_.expand(expansion);
+    }
+    public void expand(double dirX, double dirY, double dirZ, double expansion) {
+        this.boundingBox_.expand(dirX, dirY, dirZ, expansion);
+    }
+    public void expand(Vector direction, double expansion) {
+        this.boundingBox_.expand(direction, expansion);
+    }
+    public void expand(BlockFace blockFace, double expansion) {
+        this.boundingBox_.expand(blockFace, expansion);
+    }
+    public void expandDirectional(double dirX, double dirY, double dirZ) {
+        this.boundingBox_.expandDirectional(dirX, dirY, dirZ);
+    }
+    public void expandDirectional(Vector direction) {
+        this.boundingBox_.expandDirectional(direction);
+    }
+    @Override public int compareTo(@Nonnull Region otherRegion) {
         return Integer.compare(this.getId(), otherRegion.getId());
     }
 
     //PRIVATE METHODS
-    private void attemptCalculateBoundaries_() {
-
-        if(vertex_ != null && world_ != null){
-            if (boundary_ == null) {
-                boundary_ = new RegionBoundary(this);
-            }else{
-                boundary_.recalculate();
-            }
-        }
-    }
-    private void setBoundingBox_() {
-
-        boolean cond;
-        RegionBoundingBox box = this.getBoundingBox();
-        if(box == null) { cond = true; } else { cond = box.getCorners() != this.getVertex(); }
-        if (cond) {
-            double[] v = this.getVertex();
-            boundingBox_ = new RegionBoundingBox(v[0], v[1], v[2], v[3], v[4], v[5], this);
-        }
-    }
     private void setInsidePlayers_(List<? extends Player> players) {
         Iterator<? extends Player> i = this.insidePlayers_.iterator();
         players = new LinkedList<>(players);
@@ -446,14 +463,18 @@ public class Region implements Comparable<Region> {
         private final BukkitRunnable displayer = new BukkitRunnable() {
             @Override
             public void run() {
-                for (Location l : self_.getBoundary().getFullBoundaries()) {
-                    Objects.requireNonNull(l.getWorld()).spawnParticle(
-                            boundaryParticle_.particle(),
-                            l,
-                            boundaryParticle_.count(),
-                            boundaryParticle_.delta()[0], boundaryParticle_.delta()[1], boundaryParticle_.delta()[2],
-                            0, null, true
-                    );
+                Region region = Region.this;
+                double interval = region.getHeight() / Math.floor(region.getHeight()) / 2;
+                double min1 = region.getMinX(), min2 = region.getMinZ(), max1 = region.getMaxX(), max2 = region.getMaxZ();
+                for (double i = 0; i <= region.getHeight(); i += interval) {
+                    double[][] corners = { {min1, min2}, {min1, max2}, {max1, min2}, {max1, max2} };
+                    for (int j = 0; j < 4; j++) {
+                        region.getWorld().spawnParticle(
+                                Particle.SCRAPE,
+                                corners[j][0], region.getMinY() + (i), corners[j][1],
+                                1, 0, 0, 0, 0
+                        );
+                    }
                 }
             }
         };
@@ -475,9 +496,10 @@ public class Region implements Comparable<Region> {
         protected void cancel() {
             if (!ran) { return; }
 
-            if (!displayer.isCancelled()) {
-                canceller.cancel(); displayer.cancel();
-            }
+            if (!displayer.isCancelled()) { displayer.cancel(); }
+            try {
+                if (!canceller.isCancelled()) { canceller.cancel(); }
+            } catch (IllegalStateException ignored) {}
         }
     }
 
@@ -492,7 +514,7 @@ public class Region implements Comparable<Region> {
             jsonRegion.addProperty("hierarchy",src.getHierarchy().getId());
             jsonRegion.addProperty("world",src.getWorld().getName());
             jsonRegion.addProperty("enabled",src.isEnabled());
-            jsonRegion.add("vertex", new Gson().toJsonTree(src.getVertex()));
+            jsonRegion.add("vertex", new Gson().toJsonTree(src.getCorners()));
 
             JsonArray jsonPermissions = new JsonArray();
             for (Permission permission : src.getPermissions()) {
