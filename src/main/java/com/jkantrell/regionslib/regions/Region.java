@@ -158,6 +158,17 @@ public class Region implements Comparable<Region> {
     public double getMaxZ() {
         return this.boundingBox_.getMaxZ();
     }
+    public double getFacePos(BlockFace face) {
+        return switch (face) {
+            case UP -> this.getMaxY();
+            case DOWN -> this.getMinY();
+            case SOUTH -> this.getMaxZ();
+            case NORTH -> this.getMinZ();
+            case EAST -> this.getMaxX();
+            case WEST -> this.getMinX();
+            default -> throw new IllegalArgumentException("The provided BlockFace must be cartesian (NORTH, SOUTH, EAST, WEST, UP, DOWN).");
+        };
+    }
     public World getWorld() {
         return this.world_;
     }
@@ -489,7 +500,7 @@ public class Region implements Comparable<Region> {
         //METHODS
         protected void displayBoundaries(int frequency, long persistence) {
             displayer.runTaskTimerAsynchronously(RegionsLib.getMain(), 0, frequency);
-            canceller.runTaskLater(RegionsLib.getMain(), persistence);
+            //canceller.runTaskLater(RegionsLib.getMain(), persistence);
             ran = true;
         }
 
