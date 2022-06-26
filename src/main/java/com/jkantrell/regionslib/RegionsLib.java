@@ -6,6 +6,7 @@ import com.jkantrell.regionslib.commands.commanderProviders.*;
 import com.jkantrell.regionslib.commands.commanderProviders.annotations.RuleValue;
 import com.jkantrell.regionslib.io.Config;
 import com.jkantrell.regionslib.regions.Hierarchy;
+import com.jkantrell.regionslib.regions.Regions;
 import com.jkantrell.regionslib.regions.abilities.Abilities;
 import com.jkantrell.regionslib.regions.abilities.AbilityHandler;
 import com.jkantrell.regionslib.regions.Region;
@@ -69,7 +70,7 @@ public final class RegionsLib extends JavaPlugin {
 
         //Loading all Hierarchies and regions
         Hierarchy.loadAll();
-        if (Region.loadAll().length < 1) {RegionsLib.getMain().getLogger().info("No regions lo load!"); }
+        if (Regions.loadAll().length < 1) {RegionsLib.getMain().getLogger().info("No regions lo load!"); }
 
         //Registering rules.
         RuleKey.registerNew(RegionsLib.getMain(),"localMod", RuleDataType.BOOL).setAccessPermission("regions.mod");

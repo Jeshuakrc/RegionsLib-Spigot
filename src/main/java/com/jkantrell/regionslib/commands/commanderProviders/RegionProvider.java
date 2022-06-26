@@ -5,7 +5,7 @@ import com.jkantrell.commander.exception.CommandArgumentException;
 import com.jkantrell.commander.exception.CommandException;
 import com.jkantrell.commander.command.provider.CommandProvider;
 import com.jkantrell.regionslib.regions.Region;
-
+import com.jkantrell.regionslib.regions.Regions;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,7 +17,7 @@ public class RegionProvider extends CommandProvider<Region> {
 
     @Override
     public List<String> suggest() {
-        return Arrays.stream(Region.getAll())
+        return Arrays.stream(Regions.getAll())
                 .map(region -> {
                     String name = region.getName();
                     return (name.contains(" ") ? "\"" + name + "\"" : name);
@@ -28,14 +28,14 @@ public class RegionProvider extends CommandProvider<Region> {
     @Override
     protected boolean handleArgument(Argument argument) throws CommandException {
         if (argument.isInt()) {
-            Region region = Region.get(argument.getInt());
+            Region region = Regions.get(argument.getInt());
             if (region == null) {
                 throw new CommandArgumentException(argument, "There's no region under the ID " + argument.getInt() + ".");
             }
             this.region_ = region;
             return true;
         }
-        Region[] regions = Region.get(argument.getString());
+        Region[] regions = Regions.get(argument.getString());
         if (regions.length < 1) {
             throw new CommandArgumentException(argument, "There's no region under the name '" + argument.getString() + "'.");
         } else if (regions.length > 1) {

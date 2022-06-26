@@ -3,6 +3,7 @@ package com.jkantrell.regionslib.regions.abilities;
 import com.jkantrell.regionslib.RegionsLib;
 import com.jkantrell.regionslib.events.AbilityTriggeredEvent;
 import com.jkantrell.regionslib.regions.Region;
+import com.jkantrell.regionslib.regions.Regions;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -139,10 +140,10 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
         return this.isAllowedIn(new Region[] {region},player);
     }
     public boolean isAllowedAt(double x, double y, double z, World world, Player player) {
-        return this.isAllowedIn(Region.getAt(x,y,z,world),player);
+        return this.isAllowedIn(Regions.getAt(x,y,z,world),player);
     }
     public boolean isAllowedAt(Location location, Player player) {
-        return this.isAllowedIn(Region.getAt(location),player);
+        return this.isAllowedIn(Regions.getAt(location),player);
     }
 
     //SETTERS
@@ -250,7 +251,7 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
         Location location = this.locationGetter.apply(trigger);
         if (player == null || location == null) { return true; }
 
-        Region[] regions = Region.getAt(location);
+        Region[] regions = Regions.getAt(location);
         if (regions.length < 1) { return true; }
 
         boolean[] results = new boolean[regions.length];

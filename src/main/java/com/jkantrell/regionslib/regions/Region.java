@@ -28,9 +28,28 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.function.Predicate;
 
 public class Region implements Comparable<Region> {
+
+    //STATIC METHODS
+    public static void setPlayerSampling(long rate) {
+        if (Region.playerSampler_ != null) { Region.playerSampler_.cancel(); }
+        Region.playerSampler_ = new BukkitRunnable() {
+            @Override
+            public void run() {
+                Regions.regions_.forEach(
+                        r -> r.setInsidePlayers_(
+                                Bukkit.getOnlinePlayers().stream().filter(p -> r.contains(p.getLocation())).toList()
+                        )
+                );
+            }
+        };
+        Region.playerSampler_.runTaskTimer(RegionsLib.getMain(),0, rate);
+
+    }
+
+    //STATIC FIELDS
+    private static BukkitRunnable playerSampler_ = null;
 
     //FIELDS
     private int id_;
@@ -50,7 +69,7 @@ public class Region implements Comparable<Region> {
 
     //CONSTRUCTORS
     public Region(double[] vertex, World world, String name, Hierarchy hierarchy, @Nullable Entity creator) {
-        this.setId(Region.getHighestId() + 1);
+        this.setId(Regions.getHighestId() + 1);
         this.setWorld(world);
         this.resize(vertex);
         this.setName(name);
@@ -68,10 +87,6 @@ public class Region implements Comparable<Region> {
         this(vertex, world, name, hierarchy, null);
     }
 
-    //STATIC FIELDS
-    private static List<Region> regions_ = new ArrayList<>();
-    private static BukkitRunnable playerSampler_ = null;
-
     //SETTERS
     public void setWorld(World world) {
         world_ = world;
@@ -81,7 +96,7 @@ public class Region implements Comparable<Region> {
         Arrays.stream(permissions).forEach(this::addPermission);
     }
     public void setId(int id) {
-        if (Region.regions_.stream().anyMatch(r -> r.getId() == id)) {
+        if (Regions.regions_.stream().anyMatch(r -> r.getId() == id)) {
             throw new IllegalArgumentException("A region with Id " + id + " already exists." );
         }
         this.id_ = id;
@@ -219,87 +234,6 @@ public class Region implements Comparable<Region> {
         return this.getPermission(player).getGroup();
     }
 
-    //STATIC METHODS
-    public static Region get(int id) {
-        return Region.regions_.stream().filter(r -> r.getId() == id).findFirst().orElse(null);
-    }
-    public static Region[] get(String name) {
-        return Region.getAll(r -> r.getName().equals(name));
-    }
-    public static Region[] loadAll() {
-        Region.regions_ = Serializer.deserializeFileList(Serializer.FILES.REGIONS, Region.class);
-        return Region.regions_.toArray(new Region[0]);
-    }
-    public static Region[] getAll() {
-        return Region.getAll(r -> true);
-    }
-    public static Region[] getAll(Predicate<Region> condition) {
-        return Region.regions_.stream().filter(condition).toArray(Region[]::new);
-    }
-    public static Region[] getAt(double x, double y, double z, World world, Predicate<Region> condition){
-        return Region.getAllAt(x,y,z,world, r -> r.isEnabled() && condition.test(r));
-    }
-    public static Region[] getAt(Location location, Predicate<Region> condition){
-        return Region.getAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()),condition);
-    }
-    public static Region[] getAt(double x, double y, double z, World world) {
-        return Region.getAt(x, y, z, world, r -> true);
-    }
-    public static Region[] getAt(Location location) {
-        return Region.getAt(location, r -> true);
-    }
-    public static Region[] getAllAt(double x, double y, double z, World world) {
-        return Region.getAllAt(x,y,z,world, r -> true);
-    }
-    public static Region[] getAllAt(Location location) {
-        return Region.getAllAt(location, r -> true);
-    }
-    public static Region[] getAllAt(double x, double y, double z, World world, Predicate<Region> condition) {
-        return Region.getAll(r -> r.contains(x,y,z,world) && condition.test(r));
-    }
-    public static Region[] getAllAt(Location location, Predicate<Region> condition) {
-        return Region.getAllAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()),condition);
-    }
-    public static Region[] getIn(BoundingBox boundingBox, World world, Predicate<Region> condition) {
-        return Region.getAllIn(boundingBox, world, r -> r.isEnabled() && condition.test(r));
-    }
-    public static Region[] getIn(double x1, double y1, double z1, double x2, double y2, double z2, World world) {
-        return Region.getIn(new BoundingBox(x1, y1, z1, x2, y2, z2), world);
-    }
-    public static Region[] getIn(Region region) {
-        return Region.getIn(region.getBoundingBox(),region.getWorld(), r -> !r.equals(region));
-    }
-    public static Region[] getIn(BoundingBox boundingBox, World world) {
-        return Region.getIn(boundingBox, world, r -> true);
-    }
-    public static Region[] getAllIn(BoundingBox boundingBox, World world, Predicate<Region> condition) {
-        return Region.getAll(r -> r.getBoundingBox().overlaps(boundingBox) && r.getWorld().equals(world) && condition.test(r));
-    }
-    public static Region[] getAllIn(BoundingBox boundingBox, World world) {
-        return Region.getAllIn(boundingBox, world, r -> true);
-    }
-    public static Region[] getRuleContainersAt(String ruleName, RuleDataType dataType, Location location) {
-        return getAt(location, region -> region.hasRule(ruleName, dataType));
-    }
-    public static int getHighestId() {
-        return Region.regions_.stream().map(Region::getId).max(Integer::compare).orElse(0);
-    }
-    public static void setPlayerSampling(long rate) {
-        if (Region.playerSampler_ != null) { Region.playerSampler_.cancel(); }
-        Region.playerSampler_ = new BukkitRunnable() {
-            @Override
-            public void run() {
-                Region.regions_.forEach(
-                    r -> r.setInsidePlayers_(
-                        Bukkit.getOnlinePlayers().stream().filter(p -> r.contains(p.getLocation())).toList()
-                    )
-                );
-            }
-        };
-        Region.playerSampler_.runTaskTimer(RegionsLib.getMain(),0, rate);
-
-    }
-
     //PUBLIC METHODS
     public boolean checkAbility( Player player, Ability<?> ability) {
 
@@ -327,11 +261,11 @@ public class Region implements Comparable<Region> {
             RegionsLib.getMain().getLogger().fine("Region '" + this.getName() + "' cannot be saved as it has been destroyed.");
             return;
         }
-        if (!Region.regions_.contains(this)) { Region.regions_.add(this); }
-        Serializer.serializeToFile(Serializer.FILES.REGIONS,regions_);
+        if (!Regions.regions_.contains(this)) { Regions.regions_.add(this); }
+        Serializer.serializeToFile(Serializer.FILES.REGIONS, Regions.regions_);
     }
     public Region[] getOverlappingRegions() {
-        return Region.getIn(this);
+        return Regions.getIn(this);
     }
     public void destroy(@Nullable Entity destructor){
         RegionDestroyEvent event = new RegionDestroyEvent(this, destructor);
@@ -340,8 +274,8 @@ public class Region implements Comparable<Region> {
 
         if(boundaryDisplayer_ != null && !boundaryDisplayer_.displayer.isCancelled()) { this.boundaryDisplayer_.cancel(); }
         this.insidePlayers_.clear();
-        if (Region.regions_.remove(this)) {
-            Serializer.serializeToFile(Serializer.FILES.REGIONS, Region.regions_);
+        if (Regions.regions_.remove(this)) {
+            Serializer.serializeToFile(Serializer.FILES.REGIONS, Regions.regions_);
         }
         this.isDestroyed_ = true;
     }
@@ -500,7 +434,7 @@ public class Region implements Comparable<Region> {
         //METHODS
         protected void displayBoundaries(int frequency, long persistence) {
             displayer.runTaskTimerAsynchronously(RegionsLib.getMain(), 0, frequency);
-            //canceller.runTaskLater(RegionsLib.getMain(), persistence);
+            canceller.runTaskLater(RegionsLib.getMain(), persistence);
             ran = true;
         }
 
