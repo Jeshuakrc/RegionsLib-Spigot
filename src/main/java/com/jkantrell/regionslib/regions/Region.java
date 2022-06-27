@@ -146,6 +146,9 @@ public class Region implements Comparable<Region> {
     public BoundingBox getBoundingBox(){
         return new BoundingBox().copy(this.boundingBox_);
     }
+    public double getVolume() {
+        return this.getHeight() * this.getWidthX() * this.getWidthZ();
+    }
     public double getHeight(){
         return this.boundingBox_.getHeight();
     }
@@ -173,6 +176,9 @@ public class Region implements Comparable<Region> {
     public double getMaxZ() {
         return this.boundingBox_.getMaxZ();
     }
+    public Vector getDimensions() {
+        return new Vector(this.getWidthX(), this.getHeight(), this.getWidthZ());
+    }
     public double getFacePos(BlockFace face) {
         return switch (face) {
             case UP -> this.getMaxY();
@@ -183,6 +189,10 @@ public class Region implements Comparable<Region> {
             case WEST -> this.getMinX();
             default -> throw new IllegalArgumentException("The provided BlockFace must be cartesian (NORTH, SOUTH, EAST, WEST, UP, DOWN).");
         };
+    }
+    public Location getCenter() {
+        Vector center = this.boundingBox_.getCenter();
+        return new Location(this.getWorld(), center.getX(), center.getY(), center.getZ());
     }
     public World getWorld() {
         return this.world_;
