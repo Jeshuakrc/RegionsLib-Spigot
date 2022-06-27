@@ -14,10 +14,7 @@ import com.jkantrell.regionslib.io.Serializer;
 import com.jkantrell.regionslib.regions.rules.Rule;
 import com.jkantrell.regionslib.regions.rules.RuleDataType;
 import com.jkantrell.regionslib.regions.rules.RuleKey;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -157,6 +154,13 @@ public class Region implements Comparable<Region> {
     }
     public double getWidthZ(){
         return this.boundingBox_.getWidthZ();
+    }
+    public double getLength(Axis axis) {
+        return switch (axis) {
+            case X -> this.getWidthX();
+            case Z -> this.getWidthZ();
+            case Y -> this.getHeight();
+        };
     }
     public double getMinX() {
         return this.boundingBox_.getMinX();
