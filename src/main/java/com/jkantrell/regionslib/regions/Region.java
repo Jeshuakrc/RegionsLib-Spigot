@@ -270,6 +270,9 @@ public class Region implements Comparable<Region> {
         if(!this.getWorld().equals(world)) { return false; }
         return this.getBoundingBox().contains(x,y,z);
     }
+    public boolean contains(BoundingBox boundingBox) {
+        return this.boundingBox_.contains(boundingBox);
+    }
     public void save() {
         if (this.isDestroyed_) {
             RegionsLib.getMain().getLogger().fine("Region '" + this.getName() + "' cannot be saved as it has been destroyed.");
