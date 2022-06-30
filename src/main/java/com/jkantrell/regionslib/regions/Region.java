@@ -56,7 +56,7 @@ public class Region implements Comparable<Region> {
     private boolean enabled_ = true;
     private boolean isDestroyed_ = false;
     private RegionDataContainer dataContainer_ = new RegionDataContainer();
-    private BoundingBox boundingBox_ = new BoundingBox();
+    private BoundingBox boundingBox_;
     private BoundaryDisplayer boundaryDisplayer_ = null;
     private Hierarchy hierarchy_;
     private final List<Rule> rules_ = new ArrayList<>();
@@ -65,10 +65,10 @@ public class Region implements Comparable<Region> {
     private final LinkedList<Player> insidePlayers_ = new LinkedList<>();
 
     //CONSTRUCTORS
-    public Region(double[] vertex, World world, String name, Hierarchy hierarchy, @Nullable Entity creator) {
+    public Region(BoundingBox initialBox, World world, String name, Hierarchy hierarchy, @Nullable Entity creator) {
         this.setId(Regions.getHighestId() + 1);
         this.setWorld(world);
-        this.resize(vertex);
+        this.resize(initialBox);
         this.setName(name);
         this.setHierarchy(hierarchy);
 
@@ -80,8 +80,15 @@ public class Region implements Comparable<Region> {
         RegionsLib.getMain().getServer().getPluginManager().callEvent(event);
         if (event.isCancelled()) { this.destroy(); }
     }
-    public Region(double[] vertex, World world, String name, Hierarchy hierarchy) {
-        this(vertex, world, name, hierarchy, null);
+    public Region(BoundingBox initialBox, World world, String name, Hierarchy hierarchy) {
+        this(initialBox, world, name, hierarchy, null);
+    }
+    public Region(double[] corners, World world, String name, Hierarchy hierarchy, @Nullable Entity creator) {
+        this(new BoundingBox(), world, name, hierarchy, creator);
+        this.resize(corners);
+    }
+    public Region(double[] corners, World world, String name, Hierarchy hierarchy) {
+        this(corners, world, name, hierarchy, null);
     }
 
     //SETTERS
@@ -365,7 +372,16 @@ public class Region implements Comparable<Region> {
         return Arrays.stream(this.getPermissions(player)).anyMatch(this::removePermission);
     }
     public void resize(double[] corners) {
-        this.boundingBox_.resize(corners[0],corners[1],corners[2],corners[3],corners[4],corners[5]);
+        if (corners.length < 6) {
+            throw new IndexOutOfBoundsException("The provided array must be of length 6");
+        }
+        this.resize(corners[0],corners[1],corners[2],corners[3],corners[4],corners[5]);
+    }
+    public void resize(double x1, double y1, double z1, double x2, double y2, double z2) {
+        this.boundingBox_.resize(x1, y1, z1, x2, y2, z2);
+    }
+    public void resize(BoundingBox boundingBox) {
+        this.boundingBox_ = boundingBox;
     }
     public void expand(double negativeX, double negativeY, double negativeZ, double positiveX, double positiveY, double positiveZ) {
         this.boundingBox_.expand(negativeX, negativeY, negativeZ, positiveX, positiveY, positiveZ);
