@@ -8,6 +8,7 @@ import org.bukkit.util.BoundingBox;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 public final class Regions {
@@ -15,8 +16,8 @@ public final class Regions {
     static List<Region> regions_ = new ArrayList<>();
 
     //STATIC METHODS
-    public static Region get(int id) {
-        return regions_.stream().filter(r -> r.getId() == id).findFirst().orElse(null);
+    public static Optional<Region> get(int id) {
+        return regions_.stream().filter(r -> r.getId() == id).findFirst();
     }
     public static Region[] get(String name) {
         return getAll(r -> r.getName().equals(name));

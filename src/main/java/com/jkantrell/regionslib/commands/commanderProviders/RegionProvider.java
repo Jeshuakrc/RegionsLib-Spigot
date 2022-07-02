@@ -28,11 +28,8 @@ public class RegionProvider extends CommandProvider<Region> {
     @Override
     protected boolean handleArgument(Argument argument) throws CommandException {
         if (argument.isInt()) {
-            Region region = Regions.get(argument.getInt());
-            if (region == null) {
-                throw new CommandArgumentException(argument, "There's no region under the ID " + argument.getInt() + ".");
-            }
-            this.region_ = region;
+            this.region_ = Regions.get(argument.getInt())
+                    .orElseThrow(() -> new CommandArgumentException(argument, "There's no region under the ID " + argument.getInt() + "."));
             return true;
         }
         Region[] regions = Regions.get(argument.getString());
