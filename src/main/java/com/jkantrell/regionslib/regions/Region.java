@@ -36,8 +36,9 @@ public class Region implements Comparable<Region> {
             @Override
             public void run() {
                 Regions.regions_.forEach(
-                        r -> r.setInsidePlayers_(
-                                Bukkit.getOnlinePlayers().stream().filter(p -> r.contains(p.getLocation())).toList()
+                        r -> r.setInsidePlayers_( (r.isEnabled()) ?
+                                Bukkit.getOnlinePlayers().stream().filter(p -> r.contains(p.getLocation())).toList() :
+                                Collections.emptyList()
                         )
                 );
             }
@@ -208,16 +209,6 @@ public class Region implements Comparable<Region> {
     }
     public World getWorld() {
         return this.world_;
-    }
-    public List<Player> getGroupLevelRagePlayers(int min, int max) {
-       List <Player> r = new ArrayList<>();
-        for (Permission p : this.getPermissions()) {
-            int lvl = p.getGroup().getLevel();
-            if (lvl <= max && lvl >= min) {
-                r.add(p.getPlayer());
-            }
-        }
-        return r;
     }
     public Hierarchy getHierarchy() {
         return this.hierarchy_;

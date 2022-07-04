@@ -19,6 +19,7 @@ public abstract class Serializer {
     public static final Gson GSON;
     static {
         GsonBuilder builder = new GsonBuilder();
+        builder.setPrettyPrinting();
         builder.registerTypeAdapter(Hierarchy.class, new Hierarchy.JDeserializer());
         builder.registerTypeAdapter(Rule.class, new Rule.JSerializer());
         builder.registerTypeAdapter(Rule.class, new Rule.JDeserializer());
