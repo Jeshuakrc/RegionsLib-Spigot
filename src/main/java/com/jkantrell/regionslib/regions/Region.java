@@ -25,6 +25,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.function.Predicate;
 
 public class Region implements Comparable<Region> {
 
@@ -248,11 +249,34 @@ public class Region implements Comparable<Region> {
     public Permission[] getPermissions(Player player) {
         return this.permissions_.stream().filter(p -> p.getPlayerName().equals(player.getName())).toList().toArray(new Permission[0]);
     }
-    public Permission getPermission(Player player) {
-        return this.permissions_.stream().filter(p -> p.getPlayerName().equals(player.getName())).findFirst().orElse(null);
+    public Optional<Permission> getPermission(Player player) {
+        return this.permissions_.stream().filter(p -> p.getPlayerName().equals(player.getName())).findFirst();
     }
-    public Hierarchy.Group getGroup(Player player) {
-        return this.getPermission(player).getGroup();
+    public Optional<Hierarchy.Group> getGroupOf(Player player) {
+        return this.getPermission(player).map(Permission::getGroup);
+    }
+    public Player[] getOnlineMembers(Predicate<Player> condition) {
+        return this.permissions_.stream()
+                .map(Permission::getPlayer)
+                .filter(Objects::nonNull)
+                .filter(condition)
+                .toArray(Player[]::new);
+    }
+    public Player[] getOnlineMembers() {
+        return this.getOnlineMembers(p -> true);
+    }
+    public Player[] getOnlineMembersMaxGroup(int level) {
+        return this.permissions_.stream()
+                .filter(perm -> perm.getGroup().getLevel() <= level)
+                .map(Permission::getPlayer)
+                .filter(Objects::nonNull)
+                .toArray(Player[]::new);
+    }
+    public Player[] getOnlinePlayersMaxGroup(Hierarchy.Group group) {
+        if (!group.getHierarchy().equals(this.getHierarchy())) {
+            throw new IllegalArgumentException("The provided group must belong the the region's associated hierarchy");
+        }
+        return this.getOnlineMembersMaxGroup(group.getLevel());
     }
 
     //PUBLIC METHODS
@@ -279,6 +303,10 @@ public class Region implements Comparable<Region> {
     }
     public boolean contains(BoundingBox boundingBox) {
         return this.boundingBox_.contains(boundingBox);
+    }
+    public boolean isMember(Player player) {
+        if (player == null) { return false; }
+        return permissions_.stream().anyMatch(perm -> perm.getPlayerName().equals(player.getName()));
     }
     public void save() {
         if (this.isDestroyed_) {
