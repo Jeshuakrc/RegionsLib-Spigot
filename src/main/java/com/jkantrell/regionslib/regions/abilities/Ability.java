@@ -348,6 +348,8 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
                 RegionsLib.getMain().getLogger().warning("Unregistering ability. Please declare the playerGetter directly.");
                 Ability.this.unregister();
                 return null;
+            } catch (Exception ex) {
+                return null;
             }
         }
     }
