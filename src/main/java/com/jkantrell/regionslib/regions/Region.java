@@ -400,7 +400,7 @@ public class Region implements Comparable<Region> {
         this.boundingBox_.resize(x1, y1, z1, x2, y2, z2);
     }
     public void resize(BoundingBox boundingBox) {
-        this.boundingBox_ = boundingBox;
+        this.boundingBox_ = boundingBox.clone();
     }
     public void expand(double negativeX, double negativeY, double negativeZ, double positiveX, double positiveY, double positiveZ) {
         this.boundingBox_.expand(negativeX, negativeY, negativeZ, positiveX, positiveY, positiveZ);
