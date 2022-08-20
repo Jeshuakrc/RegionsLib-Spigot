@@ -25,6 +25,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Predicate;
 
 public class Region implements Comparable<Region> {
@@ -325,10 +326,10 @@ public class Region implements Comparable<Region> {
     public void destroy() {
         this.destroy(null);
     }
-    public void displayBoundaries(int frequency ,long persistence) {
+    public void displayBoundaries(Player player, int frequency ,long persistence) {
         if(boundaryDisplayer_ != null) { boundaryDisplayer_.cancel(); }
 
-        boundaryDisplayer_ = new BoundaryDisplayer();
+        boundaryDisplayer_ = new BoundaryDisplayer(this, player);
         boundaryDisplayer_.displayBoundaries(frequency,persistence);
     }
     public void broadCastToMembers(String message, int maxLevel) {
@@ -451,27 +452,74 @@ public class Region implements Comparable<Region> {
     }
 
     //PRIVATE CLASSES
-    private class BoundaryDisplayer {
+    private static class BoundaryDisplayer {
 
         //FIELDS
-        boolean ran = false;
+        private final Region region_;
+        private final Player player_;
+        private final BoundingBox boundingBox_;
+        private boolean ran = false;
+
+        //CONSTRUCTORS
+        BoundaryDisplayer(Region region, Player player) {
+            this.region_ = region;
+            this.player_ = player;
+            int rad = RegionsLib.CONFIG.regionBorderShowRadius;
+            this.boundingBox_ = new BoundingBox(-rad, -rad, -rad, rad, rad, rad);
+        }
 
         //RUNNABLES
         private final BukkitRunnable displayer = new BukkitRunnable() {
-            @Override
-            public void run() {
-                Region region = Region.this;
-                double interval = region.getHeight() / Math.floor(region.getHeight()) / 2;
-                double min1 = region.getMinX(), min2 = region.getMinZ(), max1 = region.getMaxX(), max2 = region.getMaxZ();
-                for (double i = 0; i <= region.getHeight(); i += interval) {
-                    double[][] corners = { {min1, min2}, {min1, max2}, {max1, min2}, {max1, max2} };
-                    for (int j = 0; j < 4; j++) {
-                        region.getWorld().spawnParticle(
+            private void renderFace(Axis face, double pos, double min1, double max1, double interval1, double min2, double max2, double interval2) {
+                for (double i = min1; i <= max1; i += interval1) {
+                    for (double j = min2; j <= max2; j += interval2) {
+                        double[] loc = switch (face) {
+                            case X -> new double[] {pos, i, j};
+                            case Y -> new double[] {i, pos, j};
+                            case Z -> new double[] {i, j, pos};
+                        };
+
+                        BoundaryDisplayer.this.player_.spawnParticle(
                                 Particle.SCRAPE,
-                                corners[j][0], region.getMinY() + (i), corners[j][1],
+                                loc[0], loc[1], loc[2],
                                 1, 0, 0, 0, 0
                         );
                     }
+                }
+            }
+
+            @Override
+            public void run() {
+                Region region = BoundaryDisplayer.this.region_;
+                BoundingBox radBox = BoundaryDisplayer.this.boundingBox_.clone();
+                BoundingBox regBox = region.getBoundingBox();
+
+                radBox.shift(BoundaryDisplayer.this.player_.getLocation());
+                if (!radBox.overlaps(regBox)) { return; }
+                if (regBox.contains(radBox)) { return; }
+
+                BoundingBox intBox = radBox.clone().intersection(regBox);
+                double  intervalY = region.getHeight() / Math.floor(region.getHeight()) / 2,
+                        intervalX = region.getWidthX() / Math.floor(region.getWidthX()) / 2,
+                        intervalZ = region.getWidthZ() / Math.floor(region.getWidthZ()) / 2;
+
+                if (intBox.getMinX() > radBox.getMinX()) {
+                    this.renderFace(Axis.X, intBox.getMinX(), intBox.getMinY(), intBox.getMaxY(), intervalY, intBox.getMinZ(), intBox.getMaxZ(), intervalZ);
+                }
+                if (intBox.getMaxX() < radBox.getMaxX()) {
+                    this.renderFace(Axis.X,intBox.getMaxX(), intBox.getMinY(), intBox.getMaxY(), intervalY, intBox.getMinZ(), intBox.getMaxZ(), intervalZ);
+                }
+                if (intBox.getMinY() > radBox.getMinY()) {
+                    this.renderFace(Axis.Y, intBox.getMinY(), intBox.getMinX(), intBox.getMaxX(), intervalX, intBox.getMinZ(), intBox.getMaxZ(), intervalZ);
+                }
+                if (intBox.getMaxY() < radBox.getMaxY()) {
+                    this.renderFace(Axis.Y, intBox.getMaxY(), intBox.getMinX(), intBox.getMaxX(), intervalX, intBox.getMinZ(), intBox.getMaxZ(), intervalZ);
+                }
+                if (intBox.getMinZ() > radBox.getMinZ()) {
+                    this.renderFace(Axis.Z, intBox.getMinZ(), intBox.getMinX(), intBox.getMaxX(), intervalX, intBox.getMinY(), intBox.getMaxY(), intervalY);
+                }
+                if (intBox.getMaxZ() < radBox.getMaxZ()) {
+                    this.renderFace(Axis.Z, intBox.getMaxZ(), intBox.getMinX(), intBox.getMaxX(), intervalX, intBox.getMinY(), intBox.getMaxY(), intervalY);
                 }
             }
         };
@@ -479,7 +527,7 @@ public class Region implements Comparable<Region> {
         private final BukkitRunnable canceller = new BukkitRunnable() {
             @Override
             public void run() {
-                displayer.cancel();
+                BoundaryDisplayer.this.displayer.cancel();
             }
         };
 

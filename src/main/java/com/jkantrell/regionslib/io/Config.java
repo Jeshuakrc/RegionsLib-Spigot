@@ -62,11 +62,14 @@ public class Config extends AbstractYamlConfig {
     @ConfigField(path = "breakable_redstone_blocks")
     public List<Material> breakableRedstoneBlocks = List.of(Material.REDSTONE_WIRE);
 
-    @ConfigField(path = "border_particle.resolution")
+    @ConfigField(path = "border_display.particle.resolution")
     public int regionBorderResolution = 1;
 
-    @ConfigField(path = "border_particle")
+    @ConfigField(path = "border_display.particle")
     public ParticleData regionBorderParticle = new ParticleData(Particle.NAUTILUS, 1, new int[] {0,0,0});
+
+    @ConfigField(path = "border_display.show_radius")
+    public int regionBorderShowRadius = 15;
 
     @ConfigField(path = "player_sampling_rate")
     public int playerSamplingRate = 10;
