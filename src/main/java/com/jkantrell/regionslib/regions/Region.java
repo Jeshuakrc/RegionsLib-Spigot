@@ -60,12 +60,12 @@ public class Region implements Comparable<Region> {
     private boolean isDestroyed_ = false;
     private RegionDataContainer dataContainer_ = new RegionDataContainer();
     private BoundingBox boundingBox_;
-    private BoundaryDisplayer boundaryDisplayer_ = null;
     private Hierarchy hierarchy_;
     private final List<Rule> rules_ = new ArrayList<>();
     private final Config.ParticleData boundaryParticle_ = RegionsLib.CONFIG.regionBorderParticle;
     private final Region self_ = this;
     private final LinkedList<Player> insidePlayers_ = new LinkedList<>();
+    private final HashMap<Player, BoundaryDisplayer> boundaryDisplayers_ = new HashMap<>();
 
     //CONSTRUCTORS
     public Region(BoundingBox initialBox, World world, String name, Hierarchy hierarchy, @Nullable Entity creator) {
@@ -316,7 +316,7 @@ public class Region implements Comparable<Region> {
         RegionsLib.getMain().getServer().getPluginManager().callEvent(event);
         if (event.isCancelled()) { return; }
 
-        if(boundaryDisplayer_ != null && !boundaryDisplayer_.displayer.isCancelled()) { this.boundaryDisplayer_.cancel(); }
+        this.boundaryDisplayers_.values().forEach(BoundaryDisplayer::cancel);
         this.insidePlayers_.clear();
         if (Regions.regions_.remove(this)) {
             Serializer.serializeToFile(Serializer.FILES.REGIONS, Regions.regions_);
@@ -327,10 +327,12 @@ public class Region implements Comparable<Region> {
         this.destroy(null);
     }
     public void displayBoundaries(Player player, int frequency ,long persistence) {
-        if(boundaryDisplayer_ != null) { boundaryDisplayer_.cancel(); }
-
-        boundaryDisplayer_ = new BoundaryDisplayer(this, player);
-        boundaryDisplayer_.displayBoundaries(frequency,persistence);
+        if (this.boundaryDisplayers_.containsKey(player)) {
+            this.boundaryDisplayers_.get(player).cancel();
+        }
+        BoundaryDisplayer displayer = new BoundaryDisplayer(this,player);
+        displayer.displayBoundaries(frequency,persistence);
+        this.boundaryDisplayers_.put(player, displayer);
     }
     public void broadCastToMembers(String message, int maxLevel) {
 
@@ -498,28 +500,28 @@ public class Region implements Comparable<Region> {
                 if (!radBox.overlaps(regBox)) { return; }
                 if (regBox.contains(radBox)) { return; }
 
-                BoundingBox intBox = radBox.clone().intersection(regBox);
+                regBox.intersection(radBox);
                 double  intervalY = region.getHeight() / Math.floor(region.getHeight()) / 2,
                         intervalX = region.getWidthX() / Math.floor(region.getWidthX()) / 2,
                         intervalZ = region.getWidthZ() / Math.floor(region.getWidthZ()) / 2;
 
-                if (intBox.getMinX() > radBox.getMinX()) {
-                    this.renderFace(Axis.X, intBox.getMinX(), intBox.getMinY(), intBox.getMaxY(), intervalY, intBox.getMinZ(), intBox.getMaxZ(), intervalZ);
+                if (regBox.getMinX() > radBox.getMinX()) {
+                    this.renderFace(Axis.X, regBox.getMinX(), regBox.getMinY(), regBox.getMaxY(), intervalY, regBox.getMinZ(), regBox.getMaxZ(), intervalZ);
                 }
-                if (intBox.getMaxX() < radBox.getMaxX()) {
-                    this.renderFace(Axis.X,intBox.getMaxX(), intBox.getMinY(), intBox.getMaxY(), intervalY, intBox.getMinZ(), intBox.getMaxZ(), intervalZ);
+                if (regBox.getMaxX() < radBox.getMaxX()) {
+                    this.renderFace(Axis.X,regBox.getMaxX(), regBox.getMinY(), regBox.getMaxY(), intervalY, regBox.getMinZ(), regBox.getMaxZ(), intervalZ);
                 }
-                if (intBox.getMinY() > radBox.getMinY()) {
-                    this.renderFace(Axis.Y, intBox.getMinY(), intBox.getMinX(), intBox.getMaxX(), intervalX, intBox.getMinZ(), intBox.getMaxZ(), intervalZ);
+                if (regBox.getMinY() > radBox.getMinY()) {
+                    this.renderFace(Axis.Y, regBox.getMinY(), regBox.getMinX(), regBox.getMaxX(), intervalX, regBox.getMinZ(), regBox.getMaxZ(), intervalZ);
                 }
-                if (intBox.getMaxY() < radBox.getMaxY()) {
-                    this.renderFace(Axis.Y, intBox.getMaxY(), intBox.getMinX(), intBox.getMaxX(), intervalX, intBox.getMinZ(), intBox.getMaxZ(), intervalZ);
+                if (regBox.getMaxY() < radBox.getMaxY()) {
+                    this.renderFace(Axis.Y, regBox.getMaxY(), regBox.getMinX(), regBox.getMaxX(), intervalX, regBox.getMinZ(), regBox.getMaxZ(), intervalZ);
                 }
-                if (intBox.getMinZ() > radBox.getMinZ()) {
-                    this.renderFace(Axis.Z, intBox.getMinZ(), intBox.getMinX(), intBox.getMaxX(), intervalX, intBox.getMinY(), intBox.getMaxY(), intervalY);
+                if (regBox.getMinZ() > radBox.getMinZ()) {
+                    this.renderFace(Axis.Z, regBox.getMinZ(), regBox.getMinX(), regBox.getMaxX(), intervalX, regBox.getMinY(), regBox.getMaxY(), intervalY);
                 }
-                if (intBox.getMaxZ() < radBox.getMaxZ()) {
-                    this.renderFace(Axis.Z, intBox.getMaxZ(), intBox.getMinX(), intBox.getMaxX(), intervalX, intBox.getMinY(), intBox.getMaxY(), intervalY);
+                if (regBox.getMaxZ() < radBox.getMaxZ()) {
+                    this.renderFace(Axis.Z, regBox.getMaxZ(), regBox.getMinX(), regBox.getMaxX(), intervalX, regBox.getMinY(), regBox.getMaxY(), intervalY);
                 }
             }
         };
@@ -527,21 +529,23 @@ public class Region implements Comparable<Region> {
         private final BukkitRunnable canceller = new BukkitRunnable() {
             @Override
             public void run() {
-                BoundaryDisplayer.this.displayer.cancel();
+                BukkitRunnable toCancel = BoundaryDisplayer.this.displayer;
+                if (!toCancel.isCancelled()) { toCancel.cancel(); }
+                BoundaryDisplayer.this.region_.boundaryDisplayers_.remove(BoundaryDisplayer.this.player_);
             }
         };
 
         //METHODS
         protected void displayBoundaries(int frequency, long persistence) {
             displayer.runTaskTimerAsynchronously(RegionsLib.getMain(), 0, frequency);
-            canceller.runTaskLater(RegionsLib.getMain(), persistence);
+            canceller.runTaskLaterAsynchronously(RegionsLib.getMain(), persistence);
             ran = true;
         }
 
         protected void cancel() {
             if (!ran) { return; }
 
-            if (!displayer.isCancelled()) { displayer.cancel(); }
+            this.canceller.run();
             try {
                 if (!canceller.isCancelled()) { canceller.cancel(); }
             } catch (IllegalStateException ignored) {}
