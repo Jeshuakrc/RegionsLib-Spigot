@@ -124,6 +124,7 @@ public class Region implements Comparable<Region> {
     }
     public void enable() {
         this.enabled_ = true;
+        this.setInsidePlayers_(this.getWorld().getPlayers().stream().filter(p -> this.contains(p.getLocation())).toList());
     }
     public void disable() {
         this.enabled_ = false;
@@ -340,6 +341,9 @@ public class Region implements Comparable<Region> {
         BoundaryDisplayer displayer = new BoundaryDisplayer(this,player);
         displayer.displayBoundaries(persistence);
         this.boundaryDisplayers_.put(player, displayer);
+    }
+    public void displayBoundaries(Collection<Player> players, long persistence) {
+        players.forEach(p -> this.displayBoundaries(p, persistence));
     }
     public void stopDisplayBoundaries(Player player) {
         BoundaryDisplayer displayer = this.boundaryDisplayers_.get(player);
