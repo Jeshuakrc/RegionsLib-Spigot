@@ -62,7 +62,7 @@ public class RegionCommand extends CommandHolder {
 
     @Command(label = "resize")
     @Requires(permission = "regions.resize")
-    public boolean resize(CommandSender sender, Region region, Location corner1, Location corner2) {
+    public boolean resize(CommandSender sender, Region region, @ExcludeWorld Location corner1, @ExcludeWorld Location corner2) {
         region.resize(corner1.getX(), corner1.getY(), corner1.getZ(), corner2.getX(), corner2.getY(), corner2.getZ());
         sender.sendMessage(region.getName() + " has been resized. New dimensions: [" + region.getWidthX() + " x " + region.getHeight() + " x " + region.getWidthZ() + "].");
         return true;
