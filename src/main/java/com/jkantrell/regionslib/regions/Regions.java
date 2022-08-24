@@ -38,23 +38,17 @@ public final class Regions {
     public static Region[] getAt(Location location, Predicate<Region> condition){
         return getAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()),condition);
     }
+    public static Region[] getIn(World world, Predicate<Region> condition) {
+        return Regions.getAllIn(world, r -> r.isEnabled() && condition.test(r));
+    }
     public static Region[] getAt(double x, double y, double z, World world) {
         return getAt(x, y, z, world, r -> true);
     }
     public static Region[] getAt(Location location) {
         return getAt(location, r -> true);
     }
-    public static Region[] getAllAt(double x, double y, double z, World world) {
-        return getAllAt(x,y,z,world, r -> true);
-    }
-    public static Region[] getAllAt(Location location) {
-        return getAllAt(location, r -> true);
-    }
-    public static Region[] getAllAt(double x, double y, double z, World world, Predicate<Region> condition) {
-        return getAll(r -> r.contains(x,y,z,world) && condition.test(r));
-    }
-    public static Region[] getAllAt(Location location, Predicate<Region> condition) {
-        return getAllAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()),condition);
+    public static Region[] getIn(World world) {
+        return Regions.getIn(world, r -> true);
     }
     public static Region[] getIn(BoundingBox boundingBox, World world, Predicate<Region> condition) {
         return getAllIn(boundingBox, world, r -> r.isEnabled() && condition.test(r));
@@ -67,6 +61,24 @@ public final class Regions {
     }
     public static Region[] getIn(BoundingBox boundingBox, World world) {
         return getIn(boundingBox, world, r -> true);
+    }
+    public static Region[] getAllAt(double x, double y, double z, World world) {
+        return getAllAt(x,y,z,world, r -> true);
+    }
+    public static Region[] getAllAt(Location location) {
+        return getAllAt(location, r -> true);
+    }
+    public static Region[] getAllIn(World world) {
+        return Regions.getAllIn(world, r -> true);
+    }
+    public static Region[] getAllAt(double x, double y, double z, World world, Predicate<Region> condition) {
+        return getAll(r -> r.contains(x,y,z,world) && condition.test(r));
+    }
+    public static Region[] getAllAt(Location location, Predicate<Region> condition) {
+        return getAllAt(location.getX(),location.getY(),location.getZ(), Objects.requireNonNull(location.getWorld()),condition);
+    }
+    public static Region[] getAllIn(World world, Predicate<Region> condition) {
+        return Regions.getAll(r -> r.getWorld().equals(world) && condition.test(r));
     }
     public static Region[] getAllIn(BoundingBox boundingBox, World world, Predicate<Region> condition) {
         return getAll(r -> r.getBoundingBox().overlaps(boundingBox) && r.getWorld().equals(world) && condition.test(r));
