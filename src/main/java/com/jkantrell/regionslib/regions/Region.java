@@ -326,12 +326,12 @@ public class Region implements Comparable<Region> {
     public void destroy() {
         this.destroy(null);
     }
-    public void displayBoundaries(Player player, int frequency ,long persistence) {
+    public void displayBoundaries(Player player, long persistence) {
         if (this.boundaryDisplayers_.containsKey(player)) {
             this.boundaryDisplayers_.get(player).cancel();
         }
         BoundaryDisplayer displayer = new BoundaryDisplayer(this,player);
-        displayer.displayBoundaries(frequency,persistence);
+        displayer.displayBoundaries(persistence);
         this.boundaryDisplayers_.put(player, displayer);
     }
     public void broadCastToMembers(String message, int maxLevel) {
@@ -536,8 +536,8 @@ public class Region implements Comparable<Region> {
         };
 
         //METHODS
-        protected void displayBoundaries(int frequency, long persistence) {
-            displayer.runTaskTimerAsynchronously(RegionsLib.getMain(), 0, frequency);
+        protected void displayBoundaries(long persistence) {
+            displayer.runTaskTimerAsynchronously(RegionsLib.getMain(), 0, RegionsLib.CONFIG.regionsBorderRefreshRate);
             canceller.runTaskLaterAsynchronously(RegionsLib.getMain(), persistence);
             ran = true;
         }

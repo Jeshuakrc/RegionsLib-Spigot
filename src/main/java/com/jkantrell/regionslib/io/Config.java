@@ -71,6 +71,9 @@ public class Config extends AbstractYamlConfig {
     @ConfigField(path = "border_display.show_radius")
     public int regionBorderShowRadius = 15;
 
+    @ConfigField(path = "border_display.particle.refresh_rate")
+    public int regionsBorderRefreshRate = 10;
+
     @ConfigField(path = "player_sampling_rate")
     public int playerSamplingRate = 10;
 }
