@@ -120,7 +120,14 @@ public class Region implements Comparable<Region> {
         name_ = name;
     }
     public void enabled(boolean bool) {
-        enabled_ = bool;
+        if (bool) { this.enable(); } else { this.disable(); }
+    }
+    public void enable() {
+        this.enabled_ = true;
+    }
+    public void disable() {
+        this.enabled_ = false;
+        this.stopDisplayBoundaries();
     }
     public void setDataContainer(RegionDataContainer dataContainer){
         dataContainer_ = dataContainer;
@@ -227,7 +234,7 @@ public class Region implements Comparable<Region> {
         return rule.getValue(dataType);
     }
     public List<Player> getInsidePlayers() {
-        LinkedList<Player> r = new LinkedList<>();
+        ArrayList<Player> r = new ArrayList<>();
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (this.contains(player.getLocation())) {
                 r.add(player);
@@ -316,7 +323,7 @@ public class Region implements Comparable<Region> {
         RegionsLib.getMain().getServer().getPluginManager().callEvent(event);
         if (event.isCancelled()) { return; }
 
-        this.boundaryDisplayers_.values().forEach(BoundaryDisplayer::cancel);
+        this.stopDisplayBoundaries();
         this.insidePlayers_.clear();
         if (Regions.regions_.remove(this)) {
             Serializer.serializeToFile(Serializer.FILES.REGIONS, Regions.regions_);
@@ -333,6 +340,17 @@ public class Region implements Comparable<Region> {
         BoundaryDisplayer displayer = new BoundaryDisplayer(this,player);
         displayer.displayBoundaries(persistence);
         this.boundaryDisplayers_.put(player, displayer);
+    }
+    public void stopDisplayBoundaries(Player player) {
+        BoundaryDisplayer displayer = this.boundaryDisplayers_.get(player);
+        if (displayer == null) { return; }
+        displayer.cancel();
+    }
+    public void stopDisplayBoundaries() {
+        Iterator<BoundaryDisplayer> i = this.boundaryDisplayers_.values().iterator();
+        while (i.hasNext()) {
+            i.next().cancel();
+        }
     }
     public void broadCastToMembers(String message, int maxLevel) {
 
@@ -551,7 +569,6 @@ public class Region implements Comparable<Region> {
             } catch (IllegalStateException ignored) {}
         }
     }
-
     public static class JSerializer implements JsonSerializer<Region> {
 
         @Override
