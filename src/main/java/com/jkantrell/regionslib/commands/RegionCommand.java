@@ -9,15 +9,20 @@ import com.jkantrell.commander.exception.CommandUnrunnableException;
 import com.jkantrell.regionslib.commands.commanderProviders.annotations.RuleValue;
 import com.jkantrell.regionslib.regions.Hierarchy;
 import com.jkantrell.regionslib.regions.Region;
+import com.jkantrell.regionslib.regions.Regions;
 import com.jkantrell.regionslib.regions.rules.Rule;
 import com.jkantrell.regionslib.regions.rules.RuleKey;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.block.BlockFace;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.util.Vector;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
 
 @Command(label = "region")
 @Requires(permission = "regions.mod.local")
@@ -54,6 +59,22 @@ public class RegionCommand extends CommandHolder {
     public boolean destroy(CommandSender sender, Region region) {
         region.destroy((sender instanceof Entity) ? (Entity) sender : null);
         sender.sendMessage(region.getName() + " was successfully deleted.");
+        return true;
+    }
+
+    @Command(label = "resize")
+    @Requires(permission = "region.resize")
+    public boolean resize(CommandSender sender, Region region, Location corner1, Location corner2) {
+        region.resize(corner1.getX(), corner1.getY(), corner1.getZ(), corner2.getX(), corner2.getY(), corner2.getZ());
+        sender.sendMessage(region.getName() + " has been resized. New dimensions: [" + region.getWidthX() + " x " + region.getHeight() + " x " + region.getWidthZ() + "].");
+        return true;
+    }
+
+    @Command(label = "expand")
+    @Requires(permission = "region.resize")
+    public boolean expand(CommandSender sender, Region region, BlockFace direction, Double howMuch) {
+        region.expand(direction, howMuch);
+        sender.sendMessage(region.getName() + " has been resized. New dimensions: [" + region.getWidthX() + " x " + region.getHeight() + " x " + region.getWidthZ() + "].");
         return true;
     }
 
@@ -106,7 +127,7 @@ public class RegionCommand extends CommandHolder {
         return true;
     }
 
-    @Command( label = "player kick")
+    @Command(label = "player kick")
     @Requires(permission = "regions.mod.local")
     public boolean playerKick(CommandSender sender, Region region, Player player) {
         boolean r = region.removePermissions(player);
@@ -118,7 +139,7 @@ public class RegionCommand extends CommandHolder {
         return r;
     }
 
-    @Command( label = "setrule" )
+    @Command(label = "setrule")
     @Requires(permission = "regions.mod.local")
     public boolean setRule(CommandSender sender, Region region, RuleKey ruleKey, @RuleValue Object value) throws CommandUnrunnableException {
         if (!ruleKey.testPermission(sender)) {
@@ -143,7 +164,7 @@ public class RegionCommand extends CommandHolder {
         return true;
     }
 
-    @Command( label = "setrule default" )
+    @Command(label = "setrule default")
     @Requires(permission = "regions.mod.local")
     public boolean setRuleDefault(CommandSender sender, Region region, RuleKey ruleKey) {
         boolean removed = region.removeRule(ruleKey.getLabel());
@@ -155,5 +176,19 @@ public class RegionCommand extends CommandHolder {
         return removed;
     }
 
+    @Command(label = "showlimit")
+    @Requires(permission = "region.command.showlimit")
+    public boolean showLimit(@Sender Player player, Region region, Long persistence) {
+        region.displayBoundaries(player, persistence);
+        player.sendMessage("Displaying " + region.getName() + " boundaries.");
+        return true;
+    }
+
+    @Command(label = "showlimits")
+    @Requires(permission = "region.command.showlimit")
+    public boolean showLimits(@Sender Player player, Long persistence) {
+        Arrays.stream(Regions.getIn(player.getWorld())).forEach(r -> this.showLimit(player, r, persistence));
+        return true;
+    }
 
 }
