@@ -53,8 +53,8 @@ public class Hierarchy {
     public String getName() {
         return name_;
     }
-    public Hierarchy.Groups getGroups() {
-        return groups_;
+    public List<Hierarchy.Group> getGroups() {
+        return this.groups_.stream().sorted().toList();
     }
     public Hierarchy.Group getGroup(int level) {
         Group g = null;
@@ -139,6 +139,9 @@ public class Hierarchy {
         if (!group.getHierarchy().equals(this)) { return false; }
         return checkAbility(ability,group.getLevel());
     }
+    public void addGroup(String name, int level, List<String> abilities) {
+        this.groups_.add(name,level,abilities);
+    }
 
     //CLASSES
     public class Group implements Comparable<Group> {
@@ -194,7 +197,7 @@ public class Hierarchy {
             return this.allowedTo(ability.getName());
         }
     }
-    public class Groups extends ArrayList<Group> {
+    private class Groups extends ArrayList<Group> {
 
         //FIELDS
         private final Hierarchy hierarchy_;
@@ -248,7 +251,7 @@ public class Hierarchy {
                     ability = StringUtils.normalizeSpace(element1.getAsString().toLowerCase());
                     abilities.add(ability);
                 }
-                hierarchy.getGroups().add(
+                hierarchy.addGroup(
                         jsonGroup.get("name").getAsString(),
                         jsonGroup.get("level").getAsInt(),
                         abilities
