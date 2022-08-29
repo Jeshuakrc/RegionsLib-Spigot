@@ -223,8 +223,8 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
 
     //EVENT_HANDLING METHODS
     public void invalidateTargets(E event) {
-        for (Ability<?> ability : invalidates_) {
-            ability.invalidate(playerGetter.apply(event));
+        for (Ability<?> ability : this.invalidates_) {
+            ability.invalidate(this.playerGetter.apply(event));
         }
     }
     public boolean isValid(E event) {

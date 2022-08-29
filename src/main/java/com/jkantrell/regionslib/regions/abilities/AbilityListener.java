@@ -1,13 +1,16 @@
 package com.jkantrell.regionslib.regions.abilities;
 
 import com.jkantrell.regionslib.RegionsLib;
+import com.jkantrell.regionslib.regions.Region;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
 
 
 class AbilityListener<E extends Event> {
@@ -45,34 +48,35 @@ class AbilityListener<E extends Event> {
     }
 
     private void onEvent(E e) {
+        //Validating all registered abilities
+        LinkedList<Ability<E>> abilities = new LinkedList<>(this.abilities_.prioritize());
+        LinkedList<Ability<?>> toRemove = new LinkedList<>();
+        abilities.removeIf(a -> {
+            boolean r = toRemove.contains(a) || !a.isValid(e);
+            if (r) { toRemove.addAll(a.getSubAbilities().toList()); }
+            return r;
+        });
 
-        boolean allowed = false;
-        List<Ability<E>> validAbilities = this.abilities_.prioritize();
-        List<Ability<?>> toRemove = new ArrayList<>();
-        Iterator<Ability<E>> iterator = validAbilities.iterator();
-        StringBuilder log = new StringBuilder();
+        //Return if there's no valid abilities
+        if (abilities.isEmpty()) { return; }
 
-        while (iterator.hasNext()) {
-            Ability<E> ability = iterator.next();
-            if (toRemove.contains(ability) || !ability.isValid(e)) {
-                iterator.remove();
-                AbilityList<E> subAbilities = ability.getSubAbilities();
-                toRemove.addAll(subAbilities.toList());
-            }
+        //Firing the priority top most ability
+        Ability<E> definitive = abilities.getLast();
+        boolean allowed = definitive.fire(e);
+        if (allowed) { definitive.invalidateTargets(e); }
+
+        //Logging
+        Player player = definitive.playerGetter.apply(e);
+        this.log_(player.getName() + " fired the '" + definitive.getName() + "' ability. " + (allowed ? "A" : "Not A") + "llowed.",Level.FINER);
+        if (abilities.size() > 2) { return; }
+        this.log_("   Anility stack:", Level.FINEST);
+        for (int i = 0; i < (abilities.size() - 1); i++) {
+            this.log_("     - " + abilities.get(i).getName(), Level.FINEST);
         }
-        if (!validAbilities.isEmpty()) {
-            Player player = validAbilities.get(0).playerGetter.apply(e);
-            log.append(player.getName()).append(" has fired abilities:\n");
-            for (Ability<E> ability : validAbilities) {
-                allowed = ability.fire(e);
-                ability.invalidateTargets(e);
-                log.append("     ").append(ability.getName()).append(" - ").append(allowed ? "A" : "Not a").append("llowed").append("\n");
-            }
-            log.append("     ").append(allowed ? "Keeping" : "Cancelling").append(" event ").append(e.getClass().getSimpleName());
+        this.log_("     >> " + definitive.getName(), Level.FINEST);
+    }
 
-            for (String s : StringUtils.split(log.toString(),'\n')) {
-                RegionsLib.getMain().getLogger().finest(s);
-            }
-        }
+    private void log_(String log, Level level) {
+        RegionsLib.getMain().getLogger().log(level, log);
     }
 }
