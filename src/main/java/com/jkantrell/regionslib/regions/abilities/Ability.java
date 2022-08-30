@@ -245,7 +245,7 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
         }
     }
     public boolean fire(E trigger) {
-        if (!(trigger instanceof Cancellable)) { throw new ClassCastException("The event must be cancellable"); }
+        if (!(trigger instanceof Cancellable cancellable)) { throw new ClassCastException("The event must be cancellable"); }
 
         Player player = this.playerGetter.apply(trigger);
         Location location = this.locationGetter.apply(trigger);
@@ -257,6 +257,7 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
         boolean[] results = new boolean[regions.length];
 
         int i = 0;
+        cancellable.setCancelled(false);
         for (Region region : regions) {
             AbilityTriggeredEvent event = new AbilityTriggeredEvent(
                     this,
@@ -272,7 +273,7 @@ public class Ability<E extends Event> implements Comparable<Ability<E>> {
         }
 
         boolean r = Ability.overlappingPermissionCheck_(results);
-        ((Cancellable) trigger).setCancelled(!r);
+        if (!cancellable.isCancelled()) { cancellable.setCancelled(!r); }
         return r;
     }
 
