@@ -18,20 +18,22 @@ public abstract class Serializer {
     //NEW IMPLEMENTATION
     public static final Gson GSON;
     static {
-        GsonBuilder builder = new GsonBuilder();
-        builder.setPrettyPrinting();
-        builder.registerTypeAdapter(Hierarchy.class, new Hierarchy.JDeserializer());
-        builder.registerTypeAdapter(Rule.class, new Rule.JSerializer());
-        builder.registerTypeAdapter(Rule.class, new Rule.JDeserializer());
-        builder.registerTypeAdapter(Region.class, new Region.JSerializer());
-        builder.registerTypeAdapter(Region.class, new Region.JDeserializer());
-        builder.registerTypeAdapter(Permission.class, new Permission.JSerializer());
-        builder.registerTypeAdapter(RegionData.class, new RegionData.JSerializer());
-        builder.registerTypeAdapter(RegionData.class, new RegionData.JDeserializer());
-        builder.registerTypeAdapter(RegionDataContainer.class, new RegionDataContainer.JSerializer());
-        builder.registerTypeAdapter(RegionDataContainer.class, new RegionDataContainer.JDeserializer());
+        GSON = new GsonBuilder()
+                .setPrettyPrinting()
+                .disableHtmlEscaping()
 
-        GSON = builder.create();
+                .registerTypeAdapter(Hierarchy.class, new Hierarchy.JDeserializer())
+                .registerTypeAdapter(Rule.class, new Rule.JSerializer())
+                .registerTypeAdapter(Rule.class, new Rule.JDeserializer())
+                .registerTypeAdapter(Region.class, new Region.JSerializer())
+                .registerTypeAdapter(Region.class, new Region.JDeserializer())
+                .registerTypeAdapter(Permission.class, new Permission.JSerializer())
+                .registerTypeAdapter(RegionData.class, new RegionData.JSerializer())
+                .registerTypeAdapter(RegionData.class, new RegionData.JDeserializer())
+                .registerTypeAdapter(RegionDataContainer.class, new RegionDataContainer.JSerializer())
+                .registerTypeAdapter(RegionDataContainer.class, new RegionDataContainer.JDeserializer())
+
+                .create();
     }
 
     public static class FILES {
