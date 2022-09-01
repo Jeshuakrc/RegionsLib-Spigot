@@ -144,7 +144,7 @@ public class Hierarchy {
     }
 
     //CLASSES
-    public class Group implements Comparable<Group> {
+    public static class Group implements Comparable<Group> {
 
         //FIELDS
         private int level_;
