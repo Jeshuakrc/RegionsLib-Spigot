@@ -5,6 +5,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Type;
+import java.util.Optional;
 
 public class Permission {
 
@@ -27,8 +28,8 @@ public class Permission {
     public String getPlayerName() {
         return this.playerName_;
     }
-    public Player getPlayer(){
-        return Bukkit.getPlayer(this.playerName_);
+    public Optional<Player> getPlayer(){
+        return Optional.ofNullable(Bukkit.getPlayer(this.playerName_));
     }
 
     //PUBLIC CLASSES

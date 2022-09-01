@@ -25,7 +25,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Predicate;
 
 public class Region implements Comparable<Region> {
@@ -258,7 +257,8 @@ public class Region implements Comparable<Region> {
     public Player[] getOnlineMembers(Predicate<Player> condition) {
         return this.permissions_.stream()
                 .map(Permission::getPlayer)
-                .filter(Objects::nonNull)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .filter(condition)
                 .toArray(Player[]::new);
     }
