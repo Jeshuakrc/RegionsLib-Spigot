@@ -559,7 +559,7 @@ public class Region implements Comparable<Region> {
 
         //METHODS
         protected void displayBoundaries(long persistence) {
-            displayer.runTaskTimerAsynchronously(RegionsLib.getMain(), 0, RegionsLib.CONFIG.regionsBorderRefreshRate);
+            displayer.runTaskTimerAsynchronously(RegionsLib.getMain(), 0, RegionsLib.CONFIG.regionBorderRefreshRate);
             canceller.runTaskLaterAsynchronously(RegionsLib.getMain(), persistence);
             ran = true;
         }
