@@ -3,8 +3,6 @@ package com.jkantrell.regionslib.regions.rules;
 import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
 import java.lang.reflect.Type;
-import java.util.*;
-import java.util.logging.Logger;
 
 public class Rule {
 

@@ -3,7 +3,6 @@ package com.jkantrell.regionslib.events;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.block.BlockEvent;
 

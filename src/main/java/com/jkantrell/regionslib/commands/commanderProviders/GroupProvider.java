@@ -4,7 +4,6 @@ import com.jkantrell.commander.command.Argument;
 import com.jkantrell.commander.command.provider.CommandProvider;
 import com.jkantrell.commander.exception.CommandArgumentException;
 import com.jkantrell.commander.exception.CommandException;
-import com.jkantrell.regionslib.RegionsLib;
 import com.jkantrell.regionslib.regions.Hierarchy;
 import java.util.List;
 

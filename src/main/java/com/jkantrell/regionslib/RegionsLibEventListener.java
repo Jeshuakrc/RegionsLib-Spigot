@@ -1,7 +1,6 @@
 package com.jkantrell.regionslib;
 
 import com.jkantrell.regionslib.events.*;
-import com.jkantrell.regionslib.regions.Region;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -15,7 +14,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 

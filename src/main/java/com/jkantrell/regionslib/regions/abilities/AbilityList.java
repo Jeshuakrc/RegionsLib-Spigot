@@ -2,7 +2,6 @@ package com.jkantrell.regionslib.regions.abilities;
 
 import org.bukkit.event.Event;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Predicate;
 
