@@ -58,7 +58,7 @@
 
     <repositories>
         <repository>
-            <id>spigotmc-repo</id>
+            <id>spigot-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
         <repository>
@@ -71,7 +71,7 @@
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-API</artifactId>
-            <version>1.19-R0.1-SNAPSHOT</version>
+            <version>1.21.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -80,14 +80,14 @@
             <version>2.9.0</version>
         </dependency>
         <dependency>
-            <groupId>com.jkantrell</groupId>
+            <groupId>com.github.Jeshuakrc</groupId>
             <artifactId>Yamlizer</artifactId>
             <version>main-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.jkantrell</groupId>
-            <artifactId>CommanderSpigot</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <groupId>com.github.Jeshuakrc</groupId>
+            <artifactId>Commander-Spigot</artifactId>
+            <version>dev-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
