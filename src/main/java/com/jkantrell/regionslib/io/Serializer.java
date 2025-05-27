@@ -2,12 +2,12 @@ package com.jkantrell.regionslib.io;
 
 import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
-import com.jkantrell.regionslib.regions.Hierarchy;
-import com.jkantrell.regionslib.regions.Permission;
-import com.jkantrell.regionslib.regions.Region;
-import com.jkantrell.regionslib.regions.rules.Rule;
-import com.jkantrell.regionslib.regions.dataContainers.RegionData;
-import com.jkantrell.regionslib.regions.dataContainers.RegionDataContainer;
+import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
+import com.jkantrell.regionslib.region.Permission;
+import com.jkantrell.regionslib.region.Region;
+import com.jkantrell.regionslib.region.rule.Rule;
+import com.jkantrell.regionslib.region.dataContainer.RegionData;
+import com.jkantrell.regionslib.region.dataContainer.RegionDataContainer;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -22,7 +22,6 @@ public abstract class Serializer {
                 .setPrettyPrinting()
                 .disableHtmlEscaping()
 
-                .registerTypeAdapter(Hierarchy.class, new Hierarchy.JDeserializer())
                 .registerTypeAdapter(Rule.class, new Rule.JSerializer())
                 .registerTypeAdapter(Rule.class, new Rule.JDeserializer())
                 .registerTypeAdapter(Region.class, new Region.JSerializer())
@@ -83,8 +82,7 @@ public abstract class Serializer {
         file.getParentFile().mkdirs();
 
         if (!array) { return; }
-        try {
-            FileWriter writer = new FileWriter(file);
+        try (FileWriter writer = new FileWriter(file)) {
             writer.write("[]");
             writer.flush();
         } catch (IOException e) {

@@ -1,17 +1,17 @@
 package com.jkantrell.regionslib;
 
 import com.jkantrell.commander.command.Commander;
-import com.jkantrell.regionslib.commands.RegionCommand;
-import com.jkantrell.regionslib.commands.commanderProviders.*;
-import com.jkantrell.regionslib.commands.commanderProviders.annotations.RuleValue;
+import com.jkantrell.regionslib.command.RegionCommand;
+import com.jkantrell.regionslib.command.commanderProvider.*;
+import com.jkantrell.regionslib.command.commanderProvider.annotation.RuleValue;
 import com.jkantrell.regionslib.io.Config;
-import com.jkantrell.regionslib.regions.Hierarchy;
-import com.jkantrell.regionslib.regions.Regions;
-import com.jkantrell.regionslib.regions.abilities.Abilities;
-import com.jkantrell.regionslib.regions.abilities.AbilityHandler;
-import com.jkantrell.regionslib.regions.Region;
-import com.jkantrell.regionslib.regions.rules.RuleDataType;
-import com.jkantrell.regionslib.regions.rules.RuleKey;
+import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
+import com.jkantrell.regionslib.region.Regions;
+import com.jkantrell.regionslib.region.ability.Abilities;
+import com.jkantrell.regionslib.region.ability.AbilityHandler;
+import com.jkantrell.regionslib.region.Region;
+import com.jkantrell.regionslib.region.rule.RuleDataType;
+import com.jkantrell.regionslib.region.rule.RuleKey;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;

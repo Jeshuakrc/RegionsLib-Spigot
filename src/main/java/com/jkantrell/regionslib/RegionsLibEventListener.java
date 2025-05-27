@@ -1,6 +1,6 @@
 package com.jkantrell.regionslib;
 
-import com.jkantrell.regionslib.events.*;
+import com.jkantrell.regionslib.event.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
