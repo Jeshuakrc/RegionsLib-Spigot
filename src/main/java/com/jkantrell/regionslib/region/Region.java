@@ -1,13 +1,11 @@
 package com.jkantrell.regionslib.region;
 
-import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
 import com.jkantrell.regionslib.RegionsLibEventListener;
 import com.jkantrell.regionslib.event.PlayerEnterRegionEvent;
 import com.jkantrell.regionslib.event.PlayerLeaveRegionEvent;
 import com.jkantrell.regionslib.event.RegionCreateEvent;
 import com.jkantrell.regionslib.event.RegionDestroyEvent;
-import com.jkantrell.regionslib.io.Config;
 import com.jkantrell.regionslib.region.ability.Ability;
 import com.jkantrell.regionslib.region.dataContainer.RegionDataContainer;
 import com.jkantrell.regionslib.io.Serializer;
@@ -19,12 +17,10 @@ import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -212,33 +208,28 @@ public class Region implements Comparable<Region> {
     public List<Permission> getPermissions(Player player) {
         return this.permissions_.stream().filter(p -> p.getPlayerName().equals(player.getName())).toList();
     }
-    public Player[] getOnlineMembers(Predicate<Player> condition) {
+    public List<Player> getOnlineMembers(Predicate<Player> condition) {
         return this.permissions_.stream()
                 .map(Permission::getPlayer)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .filter(condition)
-                .toArray(Player[]::new);
+                .toList();
     }
-    public Player[] getOnlineMembers() {
+    public List<Player> getOnlineMembers() {
         return this.getOnlineMembers(p -> true);
     }
-    public Player[] getOnlineMembersMaxGroup(int level) {
+    public List<Player> getOnlineMembersMaxGroup(int level) {
         return this.permissions_.stream()
                 .filter(perm -> perm.getGroup().getLevel() <= level)
                 .map(Permission::getPlayer)
-                .filter(Objects::nonNull)
-                .toArray(Player[]::new);
-    }
-    public Player[] getOnlinePlayersMaxGroup(Hierarchy.Group group) {
-        if (!group.getHierarchy().equals(this.getHierarchy())) {
-            throw new IllegalArgumentException("The provided group must belong the the region's associated hierarchy");
-        }
-        return this.getOnlineMembersMaxGroup(group.getLevel());
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
     }
 
     //PUBLIC METHODS
-    public boolean checkAbility( Player player, Ability<?> ability) {
+    public boolean checkAbility( Player player, Ability ability) {
 
         if(!this.isEnabled()) { return true; }
         Permission perm = null;

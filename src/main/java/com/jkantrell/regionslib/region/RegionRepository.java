@@ -1,5 +1,6 @@
 package com.jkantrell.regionslib.region;
 
+import com.jkantrell.regionslib.util.Area;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -20,6 +21,9 @@ public interface RegionRepository {
     }
     List<Region> getIn(World world);
     List<Region> getIn(double x1, double y1, double z1, double x2, double y2, double z2, World world);
+    default List<Region> getIn(Area area) {
+        return this.getIn(area.getMinX(), area.getMinY(), area.getMinZ(), area.getMaxX(), area.getMaxY(), area.getMaxZ(), area.getWorld());
+    }
     default List<Region> getIn(BoundingBox boundingBox, World world) {
         return this.getIn(boundingBox.getMinX(), boundingBox.getMinY(), boundingBox.getMinZ(), boundingBox.getMaxX(), boundingBox.getMaxY(), boundingBox.getMaxZ(), world);
     }

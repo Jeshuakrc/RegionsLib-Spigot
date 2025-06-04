@@ -6,7 +6,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface AbilityRegistration {
-    int priority() default 0;
+@Target({ ElementType.FIELD, ElementType.METHOD })
+public @interface DeclareAbility {
 }

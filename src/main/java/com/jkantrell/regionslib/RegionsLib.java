@@ -7,10 +7,7 @@ import com.jkantrell.regionslib.command.commanderProvider.annotation.RuleValue;
 import com.jkantrell.regionslib.io.Config;
 import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
 import com.jkantrell.regionslib.region.Regions;
-import com.jkantrell.regionslib.region.ability.Abilities;
-import com.jkantrell.regionslib.region.ability.AbilityHandler;
 import com.jkantrell.regionslib.region.Region;
-import com.jkantrell.regionslib.region.rule.RuleDataType;
 import com.jkantrell.regionslib.region.rule.RuleKey;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
@@ -29,7 +26,6 @@ public final class RegionsLib extends JavaPlugin {
     public static final Config CONFIG = new Config("./plugins/regionsLib/config.yml");
 
     private static JavaPlugin mainInstance_;
-    private static AbilityHandler abilityHandler_ = new AbilityHandler();
     private static final HashMap<UUID, PermissionAttachment> permissions_ = new HashMap<>();
     private static LinkedList<Runnable> postEnableTasks_ = new LinkedList<>();
     private static boolean initialized_ = false;
@@ -62,21 +58,13 @@ public final class RegionsLib extends JavaPlugin {
 
         //Registering the EventListener class
         plugin.getServer().getPluginManager().registerEvents(new RegionsLibEventListener(), RegionsLib.getMain());
-        int sampleRate = RegionsLib.CONFIG.playerSamplingRate;
-        if (sampleRate > 0) { Region.setPlayerSampling(sampleRate); }
 
         //Running post-enabled tasks
         RegionsLib.postEnableTasks_.forEach(Runnable::run);
 
         //Loading all Hierarchies and regions
-        Hierarchy.loadAll();
         if (Regions.loadAll().length < 1) {RegionsLib.getMain().getLogger().info("No regions lo load!"); }
 
-        //Registering rules.
-        RuleKey.registerNew(RegionsLib.getMain(),"localMod", RuleDataType.BOOL).setAccessPermission("regions.mod");
-
-        //Registering built-in abilities if enabled.
-        if (RegionsLib.enableBuildInAbilities) { RegionsLib.getAbilityHandler().registerAll(Abilities.class); }
 
         //Registering permissions
         Permission permission = new Permission("regions.mod.local");
@@ -92,9 +80,6 @@ public final class RegionsLib extends JavaPlugin {
         commander.register(new RegionCommand());
     }
     public static JavaPlugin getMain() { return mainInstance_; }
-    public static AbilityHandler getAbilityHandler() {
-        return RegionsLib.abilityHandler_;
-    }
     public static void addPostEnableTask(Runnable task) {
         if (RegionsLib.isInitialized()) { task.run(); return; }
         RegionsLib.postEnableTasks_.add(task);

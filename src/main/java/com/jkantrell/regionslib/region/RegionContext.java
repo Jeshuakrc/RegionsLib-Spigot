@@ -1,5 +1,8 @@
 package com.jkantrell.regionslib.region;
 
+import com.jkantrell.regionslib.region.ability.Ability;
+import com.jkantrell.regionslib.region.ability.AbilityBuilder;
+import com.jkantrell.regionslib.region.ability.AbilityRegistry;
 import org.bukkit.Chunk;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -14,12 +17,14 @@ public class RegionContext implements RegionRepository {
     //FIELDS
     private final RegionRepository regionRepository_;
     private final Plugin plugin_;
+    private final AbilityRegistry abilityRegistry_;
 
 
     //CONSTRUCTORS
     public RegionContext(Plugin plugin, Function<RegionContext, RegionRepository> repositoryFactory) {
         this.regionRepository_ = repositoryFactory.apply(this);
         this.plugin_ = plugin;
+        this.abilityRegistry_ = new AbilityRegistry(this);
     }
 
 
@@ -38,6 +43,13 @@ public class RegionContext implements RegionRepository {
     public void callEvent(Event event) {
         this.plugin_.getServer().getPluginManager().callEvent(event);
     }
+    public void registerAbility(Ability ability) {
+        this.abilityRegistry_.register(ability);
+    }
+    public <E extends Event> AbilityBuilder<E> registerAbilityOn(Class<E> eventClass) {
+        return this.abilityRegistry_.registerOn(eventClass);
+    }
+
 
     //IMPLEMENTATION
     @Override public List<Region> getAll() {

@@ -66,7 +66,7 @@ public class Hierarchy {
 
 
     //METHODS
-    public boolean checkAbility(Ability<?> ability, int level) {
+    public boolean checkAbility(Ability ability, int level) {
         if (level <= this.getLowestLever()) {
             return true;
         }
@@ -83,10 +83,10 @@ public class Hierarchy {
 
         return true;
     }
-    public boolean checkAbility(Ability<?> ability) {
+    public boolean checkAbility(Ability ability) {
         return this.checkAbility(ability, this.getHighestLevel() + 1);
     }
-    public boolean checkAbility(Ability<?> ability, Hierarchy.Group group) {
+    public boolean checkAbility(Ability ability, Hierarchy.Group group) {
         if (!group.getHierarchy().equals(this)) { return false; }
         return checkAbility(ability, group.getLevel());
     }
@@ -155,7 +155,7 @@ public class Hierarchy {
         public boolean allowedTo(String ability) {
             return this.abilities_.contains(StringUtils.normalizeSpace(ability.toLowerCase()));
         }
-        public boolean allowedTo(Ability<?> ability) {
+        public boolean allowedTo(Ability ability) {
             return this.allowedTo(ability.getName());
         }
     }
