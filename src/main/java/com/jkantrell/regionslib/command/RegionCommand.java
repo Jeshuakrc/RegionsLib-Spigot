@@ -10,8 +10,8 @@ import com.jkantrell.regionslib.command.commanderProvider.annotation.RuleValue;
 import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
 import com.jkantrell.regionslib.region.Region;
 import com.jkantrell.regionslib.region.Regions;
-import com.jkantrell.regionslib.region.rule.Rule;
-import com.jkantrell.regionslib.region.rule.RuleKey;
+import com.jkantrell.regionslib.region.ruleOld.Rule;
+import com.jkantrell.regionslib.region.ruleOld.RuleKey;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
@@ -149,7 +149,7 @@ public class RegionCommand extends CommandHolder {
                 rule = new Rule(ruleKey, value);
                 region.addRule(rule);
             } else {
-                rule = region.getRule(ruleKey.getLabel());
+                rule = region.getRuleValue(ruleKey.getLabel());
                 rule.set(value);
             }
         } catch (IllegalArgumentException e) {

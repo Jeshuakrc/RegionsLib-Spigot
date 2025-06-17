@@ -1,7 +1,7 @@
 package com.jkantrell.regionslib.region;
 
 import com.jkantrell.regionslib.io.Serializer;
-import com.jkantrell.regionslib.region.rule.RuleDataType;
+import com.jkantrell.regionslib.region.ruleOld.RuleDataType;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.util.BoundingBox;

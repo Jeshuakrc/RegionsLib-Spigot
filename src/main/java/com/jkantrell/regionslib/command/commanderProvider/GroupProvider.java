@@ -1,22 +1,29 @@
 package com.jkantrell.regionslib.command.commanderProvider;
 
-import com.jkantrell.commander.command.Argument;
-import com.jkantrell.commander.command.provider.CommandProvider;
-import com.jkantrell.commander.exception.CommandArgumentException;
-import com.jkantrell.commander.exception.CommandException;
+import com.jkantrell.regionslib.region.RegionContext;
 import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
+import com.kntrel.mc.commander.command.Argument;
+import com.kntrel.mc.commander.command.provider.CommandProvider;
+import com.kntrel.mc.commander.exception.CommandArgumentException;
+import com.kntrel.mc.commander.exception.CommandException;
 import java.util.List;
 
 public class GroupProvider extends CommandProvider<Hierarchy.Group> {
 
+    private final RegionContext ctx_;
+
     private Hierarchy.Group group_ = null;
     private RegionProvider regionProvider_ = null;
+
+    public GroupProvider(RegionContext ctx) {
+        this.ctx_ = ctx;
+    }
 
     private List<Hierarchy.Group> getGroups() {
         try {
             return this.regionProvider_.provide().getHierarchy().getGroups();
         } catch (CommandException | NullPointerException e) {
-            return Hierarchy.getAll().stream().map(Hierarchy::getGroups).reduce((a,b) -> { a.addAll(b); return a; }).orElse(null);
+            return this.ctx_.getHierarchyRepository().getAll().stream().map(Hierarchy::getGroups).reduce((a,b) -> { a.addAll(b); return a; }).orElse(null);
         }
     }
 

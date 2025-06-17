@@ -1,5 +1,7 @@
 package com.jkantrell.regionslib.region;
 
+import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
+import com.jkantrell.regionslib.region.hierarchy.HierarchyRepository;
 import com.jkantrell.regionslib.util.Area;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -35,4 +37,5 @@ public interface RegionRepository {
     default void saveAll(Iterable<Region> regions) {
         regions.forEach(this::save);
     }
+    HierarchyRepository getHierarchyRepository();
 }

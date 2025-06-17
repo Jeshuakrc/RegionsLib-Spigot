@@ -11,8 +11,9 @@ import com.jkantrell.regionslib.region.dataContainer.RegionDataContainer;
 import com.jkantrell.regionslib.io.Serializer;
 import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
 import com.jkantrell.regionslib.region.rule.Rule;
-import com.jkantrell.regionslib.region.rule.RuleDataType;
-import com.jkantrell.regionslib.region.rule.RuleKey;
+import com.jkantrell.regionslib.region.rule.RuleValue;
+import com.jkantrell.regionslib.util.valueType.ValueHolder;
+import com.jkantrell.regionslib.util.valueType.ValueType;
 import org.bukkit.*;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -38,7 +39,7 @@ public class Region implements Comparable<Region> {
     private BoundingBox boundingBox_;
     private Hierarchy hierarchy_;
     private final LinkedList<Player> insidePlayers_ = new LinkedList<>();
-    private final Map<String, Rule> rules_ = new HashMap<>();
+    private final Map<String, ValueHolder<?>> rulesValues_ = new HashMap<>();
 
 
     //CONSTRUCTORS
@@ -193,14 +194,20 @@ public class Region implements Comparable<Region> {
     public Hierarchy getHierarchy() {
         return this.hierarchy_;
     }
-    public Collection<Rule> getRules() {
-        return this.rules_.values();
+    public List<ValueHolder<?>> getRuleValues() {
+        return List.copyOf(this.rulesValues_.values());
     }
-    public Optional<Rule> getRule(String name) {
-        return Optional.ofNullable(this.rules_.get(name));
+    public Optional<ValueHolder<?>> getRuleValue(String name) {
+        return Optional.ofNullable(this.rulesValues_.get(name));
     }
-    public <T> Optional<T> getRuleValue(String name, RuleDataType<T> dataType) {
-        return Optional.ofNullable(this.rules_.get(name)).map(r -> r.retrieve(dataType));
+    public <T> Optional<T> getRuleValue(String name, ValueType<T> type) {
+        ValueHolder<?> ruleValue = this.rulesValues_.get(name);
+        if (ruleValue == null) { return Optional.empty(); }
+        if (!ruleValue.getType().equals(type)) { return Optional.empty(); }
+        return Optional.of(type.valueOf(ruleValue.toString()));
+    }
+    public <T> Optional<T> getRuleValue(Rule<T> rule) {
+        return this.getRuleValue(rule.getName(), rule.getValueType());
     }
     public List<Permission> getPermissions() {
         return List.copyOf(this.permissions_);
@@ -278,25 +285,23 @@ public class Region implements Comparable<Region> {
         this.destroy(null);
     }
     public void clearRules() {
-        this.rules_.clear();
+        this.rulesValues_.clear();
     }
     public boolean removeRule(String label) {
-        return this.rules_.remove(label) != null;
+        return this.rulesValues_.remove(label) != null;
     }
-    public void addRule(Rule rule) {
-        this.rules_.put(rule.key(), rule);
+    public void addRule(RuleValue<?> ruleValue) {
+        this.rulesValues_.put(ruleValue.getRule().getName(), ruleValue);
     }
-    public <T> void addRule(String name, RuleDataType<T> dataType, T value) {
-        this.rules_.put(name, new Rule(name, dataType.serialize(value)));
+    public <T> void addRule(String name, T value) {
+        this.rulesValues_.put(name, ValueHolder.of(value));
     }
-    public void addRule(String name, String value) {
-        this.addRule(name, RuleDataType.STRING, value);
-    }
-    public boolean hasRule(RuleKey<?> key) {
-        return this.rules_.containsKey(key.getKey());
+    public boolean hasRule(Rule<?> rule) {
+        ValueHolder<?> valueHolder = this.rulesValues_.get(rule.getName());
+        return rule.getValueType().equals(valueHolder.getType());
     }
     public boolean hasRule(String name) {
-        return this.rules_.containsKey(name);
+        return this.rulesValues_.containsKey(name);
     }
     public void clearPermissions() {
         this.permissions_.clear();

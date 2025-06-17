@@ -4,11 +4,15 @@ import com.jkantrell.commander.command.Argument;
 import com.jkantrell.commander.command.provider.CommandProvider;
 import com.jkantrell.commander.exception.CommandArgumentException;
 import com.jkantrell.commander.exception.CommandException;
-import com.jkantrell.regionslib.region.rule.RuleKey;
+import com.jkantrell.regionslib.region.RegionContext;
+import com.jkantrell.regionslib.region.ruleOld.RuleKey;
 
 import java.util.List;
 
 public class RuleKeyProvider extends CommandProvider<RuleKey> {
+
+    private final RegionContext ctx_;
+    private final
 
     private RuleKey key_;
 

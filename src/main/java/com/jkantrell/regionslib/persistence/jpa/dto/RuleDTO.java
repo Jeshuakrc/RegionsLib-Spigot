@@ -1,7 +1,7 @@
 package com.jkantrell.regionslib.persistence.jpa.dto;
 
 import com.jkantrell.regionslib.persistence.jpa.mapper.JpaEntity;
-import com.jkantrell.regionslib.region.rule.Rule;
+import com.jkantrell.regionslib.region.ruleOld.Rule;
 import jakarta.persistence.*;
 
 @Entity

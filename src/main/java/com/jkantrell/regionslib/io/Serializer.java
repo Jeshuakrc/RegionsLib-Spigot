@@ -2,10 +2,9 @@ package com.jkantrell.regionslib.io;
 
 import com.google.gson.*;
 import com.jkantrell.regionslib.RegionsLib;
-import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
 import com.jkantrell.regionslib.region.Permission;
 import com.jkantrell.regionslib.region.Region;
-import com.jkantrell.regionslib.region.rule.Rule;
+import com.jkantrell.regionslib.region.ruleOld.Rule;
 import com.jkantrell.regionslib.region.dataContainer.RegionData;
 import com.jkantrell.regionslib.region.dataContainer.RegionDataContainer;
 

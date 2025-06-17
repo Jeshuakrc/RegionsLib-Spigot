@@ -4,6 +4,7 @@ import com.jkantrell.regionslib.RegionsLib;
 import com.jkantrell.regionslib.event.BlockRightClickedEvent;
 import com.jkantrell.regionslib.event.CopperBlockInteractEvent;
 import com.jkantrell.regionslib.event.LiquidRemoveEvent;
+import com.jkantrell.regionslib.region.react.EnumBuilder;
 import com.jkantrell.regionslib.util.Area;
 import org.bukkit.Material;
 import org.bukkit.entity.*;
@@ -43,23 +44,23 @@ public final class Abilities {
             PlayerTeleportEvent.TeleportCause.COMMAND, PlayerTeleportEvent.TeleportCause.END_PORTAL, PlayerTeleportEvent.TeleportCause.END_GATEWAY,
             PlayerTeleportEvent.TeleportCause.NETHER_PORTAL, PlayerTeleportEvent.TeleportCause.PLUGIN
     );
-    private static final AbilityBuilder.EnumBuilder<BlockRightClickedEvent, Material> RIGHT_CLICKED_WITH_ITEM = Ability.on(BlockRightClickedEvent.class)
+    private static final EnumBuilder<BlockRightClickedEvent, Material, Ability> RIGHT_CLICKED_WITH_ITEM = Ability.on(BlockRightClickedEvent.class)
             .by(BlockRightClickedEvent::getPlayer)
             .in(e -> Area.ofBlock(e.getBlock().getRelative(e.getBlockFace())))
             .withEnum(e -> e.getItem().getType());
-    private static final AbilityBuilder.EnumBuilder<BlockRightClickedEvent, Material> RIGHT_CLICKED_BLOCK = Ability.on(BlockRightClickedEvent.class)
+    private static final EnumBuilder<BlockRightClickedEvent, Material, Ability> RIGHT_CLICKED_BLOCK = Ability.on(BlockRightClickedEvent.class)
             .by(BlockRightClickedEvent::getPlayer)
             .in(e -> Area.ofBlock(e.getBlock()))
             .withEnum(e -> e.getBlock().getType());
-    private static final AbilityBuilder.EnumBuilder<LiquidRemoveEvent, LiquidRemoveEvent.Type> REMOVED_LIQUID = Ability.on(LiquidRemoveEvent.class)
+    private static final EnumBuilder<LiquidRemoveEvent, LiquidRemoveEvent.Type, Ability> REMOVED_LIQUID = Ability.on(LiquidRemoveEvent.class)
             .by(LiquidRemoveEvent::getPlayer)
             .at(e -> e.getBlock().getLocation().add(.5,.5,.5))
             .withEnum(LiquidRemoveEvent::getType);
-    private static final AbilityBuilder.EnumBuilder<HangingBreakByEntityEvent, EntityType> HANGING_BREAK = Ability.on(HangingBreakByEntityEvent.class)
+    private static final EnumBuilder<HangingBreakByEntityEvent, EntityType, Ability> HANGING_BREAK = Ability.on(HangingBreakByEntityEvent.class)
             .by(e -> DAMAGER_PLAYER_GETTER.apply(e.getRemover()))
             .at(e -> e.getEntity().getLocation())
             .withEnum(e -> e.getEntity().getType());
-    private static final AbilityBuilder.EnumBuilder<EntityDamageByEntityEvent, EntityType> ENTITY_DAMAGED = Ability.on(EntityDamageByEntityEvent.class)
+    private static final EnumBuilder<EntityDamageByEntityEvent, EntityType, Ability> ENTITY_DAMAGED = Ability.on(EntityDamageByEntityEvent.class)
             .by(e -> DAMAGER_PLAYER_GETTER.apply(e.getDamager()))
             .at(e -> e.getEntity().getLocation())
             .withEnum(e -> e.getEntity().getType());

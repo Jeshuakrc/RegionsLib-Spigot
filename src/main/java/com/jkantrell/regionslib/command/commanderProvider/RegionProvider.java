@@ -1,11 +1,12 @@
 package com.jkantrell.regionslib.command.commanderProvider;
 
-import com.jkantrell.commander.command.Argument;
-import com.jkantrell.commander.exception.CommandArgumentException;
-import com.jkantrell.commander.exception.CommandException;
-import com.jkantrell.commander.command.provider.CommandProvider;
 import com.jkantrell.regionslib.region.Region;
 import com.jkantrell.regionslib.region.Regions;
+import com.kntrel.mc.commander.command.Argument;
+import com.kntrel.mc.commander.command.provider.CommandProvider;
+import com.kntrel.mc.commander.exception.CommandArgumentException;
+import com.kntrel.mc.commander.exception.CommandException;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;

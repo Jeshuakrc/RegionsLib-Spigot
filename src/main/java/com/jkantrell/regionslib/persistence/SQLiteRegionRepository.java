@@ -14,7 +14,7 @@ import com.jkantrell.regionslib.region.dataContainer.RegionData;
 import com.jkantrell.regionslib.region.dataContainer.RegionDataContainer;
 import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
 import com.jkantrell.regionslib.region.hierarchy.HierarchyRepository;
-import com.jkantrell.regionslib.region.rule.Rule;
+import com.jkantrell.regionslib.region.ruleOld.Rule;
 import io.ebean.Database;
 import io.ebean.DatabaseFactory;
 import io.ebean.config.DatabaseConfig;
@@ -209,7 +209,7 @@ public class SQLiteRegionRepository implements RegionRepository {
             r.setHierarchyId(src.getHierarchy().getId());
 
             r.setRules(
-                    src.getRules().stream().map(this.ruleMapper_::toEntity).toList()
+                    src.getRuleValues().stream().map(this.ruleMapper_::toEntity).toList()
             );
             r.setDataContainer(
                     src.getDataContainer().getAll().stream().map(this.dataMapper_::toEntity).toList()

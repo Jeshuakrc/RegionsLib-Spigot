@@ -1,6 +1,8 @@
 package com.jkantrell.regionslib.region.ability;
 
 import com.jkantrell.regionslib.region.RegionContext;
+import com.jkantrell.regionslib.util.AreaGetter;
+import com.jkantrell.regionslib.util.PointGetter;
 import io.avaje.lang.Nullable;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
@@ -117,11 +119,10 @@ public class AbilityRegistry {
         if (definitive == null) { return; }
 
         //Cancelling the event if the ability is not allowed.
-        boolean allow = definitive.fire(event, this.context_);
+        boolean allow = definitive.test(event, this.context_);
 
 
-
-
+        //TODO: Logging
     }
 
 
@@ -152,8 +153,19 @@ public class AbilityRegistry {
                 throw new RuntimeException(e);
             }
             if (a == null) { continue; }
-            if (a instanceof AbilityBuilder.UnNamedAbility unNamed) {
-                unNamed.setName(member.getName());
+            if (a.getName().equals("<unnamed>")) {
+                a = a.isPointBased()
+                    ? new Ability(member.getName(), a.getEventClass(), a.getValidator(), a.getPlayerGetter(), (PointGetter) a.getPointGetter().get(), a.getPriority(), a.getBukkitPriority(), a.getSupperAbility().orElse(null))
+                    : new Ability(member.getName(), a.getEventClass(), a.getValidator(), a.getPlayerGetter(), (AreaGetter) a.getAreaGetter().get(), a.getPriority(), a.getBukkitPriority(), a.getSupperAbility().orElse(null));
+
+                member.setAccessible(true);
+                if (member instanceof Field f) {
+                    try {
+                        f.set(obj, a);
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             }
             abilities.add(a);
         }

@@ -8,7 +8,7 @@ import com.jkantrell.regionslib.io.Config;
 import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
 import com.jkantrell.regionslib.region.Regions;
 import com.jkantrell.regionslib.region.Region;
-import com.jkantrell.regionslib.region.rule.RuleKey;
+import com.jkantrell.regionslib.region.ruleOld.RuleKey;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
