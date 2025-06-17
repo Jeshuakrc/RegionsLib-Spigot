@@ -45,7 +45,6 @@ public class Region implements Comparable<Region> {
     //CONSTRUCTORS
     public Region(RegionContext context, BoundingBox initialBox, World world, String name, Hierarchy hierarchy, @Nullable Entity creator) {
         this.context_ = context;
-        this.setId(Regions.getHighestId() + 1);
         this.setWorld(world);
         this.resize(initialBox);
         this.setName(name);
@@ -73,9 +72,6 @@ public class Region implements Comparable<Region> {
         Arrays.stream(permissions).forEach(this::addPermission);
     }
     public void setId(long id) {
-        if (Regions.regions_.stream().anyMatch(r -> r.getId() == id)) {
-            throw new IllegalArgumentException("A region with Id " + id + " already exists." );
-        }
         this.id_ = id;
     }
     public void setName(String name) {
@@ -267,18 +263,15 @@ public class Region implements Comparable<Region> {
     public void save() {
         this.getContext().save(this);
     }
-    public Region[] getOverlappingRegions() {
-        return Regions.getIn(this);
+    public List<Region> getOverlappingRegions() {
+        return this.context_.getIn(this);
     }
     public void destroy(@Nullable Entity destructor){
         RegionDestroyEvent event = new RegionDestroyEvent(this, destructor);
-        RegionsLib.getMain().getServer().getPluginManager().callEvent(event);
+        this.context_.callEvent(event);
         if (event.isCancelled()) { return; }
 
         this.insidePlayers_.clear();
-        if (Regions.regions_.remove(this)) {
-            Serializer.serializeToFile(Serializer.FILES.REGIONS, Regions.regions_);
-        }
         this.isDestroyed_ = true;
     }
     public void destroy() {
@@ -314,7 +307,7 @@ public class Region implements Comparable<Region> {
         this.permissions_.add(permission);
 
         if (permission.getGroup().getLevel() > this.getHierarchy().getLowestLever()) { return; }
-        if (!this.getRuleValue("localMod", RuleDataType.BOOL).orElse(false)) { return; }
+        if (!this.getRuleValue("localMod", ValueType.BOOL).orElse(false)) { return; }
 
         RegionsLibEventListener.addPermissionRegistration(permission.getPlayerName(),"regions.mod.local");
         RegionsLib.getMain().getLogger().info(

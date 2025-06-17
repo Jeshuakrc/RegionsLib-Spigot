@@ -1,14 +1,12 @@
 package com.jkantrell.regionslib;
 
-import com.jkantrell.commander.command.Commander;
 import com.jkantrell.regionslib.command.RegionCommand;
 import com.jkantrell.regionslib.command.commanderProvider.*;
 import com.jkantrell.regionslib.command.commanderProvider.annotation.RuleValue;
 import com.jkantrell.regionslib.io.Config;
 import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
-import com.jkantrell.regionslib.region.Regions;
 import com.jkantrell.regionslib.region.Region;
-import com.jkantrell.regionslib.region.ruleOld.RuleKey;
+import com.kntrel.mc.commander.command.Commander;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;

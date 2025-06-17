@@ -26,6 +26,9 @@ public interface RegionRepository {
     default List<Region> getIn(Area area) {
         return this.getIn(area.getMinX(), area.getMinY(), area.getMinZ(), area.getMaxX(), area.getMaxY(), area.getMaxZ(), area.getWorld());
     }
+    default List<Region> getIn(Region region) {
+        return this.getIn(region.getMinX(), region.getMinY(), region.getMinZ(), region.getMaxX(), region.getMaxY(), region.getMaxZ(), region.getWorld());
+    }
     default List<Region> getIn(BoundingBox boundingBox, World world) {
         return this.getIn(boundingBox.getMinX(), boundingBox.getMinY(), boundingBox.getMinZ(), boundingBox.getMaxX(), boundingBox.getMaxY(), boundingBox.getMaxZ(), world);
     }
