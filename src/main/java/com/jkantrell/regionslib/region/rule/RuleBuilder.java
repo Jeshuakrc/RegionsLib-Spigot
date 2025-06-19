@@ -2,17 +2,18 @@ package com.jkantrell.regionslib.region.rule;
 
 import com.jkantrell.regionslib.region.Region;
 import com.jkantrell.regionslib.region.react.RegionEventReactorBuilder;
+import com.jkantrell.regionslib.util.Area;
 import com.jkantrell.regionslib.util.AreaGetter;
 import com.jkantrell.regionslib.util.PointGetter;
 import com.jkantrell.regionslib.util.TriPredicate;
 import com.jkantrell.regionslib.util.valueType.ValueType;
 import org.apache.commons.lang3.function.TriConsumer;
+import org.bukkit.Location;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
-import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
+import org.bukkit.event.EventPriority;
+import javax.annotation.Nonnull;
+import java.util.function.*;
 
 public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E, Rule<T>, RuleBuilder<E, T>> {
 
@@ -27,9 +28,16 @@ public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E
 
 
     //CONSTRUCTORS
-    public static <E extends Event> PreRuleBuilder<E> on(Class<E> eventClass) {
-        return new PreRuleBuilder<>(eventClass);
+    public static <E extends Event> BooleanRuleBuilder<E> on(Class<E> eventClass) {
+        return new BooleanRuleBuilder<>(eventClass);
     }
+
+    protected RuleBuilder(RuleBuilder<E, ?> other, ValueType<T> type) {
+        super(other.eventClass_);
+        this.type_ = type;
+        this.action_ = other.action_;
+    }
+
     protected RuleBuilder(Class<E> eventClass, ValueType<T> type) {
         super(eventClass);
         this.type_ = type;
@@ -41,26 +49,32 @@ public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E
         this.test_ = test;
         return this;
     }
+
     public RuleBuilder<E, T> iff(BiPredicate<E, T> test) {
         this.testBi_ = test;
         return this;
     }
+
     public RuleBuilder<E, T> iff(TriPredicate<E, T, Region> test) {
         this.testTri_ = test;
         return this;
     }
+
     public RuleBuilder<E, T> then(Consumer<E> action) {
         this.action_ = action;
         return this;
     }
+
     public RuleBuilder<E, T> then(BiConsumer<E, T> action) {
         this.actionBi_ = action;
         return this;
     }
+
     public RuleBuilder<E, T> then(TriConsumer<E, T, Region> action) {
         this.actionTri_ = action;
         return this;
     }
+
     public RuleBuilder<E, T> thenCancel() {
         if (!Cancellable.class.isAssignableFrom(this.eventClass_)) {
             return this;
@@ -86,6 +100,7 @@ public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E
         }
         return (e, t, r) -> true;
     }
+
     protected TriConsumer<Event, T, Region> getAction() {
         if (this.actionTri_ != null) {
             return (e, t, r) -> this.actionTri_.accept(this.eventClass_.cast(e), t, r);
@@ -100,22 +115,29 @@ public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E
     }
 
 
-
     @Override
     protected Rule<T> build(Predicate<E> extraCheck) {
-        PointGetter pg = null; AreaGetter ag = null; Exception exception = null;
+        PointGetter pg = null;
+        AreaGetter ag = null;
+        Exception exception = null;
         try {
             ag = this.getAreaGetter();
-        } catch (Exception e) { exception = e; }
+        } catch (Exception e) {
+            exception = e;
+        }
         try {
             pg = this.getPointGetter();
-        } catch (Exception e) { exception = e; }
+        } catch (Exception e) {
+            exception = e;
+        }
         if (ag == null && pg == null) {
             throw (exception != null) ? new RuntimeException(exception) : new IllegalStateException("Unable to build ability. Cannot infer location");
         }
 
         String name = this.getName();
-        if (name == null) { name = "<unnamed>"; }
+        if (name == null) {
+            name = "<unnamed>";
+        }
         Predicate<Event> validator = this.getValidator();
         int order = (this.priority_ != null) ? this.priority_ : 0;
         if (extraCheck != null) {
@@ -130,19 +152,61 @@ public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E
 
 
     //CLASSES
-    public static class PreRuleBuilder<E extends Event> {
+    public static class BooleanRuleBuilder<E extends Event> extends RuleBuilder<E, Boolean> {
 
-        //FIELDS
-        private final Class<E> eventClass_;
-
-        //CONSTRUCTORS
-        private PreRuleBuilder(Class<E> eventClass) {
-            this.eventClass_ = eventClass;
+        protected BooleanRuleBuilder(Class<E> eventClass) {
+            super(eventClass, ValueType.BOOL);
+            this.ifTrue();
         }
 
-        //UTILITY
         public <T> RuleBuilder<E, T> having(ValueType<T> type) {
-            return new RuleBuilder<>(this.eventClass_, type);
+            return new RuleBuilder<>(this, type);
+        }
+
+        public RuleBuilder<E, Boolean> ifFalse() {
+            this.iff(b -> !b);
+            return this;
+        }
+        public RuleBuilder<E, Boolean> ifTrue() {
+            this.iff(b -> b);
+            return this;
+        }
+
+        @Override public BooleanRuleBuilder<E> when(Predicate<E> validator) {
+            super.when(validator);
+            return this;
+        }
+        @Override public BooleanRuleBuilder<E> at(Function<E, Location> pointGetter) {
+            super.at(pointGetter);
+            return this;
+        }
+        @Override public BooleanRuleBuilder<E> in(Function<E, Area> areaGetter) {
+            super.in(areaGetter);
+            return this;
+        }
+    }
+
+    static class ReflectiveRule<T> extends Rule<T> {
+
+        private String name_;
+
+        public ReflectiveRule(@Nonnull Class<? extends Event> eventClass, @Nonnull ValueType<T> type, @Nonnull PointGetter pointGetter, @Nonnull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region> action) {
+            super("", eventClass, type, pointGetter, validator, priority, bukkitPriority, test, action);
+            this.name_ = null;
+        }
+
+        public void setName(String name) {
+            if (this.name_ != null) {
+                throw new IllegalStateException("Reflective rule is already named");
+            }
+            this.name_ = name;
+        }
+
+        @Override public String getName() {
+            if (this.name_ == null) {
+                throw new IllegalStateException("Trying to access an unnamed reflective rule's name");
+            }
+            return this.name_;
         }
     }
 }

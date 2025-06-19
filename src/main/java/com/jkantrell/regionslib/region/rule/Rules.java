@@ -8,10 +8,10 @@ public final class Rules {
 
     private Rules() {}
 
-    public static final Rule<Boolean> ANIMALS_TAKE_DAMAGE = Rule.on(EntityDamageEvent.class).having(ValueType.BOOL)
+    public static final Rule<Boolean> ANIMALS_TAKE_DAMAGE = Rule.on(EntityDamageEvent.class)
             .when(e -> e.getEntity() instanceof Animals)
             .at(e -> e.getEntity().getLocation())
-            .iff(b -> b)
+            .ifFalse()
             .thenCancel().build();
 
 }

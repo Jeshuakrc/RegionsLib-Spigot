@@ -11,7 +11,6 @@ import com.jkantrell.regionslib.util.valueType.ValueType;
 import org.apache.commons.lang3.function.TriConsumer;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
-
 import javax.annotation.Nonnull;
 import java.util.List;
 import java.util.function.*;
@@ -19,7 +18,7 @@ import java.util.function.*;
 public class Rule<T> extends RegionEventReactor implements BiConsumer<Event, RegionContext> {
 
     //STATIC
-    public static <E extends Event> RuleBuilder.PreRuleBuilder<E> on(Class<E> eventClass) {
+    public static <E extends Event> RuleBuilder.BooleanRuleBuilder<E> on(Class<E> eventClass) {
         return RuleBuilder.on(eventClass);
     }
 

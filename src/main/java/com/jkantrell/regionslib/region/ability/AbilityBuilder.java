@@ -1,7 +1,6 @@
 package com.jkantrell.regionslib.region.ability;
 
 import com.jkantrell.regionslib.region.react.RegionEventReactorBuilder;
-import com.jkantrell.regionslib.region.react.UnNamedAbility;
 import com.jkantrell.regionslib.util.Area;
 import com.jkantrell.regionslib.util.AreaGetter;
 import com.jkantrell.regionslib.util.PointGetter;
@@ -11,7 +10,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerEvent;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.function.Consumer;
@@ -121,5 +119,33 @@ public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E
 
         if (this.consumer_ != null) { this.consumer_.accept(ability); }
         return ability;
+    }
+
+    public static class ReflectiveAbility extends Ability {
+
+        private String renamed_;
+
+        public ReflectiveAbility(Class<? extends Event> eventClass, Predicate<Event> validator, Function<Event, Player> playerGetter, PointGetter pointGetter, int order, @Nullable EventPriority priority, @Nullable Ability dependsOn) {
+            super("", eventClass, validator, playerGetter, pointGetter, order, priority, dependsOn);
+            this.renamed_ = null;
+        }
+        public ReflectiveAbility(Class<? extends Event> eventClass, Predicate<Event> validator, Function<Event, Player> playerGetter, AreaGetter areaGetter, int order, @Nullable EventPriority priority, @Nullable Ability dependsOn) {
+            super("", eventClass, validator, playerGetter, areaGetter, order, priority, dependsOn);
+            this.renamed_ = null;
+        }
+
+        @Override public String getName() {
+            if (this.renamed_ == null) {
+                throw new IllegalStateException("Trying to access an unnamed ability's name");
+            }
+            return this.renamed_;
+        }
+
+        void setName(String name) {
+            if (this.renamed_ != null) {
+                throw new IllegalStateException("Cannot name an ability twice");
+            }
+            this.renamed_ = name;
+        }
     }
 }

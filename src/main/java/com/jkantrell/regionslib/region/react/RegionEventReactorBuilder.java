@@ -11,7 +11,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockEvent;
 import org.bukkit.event.entity.EntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -33,6 +32,15 @@ public abstract class RegionEventReactorBuilder<E extends Event ,T extends Regio
     protected RegionEventReactorBuilder(Class<E> eventClass) {
         this.eventClass_ = eventClass;
         this.instance_ = (B) this;
+    }
+    protected RegionEventReactorBuilder(RegionEventReactorBuilder<E, ?, ?> other) {
+        this(other.eventClass_);
+        this.name_ = other.name_;
+        this.validator_ = other.validator_;
+        this.pointGetter_ = other.pointGetter_;
+        this.areaGetter_ = other.areaGetter_;
+        this.bukkitPriority_ = other.bukkitPriority_;
+        this.priority_ = other.priority_;
     }
 
 
