@@ -1,32 +1,23 @@
 package com.jkantrell.regionslib.region.ability;
 
+import com.jkantrell.regionslib.region.react.ReflectiveNameable;
 import com.jkantrell.regionslib.region.react.RegionEventReactorBuilder;
-import com.jkantrell.regionslib.util.Area;
 import com.jkantrell.regionslib.util.AreaGetter;
 import com.jkantrell.regionslib.util.PointGetter;
 import io.avaje.lang.Nullable;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerEvent;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E, Ability, AbilityBuilder<E>> {
 
     // Fields
-    private String name_;
-    private Predicate<E> validator_;
     private Function<E, Player> playerGetter_;
-    private Function<E, Location> pointGetter_;
-    private Function<E, Area> areaGetter_;
-    private Consumer<Ability> consumer_;
-    private EventPriority bukkitPriority_;
-    private Integer priority_;
     private Ability extends_;
 
 
@@ -105,7 +96,6 @@ public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E
         }
 
         String name = this.getName();
-        if (name == null) { name = "<unnamed>"; }
         Predicate<Event> validator = this.getValidator();
         int order = (this.priority_ != null) ? this.priority_ : 0;
         if (extraCheck != null) {
@@ -113,15 +103,18 @@ public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E
         }
 
         if (pg != null) {
+            if (name == null) {
+                return new ReflectiveAbility(this.eventClass_, validator, this.getPlayerGetter(), pg, order, this.bukkitPriority_, this.extends_);
+            }
             return new Ability(name, this.eventClass_, validator, this.getPlayerGetter(), pg, order, this.bukkitPriority_, this.extends_);
         }
-        Ability ability = new Ability(name, this.eventClass_, validator, this.getPlayerGetter(), ag, order, this.bukkitPriority_, this.extends_);
-
-        if (this.consumer_ != null) { this.consumer_.accept(ability); }
-        return ability;
+        if (name == null) {
+            return new ReflectiveAbility(this.eventClass_, validator, this.getPlayerGetter(), ag, order, this.bukkitPriority_, this.extends_);
+        }
+        return new Ability(name, this.eventClass_, validator, this.getPlayerGetter(), ag, order, this.bukkitPriority_, this.extends_);
     }
 
-    public static class ReflectiveAbility extends Ability {
+    private static class ReflectiveAbility extends Ability implements ReflectiveNameable {
 
         private String renamed_;
 
@@ -141,7 +134,7 @@ public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E
             return this.renamed_;
         }
 
-        void setName(String name) {
+        @Override public void setName(String name) {
             if (this.renamed_ != null) {
                 throw new IllegalStateException("Cannot name an ability twice");
             }

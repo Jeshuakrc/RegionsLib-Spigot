@@ -1,6 +1,7 @@
 package com.jkantrell.regionslib.region.rule;
 
 import com.jkantrell.regionslib.region.Region;
+import com.jkantrell.regionslib.region.react.ReflectiveNameable;
 import com.jkantrell.regionslib.region.react.RegionEventReactorBuilder;
 import com.jkantrell.regionslib.util.Area;
 import com.jkantrell.regionslib.util.AreaGetter;
@@ -135,9 +136,6 @@ public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E
         }
 
         String name = this.getName();
-        if (name == null) {
-            name = "<unnamed>";
-        }
         Predicate<Event> validator = this.getValidator();
         int order = (this.priority_ != null) ? this.priority_ : 0;
         if (extraCheck != null) {
@@ -145,7 +143,13 @@ public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E
         }
 
         if (pg != null) {
+            if (name == null) {
+                return new ReflectiveRule<>(this.eventClass_, this.type_, pg, validator, order, this.bukkitPriority_, this.getTest(), this.getAction());
+            }
             return new Rule<T>(name, this.eventClass_, this.type_, pg, validator, order, this.bukkitPriority_, this.getTest(), this.getAction());
+        }
+        if (name == null) {
+            return new ReflectiveRule<>(this.eventClass_, this.type_, ag, validator, order, this.bukkitPriority_, this.getTest(), this.getAction());
         }
         return new Rule<T>(name, this.eventClass_, this.type_, ag, validator, order, this.bukkitPriority_, this.getTest(), this.getAction());
     }
@@ -186,7 +190,7 @@ public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E
         }
     }
 
-    static class ReflectiveRule<T> extends Rule<T> {
+    private static class ReflectiveRule<T> extends Rule<T> implements ReflectiveNameable {
 
         private String name_;
 
@@ -194,8 +198,13 @@ public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E
             super("", eventClass, type, pointGetter, validator, priority, bukkitPriority, test, action);
             this.name_ = null;
         }
+        public ReflectiveRule(@Nonnull Class<? extends Event> eventClass, @Nonnull ValueType<T> type, @Nonnull AreaGetter areaGetter, @Nonnull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region> action) {
+            super("", eventClass, type, areaGetter, validator, priority, bukkitPriority, test, action);
+            this.name_ = null;
+        }
 
-        public void setName(String name) {
+
+        @Override public void setName(String name) {
             if (this.name_ != null) {
                 throw new IllegalStateException("Reflective rule is already named");
             }

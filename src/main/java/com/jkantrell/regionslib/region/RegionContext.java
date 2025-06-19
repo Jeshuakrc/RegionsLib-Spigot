@@ -3,6 +3,8 @@ package com.jkantrell.regionslib.region;
 import com.jkantrell.regionslib.region.ability.Ability;
 import com.jkantrell.regionslib.region.ability.AbilityBuilder;
 import com.jkantrell.regionslib.region.ability.AbilityRegistry;
+import com.jkantrell.regionslib.region.hierarchy.HierarchyRepository;
+import com.jkantrell.regionslib.region.rule.RuleRegistry;
 import org.bukkit.Chunk;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -18,6 +20,7 @@ public class RegionContext implements RegionRepository {
     private final RegionRepository regionRepository_;
     private final Plugin plugin_;
     private final AbilityRegistry abilityRegistry_;
+    private final RuleRegistry ruleRegistry_;
 
 
     //CONSTRUCTORS
@@ -25,6 +28,7 @@ public class RegionContext implements RegionRepository {
         this.regionRepository_ = repositoryFactory.apply(this);
         this.plugin_ = plugin;
         this.abilityRegistry_ = new AbilityRegistry(this);
+        this.ruleRegistry_ = new RuleRegistry(this);
     }
 
 
@@ -37,6 +41,12 @@ public class RegionContext implements RegionRepository {
     }
     public Server getServer() {
         return this.plugin_.getServer();
+    }
+    public AbilityRegistry getAbilityRegistry() {
+        return this.abilityRegistry_;
+    }
+    public RuleRegistry getRuleRegistry() {
+        return this.ruleRegistry_;
     }
 
     //UTILITIES
@@ -81,5 +91,8 @@ public class RegionContext implements RegionRepository {
     }
     @Override public void saveAll(Iterable<Region> regions) {
         this.regionRepository_.saveAll(regions);
+    }
+    @Override public HierarchyRepository getHierarchyRepository() {
+        return this.regionRepository_.getHierarchyRepository();
     }
 }
