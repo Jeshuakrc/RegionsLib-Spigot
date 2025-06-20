@@ -16,7 +16,7 @@ import java.util.Set;
 public interface RegionRepository {
     List<Region> getAll();
     Optional<Region> get(Long id);
-    Optional<Region> get(String name);
+    List<Region> get(String name);
     List<Region> getAt(double x, double y, double z, World world);
     default List<Region> getAt(Location location) {
         return this.getAt(location.getX(), location.getY(), location.getZ(), location.getWorld());

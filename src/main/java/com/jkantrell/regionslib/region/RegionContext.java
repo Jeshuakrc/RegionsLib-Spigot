@@ -68,7 +68,7 @@ public class RegionContext implements RegionRepository {
     @Override public Optional<Region> get(Long id) {
         return this.regionRepository_.get(id);
     }
-    @Override public Optional<Region> get(String name) {
+    @Override public List<Region> get(String name) {
         return this.regionRepository_.get(name);
     }
     @Override public List<Region> getAt(double x, double y, double z, World world) {

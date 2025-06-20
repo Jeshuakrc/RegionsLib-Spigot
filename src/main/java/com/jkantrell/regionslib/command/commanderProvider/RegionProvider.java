@@ -1,24 +1,29 @@
 package com.jkantrell.regionslib.command.commanderProvider;
 
 import com.jkantrell.regionslib.region.Region;
-import com.jkantrell.regionslib.region.Regions;
+import com.jkantrell.regionslib.region.RegionContext;
 import com.kntrel.mc.commander.command.Argument;
 import com.kntrel.mc.commander.command.provider.CommandProvider;
 import com.kntrel.mc.commander.exception.CommandArgumentException;
 import com.kntrel.mc.commander.exception.CommandException;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class RegionProvider extends CommandProvider<Region> {
 
+    private final RegionContext ctx_;
     Region region_;
     CommandArgumentException multipleRegionsException_ = null;
 
+    public RegionProvider(RegionContext ctx) {
+        this.ctx_ = ctx;
+    }
+
+
     @Override
     public List<String> suggest() {
-        return Arrays.stream(Regions.getAll())
+        return this.ctx_.getAll().stream()
                 .map(region -> {
                     String name = region.getName();
                     return (name.contains(" ") ? "\"" + name + "\"" : name);
@@ -29,21 +34,21 @@ public class RegionProvider extends CommandProvider<Region> {
     @Override
     protected boolean handleArgument(Argument argument) throws CommandException {
         if (argument.isInt()) {
-            this.region_ = Regions.get(argument.getInt())
+            this.region_ = this.ctx_.get((long) argument.getInt())
                     .orElseThrow(() -> new CommandArgumentException(argument, "There's no region under the ID " + argument.getInt() + "."));
             return true;
         }
-        Region[] regions = Regions.get(argument.getString());
-        if (regions.length < 1) {
+        List<Region> regions = this.ctx_.get(argument.getString());
+        if (regions.isEmpty()) {
             throw new CommandArgumentException(argument, "There's no region under the name '" + argument.getString() + "'.");
-        } else if (regions.length > 1) {
+        } else if (regions.size() > 1) {
             StringBuilder builder = new StringBuilder();
             builder.append("Regions under IDs ");
-            for (int i = 0; i < regions.length; i++) {
-                builder.append(regions[i].getId());
-                if ((i + 2) < regions.length) {
+            for (int i = 0; i < regions.size(); i++) {
+                builder.append(regions.get(i).getId());
+                if ((i + 2) < regions.size()) {
                     builder.append(", ");
-                } else if ((i + 1) < regions.length) {
+                } else if ((i + 1) < regions.size()) {
                     builder.append(" and ");
                 }
             }
@@ -51,7 +56,7 @@ public class RegionProvider extends CommandProvider<Region> {
 
             this.multipleRegionsException_ = new CommandArgumentException(argument, builder.toString());
         }
-        this.region_ = regions[0];
+        this.region_ = regions.get(0);
 
         return true;
     }

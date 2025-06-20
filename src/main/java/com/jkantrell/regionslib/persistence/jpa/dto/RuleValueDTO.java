@@ -1,12 +1,12 @@
 package com.jkantrell.regionslib.persistence.jpa.dto;
 
 import com.jkantrell.regionslib.persistence.jpa.mapper.JpaEntity;
-import com.jkantrell.regionslib.region.ruleOld.Rule;
+import com.jkantrell.regionslib.util.valueType.ValueHolder;
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "regionRule")
-public class RuleDTO implements JpaEntity<Rule> {
+public class RuleValueDTO implements JpaEntity<ValueHolder<?>> {
 
     @Id
     private Long id;

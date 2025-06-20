@@ -3,7 +3,7 @@ package com.jkantrell.regionslib.persistence;
 import com.jkantrell.regionslib.persistence.jpa.dto.PermissionDTO;
 import com.jkantrell.regionslib.persistence.jpa.dto.RegionDTO;
 import com.jkantrell.regionslib.persistence.jpa.dto.RegionDataDTO;
-import com.jkantrell.regionslib.persistence.jpa.dto.RuleDTO;
+import com.jkantrell.regionslib.persistence.jpa.dto.RuleValueDTO;
 import com.jkantrell.regionslib.persistence.jpa.ext.IdHolder;
 import com.jkantrell.regionslib.persistence.jpa.ext.idHolderPermission;
 import com.jkantrell.regionslib.persistence.jpa.mapper.JpaEntityMapper;
@@ -14,7 +14,9 @@ import com.jkantrell.regionslib.region.dataContainer.RegionData;
 import com.jkantrell.regionslib.region.dataContainer.RegionDataContainer;
 import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
 import com.jkantrell.regionslib.region.hierarchy.HierarchyRepository;
-import com.jkantrell.regionslib.region.ruleOld.Rule;
+import com.jkantrell.regionslib.region.rule.Rule;
+import com.jkantrell.regionslib.util.valueType.ValueHolder;
+import com.jkantrell.regionslib.util.valueType.ValueType;
 import io.ebean.Database;
 import io.ebean.DatabaseFactory;
 import io.ebean.config.DatabaseConfig;
@@ -47,7 +49,7 @@ public class SQLiteRegionRepository implements RegionRepository {
                 .setDdlRun(false);
 
         this.db_ = DatabaseFactory.create(dbConfig);
-        this.regionMapper_ = new RegionMapper(plugin, context, hierarchyRepository, new RuleMapper(), new RegionDataMapper());
+        this.regionMapper_ = new RegionMapper(plugin, context, hierarchyRepository, new RuleMapper(context), new RegionDataMapper());
     }
 
 
@@ -66,8 +68,8 @@ public class SQLiteRegionRepository implements RegionRepository {
     }
 
     @Override
-    public Optional<Region> get(String name) {
-        return Optional.ofNullable(this.db_.find(RegionDTO.class).where().eq("name", name).findOne()).map(this.regionMapper_::toModel);
+    public List<Region> get(String name) {
+        return this.db_.find(RegionDTO.class).where().eq("name", name).findList().stream().map(this.regionMapper_::toModel).toList();
     }
 
     @Override
@@ -126,6 +128,11 @@ public class SQLiteRegionRepository implements RegionRepository {
         this.db_.save(this.regionMapper_.toEntity(region));
     }
 
+    @Override
+    public HierarchyRepository getHierarchyRepository() {
+        return this.regionMapper_.hierarchyRepository_;
+    }
+
 
     //INNER CLASSES
     private static class RegionMapper implements JpaEntityMapper<Region, RegionDTO> {
@@ -134,7 +141,7 @@ public class SQLiteRegionRepository implements RegionRepository {
         private final Plugin plugin_;
         private final RegionContext context_;
         private final HierarchyRepository hierarchyRepository_;
-        private final JpaEntityMapper<Rule, RuleDTO> ruleMapper_;
+        private final JpaEntityMapper<ValueHolder<?>, RuleValueDTO> ruleMapper_;
         private final JpaEntityMapper<RegionData, RegionDataDTO> dataMapper_;
 
 
@@ -143,7 +150,7 @@ public class SQLiteRegionRepository implements RegionRepository {
                 Plugin plugin,
                 RegionContext context,
                 HierarchyRepository hierarchyRepository,
-                JpaEntityMapper<Rule, RuleDTO> ruleMapper,
+                JpaEntityMapper<ValueHolder<?>, RuleValueDTO> ruleMapper,
                 JpaEntityMapper<RegionData, RegionDataDTO> dataMapper
         ) {
             this.plugin_ = plugin;
@@ -181,7 +188,7 @@ public class SQLiteRegionRepository implements RegionRepository {
 
             src.getRules().stream()
                     .map(this.ruleMapper_::toModel)
-                    .forEach(reg::addRule);
+                    .forEach(dto -> reg.setRuleValue(dto.toString(), dto.get()));
 
             RegionDataContainer container = new RegionDataContainer();
             src.getDataContainer().stream()
@@ -227,21 +234,31 @@ public class SQLiteRegionRepository implements RegionRepository {
         }
     }
 
-    private static class RuleMapper implements JpaEntityMapper<Rule, RuleDTO> {
+    private static class RuleMapper implements JpaEntityMapper<ValueHolder<?>, RuleValueDTO> {
 
-        @Override
-        public Class<Rule> getModelClass() {
-            return Rule.class;
+        private final RegionContext ctx_;
+
+        private RuleMapper(RegionContext ctx) {
+            this.ctx_ = ctx;
+        }
+
+        @Override @SuppressWarnings("unchecked")
+        public Class<ValueHolder<?>> getModelClass() {
+            return (Class<ValueHolder<?>>) (Class<?>) ValueHolder.class;
         }
 
         @Override
-        public Class<RuleDTO> getEntityClass() {
-            return RuleDTO.class;
+        public Class<RuleValueDTO> getEntityClass() {
+            return RuleValueDTO.class;
         }
 
-        @Override
-        public Rule toModel(RuleDTO src) {
-            return new Rule(src.getKey(), src.getValue());
+        @Override @SuppressWarnings({ "unchecked" , "rawtypes"})
+        public ValueHolder<?> toModel(RuleValueDTO src) {
+            ValueType<?> type = this.ctx_.getRuleRegistry().get(src.getKey())
+                    .map(Rule::getValueType)
+                    .orElse((ValueType) ValueType.STRING);
+
+            return ValueHolder.of(src.getValue(), type);
         }
     }
 

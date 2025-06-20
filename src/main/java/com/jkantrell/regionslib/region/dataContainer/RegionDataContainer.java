@@ -1,9 +1,5 @@
 package com.jkantrell.regionslib.region.dataContainer;
 
-import com.google.gson.*;
-import com.jkantrell.regionslib.io.Serializer;
-
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 

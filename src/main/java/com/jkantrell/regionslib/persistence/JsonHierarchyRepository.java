@@ -43,10 +43,21 @@ public class JsonHierarchyRepository implements HierarchyRepository {
     }
 
 
+
+
     //IMPLEMENTATION
+    @Override
+    public List<Hierarchy> getAll() {
+        return List.copyOf(this.hierarchies.values());
+    }
     @Override
     public Optional<Hierarchy> get(Long id) {
         return Optional.ofNullable(this.hierarchies.get(id));
+    }
+
+    @Override
+    public List<Hierarchy> getByName(String name) {
+        return null;
     }
 
     @Override

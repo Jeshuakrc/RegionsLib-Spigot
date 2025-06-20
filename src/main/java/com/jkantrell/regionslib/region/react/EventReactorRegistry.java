@@ -37,6 +37,9 @@ public abstract class EventReactorRegistry<T extends RegionEventReactor> {
     public Map<String, T> getAllByKey() {
         return Map.copyOf(this.keyMap_);
     }
+    public List<T> getAll() {
+        return List.copyOf(this.keyMap_.values());
+    }
     public Optional<T> get(String key) {
         return Optional.ofNullable(this.keyMap_.get(key));
     }

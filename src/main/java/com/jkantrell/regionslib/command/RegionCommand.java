@@ -1,17 +1,16 @@
 package com.jkantrell.regionslib.command;
 
-import com.jkantrell.commander.command.CommandHolder;
-import com.jkantrell.commander.command.annotations.Command;
-import com.jkantrell.commander.command.annotations.Requires;
-import com.jkantrell.commander.command.provider.identify.ExcludeWorld;
-import com.jkantrell.commander.command.provider.identify.Sender;
-import com.jkantrell.commander.exception.CommandUnrunnableException;
+import com.jkantrell.regionslib.region.RegionContext;
+import com.jkantrell.regionslib.region.rule.Rule;
+import com.kntrel.mc.commander.command.CommandHolder;
+import com.kntrel.mc.commander.command.annotations.Command;
+import com.kntrel.mc.commander.command.annotations.Requires;
+import com.kntrel.mc.commander.command.provider.identify.ExcludeWorld;
+import com.kntrel.mc.commander.command.provider.identify.Sender;
+import com.kntrel.mc.commander.exception.CommandUnrunnableException;
 import com.jkantrell.regionslib.command.commanderProvider.annotation.RuleValue;
 import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
 import com.jkantrell.regionslib.region.Region;
-import com.jkantrell.regionslib.region.Regions;
-import com.jkantrell.regionslib.region.ruleOld.Rule;
-import com.jkantrell.regionslib.region.ruleOld.RuleKey;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
@@ -19,12 +18,18 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
-import java.util.Arrays;
 
 @Command(label = "region")
 @Requires(permission = "regions.mod.local")
 public class RegionCommand extends CommandHolder {
+
+    private final RegionContext ctx_;
+
+    public RegionCommand(RegionContext ctx) {
+        this.ctx_ = ctx;
+    }
 
     @Command(label = "create")
     @Requires(permission = "regions.create")
@@ -37,11 +42,12 @@ public class RegionCommand extends CommandHolder {
     public boolean create(CommandSender sender, @ExcludeWorld Location vertex1, @ExcludeWorld Location vertex2, World world, Hierarchy hierarchy, String name) throws CommandUnrunnableException {
         try {
             Region region = new Region(
-                    new double[]{vertex1.getX(), vertex1.getY(), vertex1.getZ(), vertex2.getX(), vertex2.getY(), vertex2.getZ()},
+                    this.ctx_,
+                    new BoundingBox(vertex1.getX(), vertex1.getY(), vertex1.getZ(), vertex2.getX(), vertex2.getY(), vertex2.getZ()),
                     world,
                     name,
                     hierarchy,
-                    (sender instanceof Entity) ? (Entity) sender : null
+                    (sender instanceof Entity e) ? e : null
             );
             if (region.isDestroyed()) { return false; }
             region.save();
@@ -139,37 +145,27 @@ public class RegionCommand extends CommandHolder {
 
     @Command(label = "setrule")
     @Requires(permission = "regions.mod.local")
-    public boolean setRule(CommandSender sender, Region region, RuleKey ruleKey, @RuleValue Object value) throws CommandUnrunnableException {
-        if (!ruleKey.testPermission(sender)) {
-            throw new CommandUnrunnableException("You're not allowed to alter this rule.");
-        }
+    public boolean setRule(CommandSender sender, Region region, Rule<?> rule, @RuleValue Object value) throws CommandUnrunnableException {
         try {
-            Rule rule;
-            if (!region.hasRule(ruleKey)) {
-                rule = new Rule(ruleKey, value);
-                region.addRule(rule);
-            } else {
-                rule = region.getRuleValue(ruleKey.getLabel());
-                rule.set(value);
-            }
+            region.setRuleValue(rule.getName(), value);
         } catch (IllegalArgumentException e) {
             throw new CommandUnrunnableException("invalid rule value provided.");
         }
         region.save();
         sender.sendMessage(
-            "The value of '" + ruleKey.getLabel() + "' has been set to '" + value.toString() + "'."
+            "The value of '" + rule.getName() + "' has been set to '" + value.toString() + "'."
         );
         return true;
     }
 
     @Command(label = "setrule default")
     @Requires(permission = "regions.mod.local")
-    public boolean setRuleDefault(CommandSender sender, Region region, RuleKey ruleKey) {
-        boolean removed = region.removeRule(ruleKey.getLabel());
+    public boolean setRuleDefault(CommandSender sender, Region region, Rule<?> rule) {
+        boolean removed = region.removeRule(rule.getName());
         region.save();
         sender.sendMessage(removed ?
-                "Rule '" + ruleKey.getLabel() + "' has been reset." :
-                "Rule '" + ruleKey.getLabel() + "' was unaltered. Nothing changed."
+                "Rule '" + rule.getName() + "' has been reset." :
+                "Rule '" + rule.getName() + "' was unaltered. Nothing changed."
             );
         return removed;
     }
@@ -177,7 +173,6 @@ public class RegionCommand extends CommandHolder {
     @Command(label = "showlimit")
     @Requires(permission = "regions.command.showlimit")
     public boolean showLimit(@Sender Player player, Region region, Long persistence) {
-        region.displayBoundaries(player, persistence);
         player.sendMessage("Displaying " + region.getName() + " boundaries.");
         return true;
     }
@@ -185,9 +180,7 @@ public class RegionCommand extends CommandHolder {
     @Command(label = "showlimits")
     @Requires(permission = "regions.command.showlimit")
     public boolean showLimits(@Sender Player player, Long persistence) {
-        Region[] regions = Regions.getIn(player.getWorld());
-        Arrays.stream(regions).forEach(r -> r.displayBoundaries(player, persistence));
-        player.sendMessage("Displaying boundaries of " + regions.length + " region" + ((regions.length != 1) ? "s" : "") + ".");
+
         return true;
     }
 

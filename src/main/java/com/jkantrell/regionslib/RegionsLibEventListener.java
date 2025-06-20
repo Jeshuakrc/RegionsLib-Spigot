@@ -14,10 +14,18 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.permissions.PermissionAttachment;
+import org.bukkit.plugin.Plugin;
 
 import java.util.*;
 
 public class RegionsLibEventListener implements Listener {
+
+    private final Plugin plugin_;
+
+    public RegionsLibEventListener(Plugin plugin) {
+        this.plugin_ = plugin;
+    }
+
 
     //FIELDS
     private static final List<Map.Entry<String,String>> permissionsMap_ = new LinkedList<>();
@@ -33,7 +41,7 @@ public class RegionsLibEventListener implements Listener {
                     e.getBlockFace(),
                     e.getHand()
             );
-            RegionsLib.getMain().getServer().getPluginManager().callEvent(rightClickedEvent);
+            this.plugin_.getServer().getPluginManager().callEvent(rightClickedEvent);
             e.setCancelled(rightClickedEvent.isCancelled());
         }
 
@@ -70,7 +78,7 @@ public class RegionsLibEventListener implements Listener {
         if (!found) { return; }
 
         LiquidRemoveEvent liquidRemoveEvent = new LiquidRemoveEvent(e.getPlayer(),liquid,type);
-        RegionsLib.getMain().getServer().getPluginManager().callEvent(liquidRemoveEvent);
+        this.plugin_.getServer().getPluginManager().callEvent(liquidRemoveEvent);
         e.setCancelled(liquidRemoveEvent.isCancelled());
     }
 
@@ -84,7 +92,7 @@ public class RegionsLibEventListener implements Listener {
                                                         (item.getType().toString().contains("AXE")) ? CopperBlockInteractEvent.Action.SCRAP : null;
              if (action != null) {
                  CopperBlockInteractEvent event = new CopperBlockInteractEvent(e.getPlayer(),block,action);
-                 RegionsLib.getMain().getServer().getPluginManager().callEvent(event);
+                 this.plugin_.getServer().getPluginManager().callEvent(event);
                  e.setCancelled(event.isCancelled());
              }
          }
@@ -92,7 +100,6 @@ public class RegionsLibEventListener implements Listener {
 
     @EventHandler
     private void onPlayerJoin(PlayerJoinEvent e) {
-        RegionsLib.removePermissionAttachment(e.getPlayer());
         RegionsLibEventListener.setPermissions_(e.getPlayer());
     }
 
@@ -116,33 +123,7 @@ public class RegionsLibEventListener implements Listener {
 
     private static void setPermissions_(Player player) {
 
-        List<String> perms = RegionsLibEventListener.permissionsMap_.stream()
-                .filter(e -> e.getKey().equals(player.getName()))
-                .map(Map.Entry::getValue)
-                .distinct()
-                .toList();
 
-        PermissionAttachment attachment = RegionsLib.getPermissionAttachment(player);
-
-        attachment.getPermissions().entrySet().stream()
-                .filter(e -> !perms.contains(e.getKey()) && e.getValue())
-                .map(Map.Entry::getKey)
-                .forEach(p -> {
-                    attachment.unsetPermission(p);
-                    RegionsLib.getMain().getLogger().fine("Removed \"" + p + "\" permission from " + player.getName() + ".");
-                });
-
-        Map<String,Boolean> newPermission = attachment.getPermissions();
-
-        perms.stream()
-                .filter(p -> {
-                    if (!newPermission.containsKey(p)) { return true; }
-                    return !newPermission.get(p);
-                })
-                .forEach(p -> {
-                    attachment.setPermission(p,true);
-                    RegionsLib.getMain().getLogger().fine("Granted \"" + p + "\" to " + player.getName() + ".");
-                });
     }
 
 }

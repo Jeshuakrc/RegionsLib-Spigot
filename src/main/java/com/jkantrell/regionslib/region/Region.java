@@ -8,7 +8,6 @@ import com.jkantrell.regionslib.event.RegionCreateEvent;
 import com.jkantrell.regionslib.event.RegionDestroyEvent;
 import com.jkantrell.regionslib.region.ability.Ability;
 import com.jkantrell.regionslib.region.dataContainer.RegionDataContainer;
-import com.jkantrell.regionslib.io.Serializer;
 import com.jkantrell.regionslib.region.hierarchy.Hierarchy;
 import com.jkantrell.regionslib.region.rule.Rule;
 import com.jkantrell.regionslib.region.rule.RuleValue;
@@ -283,10 +282,10 @@ public class Region implements Comparable<Region> {
     public boolean removeRule(String label) {
         return this.rulesValues_.remove(label) != null;
     }
-    public void addRule(RuleValue<?> ruleValue) {
+    public void setRuleValue(RuleValue<?> ruleValue) {
         this.rulesValues_.put(ruleValue.getRule().getName(), ruleValue);
     }
-    public <T> void addRule(String name, T value) {
+    public <T> void setRuleValue(String name, T value) {
         this.rulesValues_.put(name, ValueHolder.of(value));
     }
     public boolean hasRule(Rule<?> rule) {
@@ -310,7 +309,7 @@ public class Region implements Comparable<Region> {
         if (!this.getRuleValue("localMod", ValueType.BOOL).orElse(false)) { return; }
 
         RegionsLibEventListener.addPermissionRegistration(permission.getPlayerName(),"regions.mod.local");
-        RegionsLib.getMain().getLogger().info(
+        this.context_.getServer().getLogger().info(
         permission.getPlayerName() + " has been marker for \"regions.mod.local\" permissions. as is local mod of " + this.getName() + "."
         );
     }
@@ -402,11 +401,11 @@ public class Region implements Comparable<Region> {
                 continue;
             }
             i.remove();
-            RegionsLib.getMain().getServer().getPluginManager().callEvent(new PlayerLeaveRegionEvent(p, this));
+            this.context_.getServer().getPluginManager().callEvent(new PlayerLeaveRegionEvent(p, this));
         }
         players.forEach(pl -> {
             this.insidePlayers_.add(pl);
-            RegionsLib.getMain().getServer().getPluginManager().callEvent(new PlayerEnterRegionEvent(pl, this));
+            this.context_.getServer().getPluginManager().callEvent(new PlayerEnterRegionEvent(pl, this));
         });
     }
 }

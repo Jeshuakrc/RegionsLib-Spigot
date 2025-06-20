@@ -48,7 +48,7 @@ public class RegionDTO implements JpaEntity<Region> {
     private Long hierarchyId;
 
     @OneToMany(mappedBy = "region")
-    private List<RuleDTO> rules;
+    private List<RuleValueDTO> rules;
 
     @OneToMany(mappedBy = "region")
     private List<PermissionDTO> permissions;
@@ -100,7 +100,7 @@ public class RegionDTO implements JpaEntity<Region> {
     public Long getHierarchyId() {
         return this.hierarchyId;
     }
-    public List<RuleDTO> getRules() {
+    public List<RuleValueDTO> getRules() {
         return this.rules;
     }
 
@@ -148,7 +148,7 @@ public class RegionDTO implements JpaEntity<Region> {
     public void setHierarchyId(Long hierarchy) {
         this.hierarchyId = hierarchy;
     }
-    public void setRules(List<RuleDTO> rules) {
+    public void setRules(List<RuleValueDTO> rules) {
         this.rules = rules;
     }
 }

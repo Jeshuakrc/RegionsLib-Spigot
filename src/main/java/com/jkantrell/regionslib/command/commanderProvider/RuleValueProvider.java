@@ -1,21 +1,28 @@
 package com.jkantrell.regionslib.command.commanderProvider;
 
-import com.jkantrell.commander.command.Argument;
-import com.jkantrell.commander.command.provider.CommandProvider;
-import com.jkantrell.commander.exception.CommandException;
-import com.jkantrell.commander.exception.CommandUnrunnableException;
-
+import com.kntrel.mc.commander.command.Argument;
+import com.kntrel.mc.commander.command.provider.CommandProvider;
+import com.kntrel.mc.commander.exception.CommandException;
+import com.kntrel.mc.commander.exception.CommandUnrunnableException;
+import com.jkantrell.regionslib.region.RegionContext;
 import java.util.List;
 
 public class RuleValueProvider extends CommandProvider<Object> {
 
-    private RuleKeyProvider ruleProvider_ = null;
+    private final RegionContext ctx_;
+    private RuleProvider ruleProvider_ = null;
     private CommandProvider<?> valueProvider_ = null;
+
+
+    public RuleValueProvider(RegionContext ctx) {
+        this.ctx_ = ctx;
+    }
+
 
     @Override
     protected void onInitialization() throws CommandException {
         for (CommandProvider<?> provider : this.getInvocationProviders()) {
-            if (provider instanceof RuleKeyProvider ruleProvider) {
+            if (provider instanceof RuleProvider ruleProvider) {
                 this.ruleProvider_ = ruleProvider;
             }
             if (provider == this) { break; }
@@ -32,7 +39,7 @@ public class RuleValueProvider extends CommandProvider<Object> {
         if (this.valueProvider_ == null) {
             if (this.getSupplyConsecutive() < 1) {
                 try {
-                    this.valueProvider_ = this.getCommander().getProvider(null, this.ruleProvider_.provide().getDataType().getClazz());
+                    this.valueProvider_ = this.getCommander().getProvider(null, this.ruleProvider_.provide().getValueType().getType()).orElse(null);
                 } catch (CommandException e) {
                     return null;
                 }
@@ -46,7 +53,7 @@ public class RuleValueProvider extends CommandProvider<Object> {
     protected boolean handleArgument(Argument argument) throws CommandException {
         if (this.valueProvider_ == null) {
             if (this.getSupplyConsecutive() < 2) {
-                this.valueProvider_ = this.getCommander().getProvider(null, this.ruleProvider_.provide().getDataType().getClazz());
+                this.valueProvider_ = this.getCommander().getProvider(null, this.ruleProvider_.provide().getValueType().getType()).orElse(null);
                 this.valueProvider_.initialize(this);
             } else {
                 throw new CommandUnrunnableException("Unknown rule.");

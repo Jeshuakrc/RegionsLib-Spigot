@@ -29,7 +29,7 @@ public class Config extends AbstractYamlConfig {
     public void load() throws FileNotFoundException {
         super.load();
         if (this.configPath == null) {
-            this.configPath = "plugins/" + RegionsLib.getMain().getName();
+            this.configPath = "plugins/RegionLib";
         }
     }
 
