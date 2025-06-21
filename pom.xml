@@ -43,6 +43,23 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <relocations>
+                                <relocation>
+                                    <pattern>io.ebean</pattern>
+                                    <shadedPattern>com.kntrel.mc.regionLib.shaded.io.ebean</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>io.ebeaninternal</pattern>
+                                    <shadedPattern>com.kntrel.mc.regionLib.shaded.io.ebeaninternal</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>io.avaje</pattern>
+                                    <shadedPattern>com.kntrel.mc.regionLib.shaded.io.avaje</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
                         </configuration>
                     </execution>
                 </executions>
@@ -102,16 +119,6 @@
             <groupId>io.ebean</groupId>
             <artifactId>ebean-sqlite</artifactId>
             <version>15.8.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.ebean</groupId>
-            <artifactId>ebean-core</artifactId>
-            <version>15.8.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.ebean</groupId>
-            <artifactId>ebean-ddl-generator</artifactId>
-            <version>17.0.0-RC3</version>
         </dependency>
     </dependencies>
 </project>
