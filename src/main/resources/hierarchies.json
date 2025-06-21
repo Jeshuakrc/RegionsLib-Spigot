@@ -1,0 +1,105 @@
+[
+
+{
+	"id" : 1,
+	"name" : "domestic",
+	"groups" : [
+				{
+			"name" : "Acmons",
+			"level" : 1,
+			"abilities" : [
+				"PUT_BOOKS_ON_TOTEM_LECTERNS",
+				"TAKE_BOOKS_FROM_TOTEM_LECTERNS"
+			]
+		},
+		{
+			"name" : "Miembros",
+			"level" : 2,
+			"abilities" : [
+				"break_blocks",
+				"place_blocks",
+				"plant",
+				"place_redstone",
+				"place_item_frames",
+				"place_glow_item_frames",
+				"place_paintings",
+				"place_armor_stands",
+				"INTERACT_WITH_ARMOR_STANDS",
+				"put_water",
+				"put_lava",
+				"take_lava",
+				"take_water",
+				"wax_copper",
+				"scrap_copper",
+				"break_paintings",
+				"break_item_frames",
+				"break_glow_item_frame",
+				"break_armor_stands",
+				"pick_from_item_frames",
+				"damege_animals",
+				"PUT_INTO_ITEM_FRAMES",
+				"TELEPORT_IN",
+				"PRESS_ENFORCED_BUTTONS",
+				"PULL_LOCKED_LEVERS",
+				"assign_keys"
+			]
+		},
+		{
+			"name" : "Plebe",
+			"level" : 3,
+			"abilities" : [
+				"EXTINGUISH_FIRE",
+				"USE_RESPAWN_ANCHORS",
+				"PUT_BOOKS_ON_LECTERNS",
+				"TAKE_BOOKS_FROM_LECTERNS",
+				"use_beds"
+			]
+		}
+	]
+},
+{
+	"id" : 2,
+	"name" : "publicSpaces",
+	"groups" : [
+		{
+			"name" : "Acmons",
+			"level" : 1,
+			"abilities" : [
+				"PUT_BOOKS_ON_TOTEM_LECTERNS",
+				"TAKE_BOOKS_FROM_TOTEM_LECTERNS",
+				"break_blocks",
+				"place_blocks",
+				"place_redstone",
+				"place_item_frames",
+				"place_glow_item_frames",
+				"place_paintings",
+				"place_armor_stands",
+				"INTERACT_WITH_ARMOR_STANDS",
+				"put_water",
+				"put_lava",
+				"ignite",
+				"ignite_tnt",
+				"take_lava",
+				"take_water",
+				"wax_copper",
+				"scrap_copper",
+				"break_paintings",
+				"break_item_frames",
+				"break_glow_item_frame",
+				"break_armor_stands",
+				"pick_from_item_frames",
+				"damege_animals",
+				"damage_villagers",
+				"PUT_INTO_ITEM_FRAMES",
+				"PRESS_ENFORCED_BUTTONS",
+				"PULL_LOCKED_LEVERS",
+				"assign_keys",
+				"PUT_BOOKS_ON_LECTERNS",
+				"TAKE_BOOKS_FROM_LECTERNS",
+				"PLANT"
+			]
+		}
+	]
+}	
+
+]

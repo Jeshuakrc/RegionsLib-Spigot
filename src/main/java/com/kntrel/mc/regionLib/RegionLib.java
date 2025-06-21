@@ -15,31 +15,28 @@ import com.kntrel.mc.regionLib.region.rule.Rules;
 import com.kntrel.mc.commander.command.Commander;
 import com.kntrel.mc.commander.command.provider.CommandProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-
 import javax.annotation.Nonnull;
 import java.io.File;
+import java.io.IOException;
+import java.net.URI;
 
 public final class RegionLib extends JavaPlugin {
 
     //API
     private static boolean EXISTING_CONTEXT = false;
     @SuppressWarnings("unchecked")
-    public static RegionContext newRegionContext(@Nonnull JavaPlugin plugin, @Nonnull String dataBase, @Nonnull String hierarchies) {
+    public static RegionContext newRegionContext(@Nonnull JavaPlugin plugin, @Nonnull URI dataBase, @Nonnull File hierarchies) {
         if (EXISTING_CONTEXT) {
             throw new IllegalStateException("An instance of RegionContext has already been provided.");
         }
-
-
-        File databaseFile = new File(plugin.getDataFolder(), dataBase);
-        File hierarchesFile = new File(plugin.getDataFolder(), hierarchies);
 
         RegionContext rc = new RegionContext(
             plugin,
             ctx -> new SQLiteRegionRepository(
                 plugin,
                 ctx,
-                databaseFile,
-                new JsonHierarchyRepository(hierarchesFile)
+                dataBase,
+                new JsonHierarchyRepository(hierarchies)
             )
         );
 
@@ -57,6 +54,21 @@ public final class RegionLib extends JavaPlugin {
         EXISTING_CONTEXT = true;
         return rc;
     }
+    public static RegionContext newRegionContext(@Nonnull JavaPlugin plugin) {
+
+        File dbFile = new File(plugin.getDataFolder(), ".db");
+        if (!dbFile.exists()) {
+            dbFile.getParentFile().mkdirs();
+            try { dbFile.createNewFile(); } catch (IOException e) { throw new RuntimeException(e); }
+        }
+
+        File hierarchiesFile = new File(plugin.getDataFolder().getParentFile(), "hierarchies.json");
+        if (!hierarchiesFile.exists()) {
+            plugin.saveResource("hierarchies.json",true);
+        }
+
+        return RegionLib.newRegionContext(plugin, dbFile.toURI(), hierarchiesFile);
+    }
 
 
     //FIELDS
@@ -65,7 +77,7 @@ public final class RegionLib extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        RegionLib.newRegionContext(this, ".db", "hierarchies.json");
+        RegionLib.newRegionContext(this);
     }
 
     @Override

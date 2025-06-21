@@ -26,7 +26,7 @@ import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BoundingBox;
 import java.io.File;
-import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,25 +35,14 @@ public class SQLiteRegionRepository implements RegionRepository {
 
     // FIELDS
     private final RegionMapper regionMapper_;
-    private Database db_;
+    private final Database db_;
 
 
     // STATIC
-    public static Database initialize(File database, Plugin plugin) {
-        boolean isNew = !database.exists();
-
-        if (isNew) {
-            database.getParentFile().mkdirs();
-            try {
-                database.createNewFile();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
+    public static Database initialize(URI database, Plugin plugin) {
         DataSourceConfig dsConfig = new DataSourceConfig();
         dsConfig.setDriver("org.sqlite.JDBC");
-        dsConfig.setUrl("jdbc:sqlite:" + database.getAbsolutePath());
+        dsConfig.setUrl("jdbc:sqlite:" + database.getPath());
         dsConfig.setUsername("");
         dsConfig.setPassword("");
 
@@ -61,8 +50,8 @@ public class SQLiteRegionRepository implements RegionRepository {
         dbConfig.setName("SQLite");
         dbConfig.setDatabasePlatform(new SQLitePlatform());
         dbConfig.setDataSourceConfig(dsConfig);
-        dbConfig.setDdlGenerate(isNew);
-        dbConfig.setDdlRun(isNew);
+        dbConfig.setDdlGenerate(false);
+        dbConfig.setDdlRun(false);
 
         // Register your @Entity classes
         dbConfig.addClass(RegionDTO.class);
@@ -76,7 +65,7 @@ public class SQLiteRegionRepository implements RegionRepository {
 
 
     // CONSTRUCTORS
-    public SQLiteRegionRepository(Plugin plugin, RegionContext context, File database, HierarchyRepository hierarchyRepository) {
+    public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database, HierarchyRepository hierarchyRepository) {
         this.db_ = SQLiteRegionRepository.initialize(database, plugin);
         this.regionMapper_ = new RegionMapper(plugin, context, hierarchyRepository, new RuleMapper(context), new RegionDataMapper());
     }
