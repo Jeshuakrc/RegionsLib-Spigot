@@ -38,35 +38,9 @@ public class SQLiteRegionRepository implements RegionRepository {
     private final Database db_;
 
 
-    // STATIC
-    public static Database initialize(URI database, Plugin plugin) {
-        DataSourceConfig dsConfig = new DataSourceConfig();
-        dsConfig.setDriver("org.sqlite.JDBC");
-        dsConfig.setUrl("jdbc:sqlite:" + database.getPath());
-        dsConfig.setUsername("");
-        dsConfig.setPassword("");
-
-        DatabaseConfig dbConfig = new DatabaseConfig();
-        dbConfig.setName("SQLite");
-        dbConfig.setDatabasePlatform(new SQLitePlatform());
-        dbConfig.setDataSourceConfig(dsConfig);
-        dbConfig.setDdlGenerate(false);
-        dbConfig.setDdlRun(false);
-
-        // Register your @Entity classes
-        dbConfig.addClass(RegionDTO.class);
-        dbConfig.addClass(RegionDataDTO.class);
-        dbConfig.addClass(PermissionDTO.class);
-        dbConfig.addClass(RuleValueDTO.class);
-
-        ClassLoader pluginLoader = plugin.getClass().getClassLoader();
-        return DatabaseFactory.createWithContextClassLoader(dbConfig, pluginLoader);
-    }
-
-
     // CONSTRUCTORS
     public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database, HierarchyRepository hierarchyRepository) {
-        this.db_ = SQLiteRegionRepository.initialize(database, plugin);
+        this.db_ = DataBaseInitializer.getDatabase(plugin, database);
         this.regionMapper_ = new RegionMapper(plugin, context, hierarchyRepository, new RuleMapper(context), new RegionDataMapper());
     }
 
