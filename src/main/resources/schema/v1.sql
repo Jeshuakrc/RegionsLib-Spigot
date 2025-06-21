@@ -38,7 +38,7 @@ CREATE TABLE regionPermission (
                         NOT NULL,
     region_id   INTEGER REFERENCES region (id)
                         NOT NULL,
-    player_name TEXT    NOT NULL,
+    player_uuid TEXT    NOT NULL,
     level       INTEGER NOT NULL
                         DEFAULT (0),
     UNIQUE (

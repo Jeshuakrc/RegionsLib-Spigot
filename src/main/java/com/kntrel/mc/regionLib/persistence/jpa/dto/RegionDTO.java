@@ -44,16 +44,16 @@ public class RegionDTO implements JpaEntity<Region> {
     @Column(name = "max_z")
     private Double maxZ;
 
-    @Column(name = "hierarchy_id")
+    @Column(name = "hierarchy")
     private Long hierarchyId;
 
-    @OneToMany(mappedBy = "region")
+    @OneToMany(mappedBy = "region", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RuleValueDTO> rules;
 
-    @OneToMany(mappedBy = "region")
+    @OneToMany(mappedBy = "region", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PermissionDTO> permissions;
 
-    @OneToMany(mappedBy = "region")
+    @OneToMany(mappedBy = "region", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RegionDataDTO> dataContainer;
 
 

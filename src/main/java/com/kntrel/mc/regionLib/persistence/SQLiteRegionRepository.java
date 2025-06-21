@@ -18,17 +18,13 @@ import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.util.valueType.ValueHolder;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import io.ebean.Database;
-import io.ebean.DatabaseFactory;
-import io.ebean.config.DatabaseConfig;
-import io.ebean.datasource.DataSourceConfig;
-import io.ebean.platform.sqlite.SQLitePlatform;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BoundingBox;
-import java.io.File;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 
 public class SQLiteRegionRepository implements RegionRepository {
@@ -68,13 +64,14 @@ public class SQLiteRegionRepository implements RegionRepository {
     public List<Region> getAt(double x, double y, double z, World world) {
         return this.db_.find(RegionDTO.class)
                 .where()
-                .raw("? BETWEEN min(x1, x2) AND max(x1, x2)", x)
-                .raw("? BETWEEN min(y1, y2) AND max(y1, y2)", y)
-                .raw("? BETWEEN min(z1, z2) AND max(z1, z2)", z)
+                .raw("? BETWEEN minX AND maxX", x)
+                .raw("? BETWEEN minY AND maxY", y)
+                .raw("? BETWEEN minZ AND maxZ", z)
                 .eq("world", world.getName())
                 .findList()
                 .stream()
                 .map(this.regionMapper_::toModel)
+                .sorted()
                 .toList();
     }
 
@@ -86,6 +83,7 @@ public class SQLiteRegionRepository implements RegionRepository {
                 .findList()
                 .stream()
                 .map(this.regionMapper_::toModel)
+                .sorted()
                 .toList();
     }
 
@@ -106,6 +104,7 @@ public class SQLiteRegionRepository implements RegionRepository {
                 .findList()
                 .stream()
                 .map(this.regionMapper_::toModel)
+                .sorted()
                 .toList();
     }
 
@@ -117,7 +116,12 @@ public class SQLiteRegionRepository implements RegionRepository {
 
     @Override
     public void save(Region region) {
-        this.db_.save(this.regionMapper_.toEntity(region));
+        RegionDTO dto = this.regionMapper_.toEntity(region);
+        if (region.getId() == null) {
+            this.db_.save(dto);
+        } else {
+            this.db_.update(dto);
+        }
     }
 
     @Override
@@ -176,7 +180,7 @@ public class SQLiteRegionRepository implements RegionRepository {
                 reg.destroy();
             }
 
-            src.getPermissions().forEach(p -> reg.addPermission(new idHolderPermission(p.getId(), p.getPlayerName(), reg, p.getLevel())));
+            src.getPermissions().forEach(p -> reg.addPermission(new idHolderPermission(p.getId(), UUID.fromString(p.getPlayerUUID()), reg, p.getLevel())));
 
             src.getRules().stream()
                     .map(this.ruleMapper_::toModel)
@@ -217,6 +221,8 @@ public class SQLiteRegionRepository implements RegionRepository {
                     src.getPermissions().stream().map(p -> {
                         PermissionDTO dto = new PermissionDTO();
                         dto.setRegion(r);
+                        dto.setPlayerUUID(p.getPlayerId().toString());
+                        dto.setLevel(p.getGroup().getLevel());
                         if (p instanceof IdHolder h) { dto.setId(h.getId()); }
                         return dto;
                     }).toList()

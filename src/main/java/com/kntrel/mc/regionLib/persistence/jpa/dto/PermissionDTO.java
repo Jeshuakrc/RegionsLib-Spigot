@@ -15,8 +15,8 @@ public class PermissionDTO implements JpaEntity<Permission> {
     @JoinColumn(name = "region_id")
     private RegionDTO region;
 
-    @Column(name = "player_name")
-    private String playerName;
+    @Column(name = "player_uuid")
+    private String playerUUID;
 
     @Column(name = "level")
     int level;
@@ -29,8 +29,8 @@ public class PermissionDTO implements JpaEntity<Permission> {
     public RegionDTO getRegion() {
         return this.region;
     }
-    public String getPlayerName() {
-        return this.playerName;
+    public String getPlayerUUID() {
+        return this.playerUUID;
     }
     public int getLevel() {
         return this.level;
@@ -44,8 +44,8 @@ public class PermissionDTO implements JpaEntity<Permission> {
     public void setRegion(RegionDTO region) {
         this.region = region;
     }
-    public void setPlayerName(String playerName) {
-        this.playerName = playerName;
+    public void setPlayerUUID(String playerUUID) {
+        this.playerUUID = playerUUID;
     }
     public void setLevel(int level) {
         this.level = level;

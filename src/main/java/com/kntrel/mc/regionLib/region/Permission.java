@@ -3,18 +3,19 @@ package com.kntrel.mc.regionLib.region;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import org.bukkit.entity.Player;
 import java.util.Optional;
+import java.util.UUID;
 
 public class Permission {
 
     //FIELDS
-    private final String playerName_;
+    private final UUID playerId;
     private final Region region_;
     private final Hierarchy.Group group_;
 
 
     //CONSTRUCTORS
-    public Permission (String player, Region region, int level) {
-        this.playerName_ = player;
+    public Permission (UUID playerId, Region region, int level) {
+        this.playerId = playerId;
         this.region_ = region;
         this.group_ = this.region_.getHierarchy().getGroupAtOrAbove(level).orElse(null);
     }
@@ -26,10 +27,10 @@ public class Permission {
     public Hierarchy.Group getGroup(){
         return this.group_;
     }
-    public String getPlayerName() {
-        return this.playerName_;
+    public UUID getPlayerId() {
+        return this.playerId;
     }
     public Optional<Player> getPlayer(){
-        return Optional.ofNullable(this.region_.getContext().getServer().getPlayer(this.playerName_));
+        return Optional.ofNullable(this.region_.getContext().getServer().getPlayer(this.playerId));
     }
 }

@@ -208,7 +208,7 @@ public class Region implements Comparable<Region> {
         return List.copyOf(this.permissions_);
     }
     public List<Permission> getPermissions(Player player) {
-        return this.permissions_.stream().filter(p -> p.getPlayerName().equals(player.getName())).toList();
+        return this.permissions_.stream().filter(p -> p.getPlayerId().equals(player.getName())).toList();
     }
     public List<Player> getOnlineMembers(Predicate<Player> condition) {
         return this.permissions_.stream()
@@ -231,14 +231,14 @@ public class Region implements Comparable<Region> {
     }
 
     //PUBLIC METHODS
-    public boolean checkAbility( Player player, Ability ability) {
+    public boolean checkAbility(Player player, Ability ability) {
 
         if(!this.isEnabled()) { return true; }
         Permission perm = null;
         if (player != null) {
-            for (Permission i : permissions_) {
-                if (i.getPlayerName().equals(player.getName())) {
-                    perm = i;
+            for (Permission p : this.permissions_) {
+                if (p.getPlayerId().equals(player.getUniqueId())) {
+                    perm = p;
                     break;
                 }
             }
@@ -257,7 +257,7 @@ public class Region implements Comparable<Region> {
     }
     public boolean isMember(Player player) {
         if (player == null) { return false; }
-        return permissions_.stream().anyMatch(perm -> perm.getPlayerName().equals(player.getName()));
+        return permissions_.stream().anyMatch(perm -> perm.getPlayerId().equals(player.getName()));
     }
     public void save() {
         this.getContext().save(this);
@@ -304,20 +304,12 @@ public class Region implements Comparable<Region> {
         }
 
         this.permissions_.add(permission);
-
-        if (permission.getGroup().getLevel() > this.getHierarchy().getLowestLever()) { return; }
-        if (!this.getRuleValue("localMod", ValueType.BOOL).orElse(false)) { return; }
-
-        RegionLibEventListener.addPermissionRegistration(permission.getPlayerName(),"regions.mod.local");
-        this.context_.getServer().getLogger().info(
-        permission.getPlayerName() + " has been marker for \"regions.mod.local\" permissions. as is local mod of " + this.getName() + "."
-        );
     }
-    public void addPermission(String playerName, int level) {
-        this.addPermission(new Permission(playerName, this, level));
+    public void addPermission(UUID playerId, int level) {
+        this.addPermission(new Permission(playerId, this, level));
     }
     public void addPermission(Player player, int level) {
-        this.addPermission(player.getName(), level);
+        this.addPermission(player.getUniqueId(), level);
     }
     public void addPermission(Player player, Hierarchy.Group group) {
         if (!this.hierarchy_.getGroups().contains(group)) {
@@ -326,11 +318,7 @@ public class Region implements Comparable<Region> {
         this.addPermission(player,group.getLevel());
     }
     public boolean removePermission(Permission permission) {
-        boolean r = this.permissions_.remove(permission);
-        if (!r) { return false; }
-        if (permission.getGroup().getLevel() > 1) { return true; }
-        RegionLibEventListener.removePermissionRegistration(permission.getPlayerName(),"regions.mod.local");
-        return true;
+        return this.permissions_.remove(permission);
     }
     public boolean removePermissions(Player player) {
         return this.permissions_.removeIf(p -> p.getPlayer().map(pl -> pl.equals(player)).orElse(false));

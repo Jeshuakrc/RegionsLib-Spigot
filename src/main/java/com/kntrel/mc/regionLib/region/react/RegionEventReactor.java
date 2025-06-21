@@ -80,9 +80,7 @@ public abstract class RegionEventReactor implements Comparable<RegionEventReacto
         Area a = (areaGetter_ != null) ? areaGetter_.apply(event) : null;
         if (l == null && a == null) return Collections.emptyList();
 
-        List<Region> regions = isPointBased() ? context.getAt(l) : context.getIn(a);
-        Collections.sort(regions);
-        return regions;
+        return isPointBased() ? context.getAt(l) : context.getIn(a);
     }
     @Override public int compareTo(RegionEventReactor o) {
         return Comparator.comparingInt(RegionEventReactor::getBukkitPrioritySlot)
