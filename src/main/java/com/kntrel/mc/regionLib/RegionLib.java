@@ -62,7 +62,7 @@ public final class RegionLib extends JavaPlugin {
             try { dbFile.createNewFile(); } catch (IOException e) { throw new RuntimeException(e); }
         }
 
-        File hierarchiesFile = new File(plugin.getDataFolder().getParentFile(), "hierarchies.json");
+        File hierarchiesFile = new File(plugin.getDataFolder(), "hierarchies.json");
         if (!hierarchiesFile.exists()) {
             plugin.saveResource("hierarchies.json",true);
         }

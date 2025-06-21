@@ -56,7 +56,7 @@ public class JsonHierarchyRepository implements HierarchyRepository {
 
     @Override
     public List<Hierarchy> getByName(String name) {
-        return null;
+        return this.hierarchies.values().stream().filter(h -> h.getName().equals(name)).toList();
     }
 
     @Override

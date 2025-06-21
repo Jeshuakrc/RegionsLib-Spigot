@@ -9,6 +9,10 @@ import java.util.function.Function;
 
 public abstract class ValueType<T> {
 
+    //ASSETS
+    private static final Map<Class<?>, ValueType<?>> REGISTRY = new HashMap<>();
+
+
     //CONSTANTS
     public static final ValueType<String> STRING = ValueType.create(String.class, Function.identity(), Function.identity());
     public static final ValueType<Integer> INT = ValueType.create(Integer.class,
@@ -24,10 +28,6 @@ public abstract class ValueType<T> {
         try { return Double.parseDouble(val) != 0; } catch (NumberFormatException ignored) {}
         return false;
     });
-
-
-    //ASSETS
-    private static final Map<Class<?>, ValueType<?>> REGISTRY = new HashMap<>();
 
 
     //API
