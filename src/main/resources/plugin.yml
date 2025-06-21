@@ -1,6 +1,6 @@
-name: RegionsLib Spigot
+name: RegionLib
 version: '${project.version}'
-main: com.jkantrell.regionslibspigot.RegionsLibSpigot
+main: com.kntrel.mc.regionLib.RegionLib
 api-version: 1.18
 prefix: RegionsLib
 authors: [ TheJsUser ]

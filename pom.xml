@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.jkantrell</groupId>
+    <groupId>com.kntrel</groupId>
     <artifactId>RegionsLib-Spigot</artifactId>
     <version>main-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -15,7 +15,7 @@
         their code.
     </description>
     <properties>
-        <java.version>1.17</java.version>
+        <java.version>24</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <url>https://github.com/Jeshuakrc</url>
@@ -27,14 +27,14 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>17</source>
-                    <target>17</target>
+                    <source>21</source>
+                    <target>21</target>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <version>3.6.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -43,6 +43,20 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.ebean</groupId>
+                <artifactId>ebean-maven-plugin</artifactId>
+                <version>14.1.0</version>
+                <executions>
+                    <execution>
+                        <phase>process-classes</phase>
+                        <goals><goal>enhance</goal></goals>
+                        <configuration>
+                            <transformArgs>debug=1</transformArgs>
                         </configuration>
                     </execution>
                 </executions>
@@ -89,6 +103,15 @@
             <artifactId>ebean-sqlite</artifactId>
             <version>15.8.0</version>
         </dependency>
-
+        <dependency>
+            <groupId>io.ebean</groupId>
+            <artifactId>ebean-core</artifactId>
+            <version>15.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.ebean</groupId>
+            <artifactId>ebean-ddl-generator</artifactId>
+            <version>17.0.0-RC3</version>
+        </dependency>
     </dependencies>
 </project>
