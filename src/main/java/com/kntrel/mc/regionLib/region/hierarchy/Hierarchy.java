@@ -48,8 +48,8 @@ public class Hierarchy {
     public Optional<Hierarchy.Group> getGroup(int level) {
         return Optional.ofNullable(this.groups_.get(level));
     }
-    public Optional<Hierarchy.Group> getGroupAtOrAbove(int level) {
-        return Optional.ofNullable(groups_.ceilingEntry(level)).map(Map.Entry::getValue);
+    public Optional<Hierarchy.Group> getGroupAtOrBellow(int level) {
+        return Optional.ofNullable(groups_.floorEntry(level)).map(Map.Entry::getValue);
     }
     public Optional<Hierarchy.Group> getGroup(String name) {
         if (name == null) {
@@ -71,7 +71,7 @@ public class Hierarchy {
             return true;
         }
 
-        Hierarchy.Group group = this.getGroupAtOrAbove(level).orElse(null);
+        Hierarchy.Group group = this.getGroupAtOrBellow(level).orElse(null);
 
         if (group != null && group.allowedTo(ability)) {
             return true;

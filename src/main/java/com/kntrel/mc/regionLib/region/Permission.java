@@ -17,7 +17,7 @@ public class Permission {
     public Permission (UUID playerId, Region region, int level) {
         this.playerId = playerId;
         this.region_ = region;
-        this.group_ = this.region_.getHierarchy().getGroupAtOrAbove(level).orElse(null);
+        this.group_ = this.region_.getHierarchy().getGroupAtOrBellow(level).orElse(null);
     }
 
     //GETTERS

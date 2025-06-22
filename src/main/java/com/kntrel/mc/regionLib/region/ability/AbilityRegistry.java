@@ -6,10 +6,9 @@ import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.logging.Level;
 
 public class AbilityRegistry extends ReflectiveEventReactorRegistry<Ability> {
-
-
 
     // CONSTRUCTORS
     public AbilityRegistry(RegionContext context) {
@@ -37,22 +36,42 @@ public class AbilityRegistry extends ReflectiveEventReactorRegistry<Ability> {
         //Keeping the highest priority Ability
         Ability definitive = null;
         for (Ability a : abilities) {
-            if (
-                    a.getSupperAbility().map(discard::contains).orElse(false)
-                            || !a.appliesTo(event)
-            ) {
-                discard.add(a);
-            } else {
+            boolean applies = true;
+            Ability superAbility = a.getSupperAbility().orElse(null);
+            if (superAbility != null) {
+                applies = !discard.contains(superAbility);
+            }
+            if (applies) {
+                try {
+                    applies = a.appliesTo(event);
+                } catch (Throwable e) {
+                    this.log(Level.SEVERE, "Ability '%1$s' failed to validate. Event: %2$s. Falling back as valid.\nCaused by: %3$s", definitive.getName(), event.getClass().getSimpleName(), e);
+                }
+            }
+            if (applies) {
                 definitive = a;
+            } else {
+                discard.add(a);
             }
         }
         if (definitive == null) { return; }
 
         //Cancelling the event if the ability is not allowed.
-        boolean allow = definitive.test(event, this.context_);
+        boolean allowed;
+        try {
+            allowed = definitive.test(event, this.context_);
+        } catch (Throwable e) {
+            this.log(Level.SEVERE ,"Ability '%1$s' failed to test. Event: %2$s. Cáncelling event.\nCaused by: %3$s", definitive.getName(), event.getClass().getSimpleName(), e);
+            if (event instanceof Cancellable c) { c.setCancelled(true); }
+            allowed = false;
+        }
 
-
-        //TODO: Logging
+        this.log(Level.FINE,
+                "Ability '%1$s' %2$s to %3$s",
+                definitive.getName(),
+                allowed ? "allowed" : "not allowed",
+                definitive.getPlayerGetter().apply(event).getName()
+        );
     }
 
 
@@ -75,5 +94,9 @@ public class AbilityRegistry extends ReflectiveEventReactorRegistry<Ability> {
             this.registry_.register(ability);
             return ability;
         }
+    }
+
+    private void log(Level level, String formattedLog, Object... args) {
+        this.plugin_.getLogger().log(level ,String.format(formattedLog, args));
     }
 }

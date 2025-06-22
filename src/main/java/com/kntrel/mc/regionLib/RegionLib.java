@@ -14,21 +14,27 @@ import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.Rules;
 import com.kntrel.mc.commander.command.Commander;
 import com.kntrel.mc.commander.command.provider.CommandProvider;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.logging.Level;
 
 public final class RegionLib extends JavaPlugin {
 
+
     //API
     private static boolean EXISTING_CONTEXT = false;
+    private static boolean ENABLED = false;
+
     @SuppressWarnings("unchecked")
     public static RegionContext newRegionContext(@Nonnull JavaPlugin plugin, @Nonnull URI dataBase, @Nonnull File hierarchies) {
         if (EXISTING_CONTEXT) {
             throw new IllegalStateException("An instance of RegionContext has already been provided.");
         }
+        RegionLib.enable(plugin);
 
         RegionContext rc = new RegionContext(
             plugin,
@@ -68,6 +74,16 @@ public final class RegionLib extends JavaPlugin {
         }
 
         return RegionLib.newRegionContext(plugin, dbFile.toURI(), hierarchiesFile);
+    }
+
+    public static void enable(Plugin plugin) {
+        if (ENABLED) { return; }
+        plugin.getServer().getPluginManager().registerEvents(new RegionLibEventListener(plugin), plugin);
+
+        java.util.logging.Logger pluginLogger = plugin.getLogger();
+        pluginLogger.setLevel(Level.ALL);
+        pluginLogger.addHandler(new RegionLibLogHandler(plugin.getName()));
+        pluginLogger.setUseParentHandlers(false);
     }
 
 

@@ -45,6 +45,7 @@ public final class Abilities {
             PlayerTeleportEvent.TeleportCause.NETHER_PORTAL, PlayerTeleportEvent.TeleportCause.PLUGIN
     );
     private static final EnumBuilder<BlockRightClickedEvent, Material, Ability> RIGHT_CLICKED_WITH_ITEM = Ability.on(BlockRightClickedEvent.class)
+            .when(e -> e.getItem() != null)
             .by(BlockRightClickedEvent::getPlayer)
             .in(e -> Area.ofBlock(e.getBlock().getRelative(e.getBlockFace())))
             .withEnum(e -> e.getItem().getType());

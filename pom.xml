@@ -120,5 +120,11 @@
             <artifactId>ebean-sqlite</artifactId>
             <version>15.8.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.25.0</version>
+            <scope>provided</scope>   <!-- do NOT shade it -->
+        </dependency>
     </dependencies>
 </project>
