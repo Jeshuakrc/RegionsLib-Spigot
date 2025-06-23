@@ -40,6 +40,7 @@ public class RegionLibEventListener implements Listener {
                     e.getItem(),
                     e.getClickedBlock(),
                     e.getBlockFace(),
+                    e.getClickedPosition(),
                     e.getHand()
             );
             this.plugin_.getServer().getPluginManager().callEvent(rightClickedEvent);

@@ -109,17 +109,13 @@ public class Ability extends RegionEventReactor implements BiPredicate<Event, Re
             case oldest -> bools[bools.length - 1];
             case all -> {
                 for (boolean b : bools) {
-                    if (!b) {
-                        yield false;
-                    }
+                    if (!b) { yield false; }
                 }
                 yield true;
             }
             case any -> {
                 for (boolean b : bools) {
-                    if (b) {
-                        yield true;
-                    }
+                    if (b) { yield true; }
                 }
                 yield false;
             }

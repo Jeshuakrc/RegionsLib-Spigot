@@ -12,7 +12,12 @@ public class Area extends BoundingBox {
 
     //CONSTRUCTORS
     public static Area ofBlock(Block block) {
-        return new Area(block.getBoundingBox(), block.getWorld());
+        BoundingBox bb = block.getBoundingBox();
+        if (nullBoundingBox(bb)) {
+            int x = block.getX(), y = block.getY(), z = block.getZ();
+            bb = new BoundingBox(x, y, z, x + 1, y + 1, z + 1);
+        }
+        return new Area(bb, block.getWorld());
     }
     public Area(double x1, double y1, double z1, double x2, double y2, double z2, World world) {
         super(x1, y1, z1, x2, y2, z2);
@@ -35,5 +40,15 @@ public class Area extends BoundingBox {
     //SETTERS
     public void setWorld(World world) {
         this.world_ = world;
+    }
+
+
+    //PRIVATE
+    private static boolean nullBoundingBox(BoundingBox bb) {
+        return     bb.getMinX() == bb.getMaxX()
+                && bb.getMaxX() == bb.getMinY()
+                && bb.getMinY() == bb.getMaxY()
+                && bb.getMaxY() == bb.getMinZ()
+                && bb.getMinZ() == bb.getMaxZ();
     }
 }

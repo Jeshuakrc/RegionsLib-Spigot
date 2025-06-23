@@ -94,31 +94,31 @@ public abstract class RegionEventReactorBuilder<E extends Event ,T extends Regio
     }
     protected PointGetter getPointGetter() {
         if (this.areaGetter_ != null) { return null; }
+        if (this.pointGetter_ == null && EntityEvent.class.isAssignableFrom(this.eventClass_)) {
+            this.pointGetter_ = e -> ((EntityEvent) e).getEntity().getLocation();
+        }
         if (this.pointGetter_ != null) {
             return e -> this.pointGetter_.apply(this.eventClass_.cast(e));
-        }
-        if (EntityEvent.class.isAssignableFrom(this.eventClass_)) {
-            return e -> ((EntityEvent) e).getEntity().getLocation();
         }
         throw new IllegalStateException("Cannot build ability. Unable to infer location");
     }
     protected AreaGetter getAreaGetter() {
         if (this.pointGetter_ != null) { return null; }
-        if (this.areaGetter_ != null) {
-            return e -> this.areaGetter_.apply(this.eventClass_.cast(e));
-        }
-        if (BlockEvent.class.isAssignableFrom(this.eventClass_)) {
-            return e -> {
+        if (this.areaGetter_ == null && BlockEvent.class.isAssignableFrom(this.eventClass_)) {
+            this.areaGetter_ = e -> {
                 BlockEvent be = (BlockEvent) e;
                 return new Area(be.getBlock().getBoundingBox(), be.getBlock().getWorld());
             };
         }
-        if (PlayerInteractEvent.class.isAssignableFrom(this.eventClass_)) {
-            return e -> {
+        if (this.areaGetter_ == null && PlayerInteractEvent.class.isAssignableFrom(this.eventClass_)) {
+            this.areaGetter_ = e -> {
                 Block b = ((PlayerInteractEvent) e).getClickedBlock();
                 if (b == null) return null;
                 return new Area(b.getBoundingBox(), b.getWorld());
             };
+        }
+        if (this.areaGetter_ != null) {
+            return e -> this.areaGetter_.apply(this.eventClass_.cast(e));
         }
         throw new IllegalStateException("Cannot build ability. Unable to infer location");
     }

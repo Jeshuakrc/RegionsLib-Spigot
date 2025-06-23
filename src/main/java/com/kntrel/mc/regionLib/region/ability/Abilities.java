@@ -47,7 +47,7 @@ public final class Abilities {
     private static final EnumBuilder<BlockRightClickedEvent, Material, Ability> RIGHT_CLICKED_WITH_ITEM = Ability.on(BlockRightClickedEvent.class)
             .when(e -> e.getItem() != null)
             .by(BlockRightClickedEvent::getPlayer)
-            .in(e -> Area.ofBlock(e.getBlock().getRelative(e.getBlockFace())))
+            .at(BlockRightClickedEvent::getClickedLocation)
             .withEnum(e -> e.getItem().getType());
     private static final EnumBuilder<BlockRightClickedEvent, Material, Ability> RIGHT_CLICKED_BLOCK = Ability.on(BlockRightClickedEvent.class)
             .by(BlockRightClickedEvent::getPlayer)
@@ -65,19 +65,24 @@ public final class Abilities {
             .by(e -> DAMAGER_PLAYER_GETTER.apply(e.getDamager()))
             .at(e -> e.getEntity().getLocation())
             .withEnum(e -> e.getEntity().getType());
-
-
+    private final static EnumBuilder<PlayerBucketEmptyEvent, Material, Ability> BUCKET_EMPTY = Ability.on(PlayerBucketEmptyEvent.class)
+            .by(PlayerBucketEmptyEvent::getPlayer)
+            .in(e -> Area.ofBlock(e.getBlock()))
+            .withEnum(PlayerBucketEvent::getBucket);
+    
+    
     //BlocBreakEvent
     @DeclareAbility
-    public final static Ability
+    public static final Ability
     BREAK_BLOCKS = Ability.on(BlockBreakEvent.class).by(BlockBreakEvent::getPlayer).prioritize(-1).build(),
     BREAK_CROPS = Ability.on(BlockBreakEvent.class).when(e -> RegionLib.CONFIG.plantableBlocks.contains(e.getBlock().getType())).by(BlockBreakEvent::getPlayer).build(),
     BREAK_REDSTONE = Ability.on(BlockBreakEvent.class).when(e -> RegionLib.CONFIG.breakableRedstoneBlocks.contains(e.getBlock().getType())).by(BlockBreakEvent::getPlayer).build(),
     EXTINGUISH_FIRE = Ability.on(BlockBreakEvent.class).when(e -> e.getBlock().getType().equals(Material.FIRE)).by(BlockBreakEvent::getPlayer).build();
 
+
     //BlockPlaceEvent
     @DeclareAbility
-    public final static Ability
+    public static final Ability
     PLACE_BLOCKS = Ability.on(BlockPlaceEvent.class).by(BlockPlaceEvent::getPlayer).prioritize(-1).build(),
     PLANT = Ability.on(BlockPlaceEvent.class).when(e -> RegionLib.CONFIG.plantableBlocks.contains(e.getBlock().getType())).by(BlockPlaceEvent::getPlayer).build(),
     PLACE_REDSTONE = Ability.on(BlockPlaceEvent.class).when(e -> RegionLib.CONFIG.breakableRedstoneBlocks.contains(e.getBlock().getType())).by(BlockPlaceEvent::getPlayer).build();
@@ -85,7 +90,7 @@ public final class Abilities {
 
     //BlockRightClickedEvent
     @DeclareAbility
-    public final static Ability RIGHT_CLICK_BLOCKS = Ability.on(BlockRightClickedEvent.class).by(BlockRightClickedEvent::getPlayer).prioritize(-1).build(),
+    public static final Ability RIGHT_CLICK_BLOCKS = Ability.on(BlockRightClickedEvent.class).by(BlockRightClickedEvent::getPlayer).prioritize(-1).build(),
     PLACE_ITEM_FRAMES = RIGHT_CLICKED_WITH_ITEM.build(Material.ITEM_FRAME),
     PLACE_GLOW_ITEM_FRAMES = RIGHT_CLICKED_WITH_ITEM.build(Material.GLOW_ITEM_FRAME),
     PLACE_PAINTINGS = RIGHT_CLICKED_WITH_ITEM.build(Material.PAINTING),
@@ -124,8 +129,6 @@ public final class Abilities {
     OPEN_DOORS = RIGHT_CLICKED_BLOCK.build(m -> m.toString().contains("DOOR")),
     OPEN_TRAPDOORS = RIGHT_CLICKED_BLOCK.build(m -> m.toString().contains("TRAPDOOR")),
     OPEN_FENCE_GATES = RIGHT_CLICKED_BLOCK.build(m -> m.toString().contains("FENCE_GATE")),
-    PUT_WATER = RIGHT_CLICKED_WITH_ITEM.build(Material.WATER_BUCKET),
-    PUT_LAVA = RIGHT_CLICKED_WITH_ITEM.build(Material.LAVA_BUCKET),
     PRESS_BUTTONS = RIGHT_CLICKED_BLOCK.build(m -> m.toString().contains("BUTTON")),
     IGNITE = RIGHT_CLICKED_WITH_ITEM.build(Material.FLINT_AND_STEEL),
     IGNITE_TNT = Ability.on(BlockRightClickedEvent.class)
@@ -133,36 +136,40 @@ public final class Abilities {
             .extend(IGNITE)
             .when(e -> e.getBlock().getType().equals(Material.TNT))
             .in(e -> Area.ofBlock(e.getBlock()))
-            .build(),
-    USE_BEDS = RIGHT_CLICKED_BLOCK.build(m -> m.toString().contains("BED"));
+            .build();
+
 
     //LiquidRemoveEvent
     @DeclareAbility
-    public final static Ability
+    public static final Ability
     TAKE_LAVA = REMOVED_LIQUID.build(LiquidRemoveEvent.Type.LAVA),
     TAKE_WATER = REMOVED_LIQUID.build(LiquidRemoveEvent.Type.WATER),
     TAKE_INFINITE_WATER = REMOVED_LIQUID.build(LiquidRemoveEvent.Type.INFINITE_WATER);
 
+
     //PlayerTakeLecternBookEvent
     @DeclareAbility
-    public final static Ability TAKE_BOOKS_FROM_LECTERNS = Ability.on(PlayerTakeLecternBookEvent.class).in(e -> Area.ofBlock(e.getLectern().getBlock())).build();
+    public static final Ability TAKE_BOOKS_FROM_LECTERNS = Ability.on(PlayerTakeLecternBookEvent.class).in(e -> Area.ofBlock(e.getLectern().getBlock())).build();
+
 
     //CooperBlockInteractEvent
     @DeclareAbility
-    public final static Ability
+    public static final Ability
     WAX_COPPER = Ability.on(CopperBlockInteractEvent.class).by(CopperBlockInteractEvent::getPlayer).when(e -> e.getAction().equals(CopperBlockInteractEvent.Action.WAX)).build(),
     SCRAP_COPPER = Ability.on(CopperBlockInteractEvent.class).by(CopperBlockInteractEvent::getPlayer).when(e -> e.getAction().equals(CopperBlockInteractEvent.Action.SCRAP)).build();
 
+
     //HangingBreakByEntityEvent
     @DeclareAbility
-    public final static Ability
+    public static final Ability
     BREAK_PAINTINGS = HANGING_BREAK.build(EntityType.PAINTING),
     BREAK_ITEM_FRAMES = HANGING_BREAK.build(EntityType.ITEM_FRAME),
     BREAK_GLOW_ITEM_FRAMES = HANGING_BREAK.build(EntityType.GLOW_ITEM_FRAME);
 
+
     //EntityDamageByEntityEvent
     @DeclareAbility
-    public final static Ability
+    public static final Ability
     BREAK_ARMOR_STANDS = ENTITY_DAMAGED.build(EntityType.ARMOR_STAND),
     PICK_FROM_ITEM_FRAMES = ENTITY_DAMAGED.build(EntityType.ITEM_FRAME),
     PICK_FROM_GLOW_FRAMES = ENTITY_DAMAGED.build(EntityType.GLOW_ITEM_FRAME),
@@ -170,9 +177,10 @@ public final class Abilities {
     DAMAGE_ANIMALS = Ability.on(EntityDamageByEntityEvent.class).by(e -> DAMAGER_PLAYER_GETTER.apply(e.getDamager())).when(e -> e.getEntity() instanceof Animals).build(),
     DAMAGE_MONSTERS = Ability.on(EntityDamageByEntityEvent.class).by(e -> DAMAGER_PLAYER_GETTER.apply(e.getDamager())).when(e -> e.getEntity() instanceof Monster).build();
 
+
     //PlayerInteractEntityEvent
     @DeclareAbility
-    public final static Ability
+    public static final Ability
     INTERACT_WITH_ITEM_FRAMES = Ability.on(PlayerInteractEntityEvent.class)
             .when(e -> e.getRightClicked().getType().equals(EntityType.ITEM_FRAME))
             .at(e -> e.getRightClicked().getLocation())
@@ -192,17 +200,32 @@ public final class Abilities {
             .at(e -> e.getRightClicked().getLocation())
             .build();
 
+
+    //PlayerBucketEmptyEvent
+    @DeclareAbility
+    public static final Ability
+            PUT_WATER = BUCKET_EMPTY.build(Material.WATER_BUCKET),
+            PUT_LAVA = BUCKET_EMPTY.build(Material.LAVA_BUCKET);
+
+
     //PlayerInteractAtEntityEvent
     @DeclareAbility
-    public final static Ability INTERACT_WITH_ARMOR_STANDS = Ability.on(PlayerInteractAtEntityEvent.class)
+    public static final Ability INTERACT_WITH_ARMOR_STANDS = Ability.on(PlayerInteractAtEntityEvent.class)
             .when(e -> e.getRightClicked().getType().equals(EntityType.ARMOR_STAND))
             .at(e -> e.getRightClicked().getLocation())
             .build();
 
 
+    //PlayerBedEnterEvent
+    @DeclareAbility
+    public static final Ability USE_BEDS = Ability.on(PlayerBedEnterEvent.class)
+            .in(e -> Area.ofBlock(e.getBed()))
+            .build();
+
+
     //PlayerTeleportEvent
     @DeclareAbility
-    public final static Ability
+    public static final Ability
     TELEPORT_IN = Ability.on(PlayerTeleportEvent.class).when(e -> VALID_TELEPORT_CAUSES.contains(e.getCause())).at(PlayerMoveEvent::getTo).build(),
     TELEPORT_OUT = Ability.on(PlayerTeleportEvent.class).extend(TELEPORT_IN).at(PlayerMoveEvent::getFrom).build();
 }

@@ -46,7 +46,9 @@ public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E
     protected PointGetter getPointGetter() {
         try {
             return super.getPointGetter();
-        } catch (IllegalStateException ignored) {}
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+        }
         Function<Event, Player> playerGetter = this.getPlayerGetter();
         return e -> playerGetter.apply(e).getLocation();
     }
