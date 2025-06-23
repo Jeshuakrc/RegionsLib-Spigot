@@ -1,5 +1,6 @@
 package com.kntrel.mc.regionLib.util;
 
+import com.kntrel.mc.regionLib.region.Region;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -7,6 +8,31 @@ import org.bukkit.util.BoundingBox;
 
 public class Area extends BoundingBox {
 
+    //ASSETS
+    public enum Corner {
+        UP_NORTH_EAST(1, 1, 0),
+        UP_NORTH_WEST(0 , 1, 0),
+        UP_SOUTH_EAST(1 , 1, 1),
+        UP_SOUTH_WEST(0 , 1, 1),
+        DOWN_NORTH_EAST(1 , 0, 0),
+        DOWN_NORTH_WEST(0 , 0, 0),
+        DOWN_SOUTH_EAST(1 , 0, 1),
+        DOWN_SOUTH_WEST(0 , 0, 1);
+
+        private final byte modX_, modY_, modZ_;
+
+        Corner(int modX, int modY, int modZ) {
+            this.modX_ = (byte) modX;
+            this.modY_ = (byte) modY;
+            this.modZ_ = (byte) modZ;
+        }
+        public byte getModX() { return this.modX_; }
+        public byte getModY() { return this.modY_; }
+        public byte getModZ() { return this.modZ_; }
+    }
+
+
+    //FIELDS
     private World world_;
 
 
@@ -18,6 +44,9 @@ public class Area extends BoundingBox {
             bb = new BoundingBox(x, y, z, x + 1, y + 1, z + 1);
         }
         return new Area(bb, block.getWorld());
+    }
+    public static Area ofRegion(Region region) {
+        return new Area(region.getBoundingBox(), region.getWorld());
     }
     public Area(double x1, double y1, double z1, double x2, double y2, double z2, World world) {
         super(x1, y1, z1, x2, y2, z2);
@@ -36,10 +65,10 @@ public class Area extends BoundingBox {
     public Location middle() {
         return new Location(this.getWorld(), this.getCenterX(), this.getCenterY(), this.getCenterZ());
     }
-
-    //SETTERS
-    public void setWorld(World world) {
-        this.world_ = world;
+    public Location getCornerLocation(Area.Corner corner) {
+        Location loc = new Location(this.getWorld(), this.getMinX(), this.getMinY(), this.getMinZ());
+        loc.add(this.getWidthX()*corner.getModX(), this.getHeight()*corner.getModY(), this.getWidthZ()*corner.getModZ());
+        return loc;
     }
 
 

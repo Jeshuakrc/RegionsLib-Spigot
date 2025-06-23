@@ -172,15 +172,8 @@ public class RegionCommand extends CommandHolder {
 
     @Command(label = "showlimit")
     @Requires(permission = "regions.command.showlimit")
-    public boolean showLimit(@Sender Player player, Region region, Long persistence) {
-        player.sendMessage("Displaying " + region.getName() + " boundaries.");
-        return true;
-    }
-
-    @Command(label = "showlimits")
-    @Requires(permission = "regions.command.showlimit")
-    public boolean showLimits(@Sender Player player, Long persistence) {
-
+    public boolean showLimit(@Sender Player player, Region region) {
+        region.display(player);
         return true;
     }
 

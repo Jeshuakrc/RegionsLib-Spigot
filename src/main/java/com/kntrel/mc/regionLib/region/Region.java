@@ -1,13 +1,13 @@
 package com.kntrel.mc.regionLib.region;
 
 import com.kntrel.mc.regionLib.RegionLib;
-import com.kntrel.mc.regionLib.RegionLibEventListener;
 import com.kntrel.mc.regionLib.event.PlayerEnterRegionEvent;
 import com.kntrel.mc.regionLib.event.PlayerLeaveRegionEvent;
 import com.kntrel.mc.regionLib.event.RegionCreateEvent;
 import com.kntrel.mc.regionLib.event.RegionDestroyEvent;
 import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
+import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.RuleValue;
@@ -28,7 +28,7 @@ public class Region implements Comparable<Region> {
 
     //FIELDS
     private Long id_;
-    private final RegionContext context_;
+    private final RegionContext ctx_;
     private World world_ = null;
     private final ArrayList<Permission> permissions_ = new ArrayList<>();
     private String name_;
@@ -43,7 +43,7 @@ public class Region implements Comparable<Region> {
 
     //CONSTRUCTORS
     public Region(RegionContext context, BoundingBox initialBox, World world, String name, Hierarchy hierarchy, @Nullable Entity creator) {
-        this.context_ = context;
+        this.ctx_ = context;
         this.setWorld(world);
         this.resize(initialBox);
         this.setName(name);
@@ -54,7 +54,7 @@ public class Region implements Comparable<Region> {
         }
 
         RegionCreateEvent event = new RegionCreateEvent(this, creator);
-        this.context_.callEvent(event);
+        this.ctx_.callEvent(event);
         if (event.isCancelled()) { this.destroy(); }
     }
     public Region(RegionContext context, BoundingBox initialBox, World world, String name, Hierarchy hierarchy) {
@@ -101,12 +101,13 @@ public class Region implements Comparable<Region> {
         this.hierarchy_ = hierarchy;
     }
 
+
     //GETTERS
     public Long getId() {
         return this.id_;
     }
     public RegionContext getContext() {
-        return this.context_;
+        return this.ctx_;
     }
     public World.Environment getDimension() {
         return this.world_.getEnvironment();
@@ -230,7 +231,8 @@ public class Region implements Comparable<Region> {
                 .toList();
     }
 
-    //PUBLIC METHODS
+
+    //PERMISSIONS
     public boolean checkAbility(Player player, Ability ability) {
 
         if(!this.isEnabled()) { return true; }
@@ -245,58 +247,9 @@ public class Region implements Comparable<Region> {
         }
         return (perm == null) ? this.getHierarchy().checkAbility(ability) : this.getHierarchy().checkAbility(ability,perm.getGroup());
     }
-    public boolean contains(Location location) {
-        return this.contains(location.getX(),location.getY(),location.getZ(),location.getWorld());
-    }
-    public boolean contains(double x, double y, double z, World world) {
-        if(!this.getWorld().equals(world)) { return false; }
-        return this.getBoundingBox().contains(x,y,z);
-    }
-    public boolean contains(BoundingBox boundingBox) {
-        return this.boundingBox_.contains(boundingBox);
-    }
     public boolean isMember(Player player) {
         if (player == null) { return false; }
         return permissions_.stream().anyMatch(perm -> perm.getPlayerId().equals(player.getName()));
-    }
-    public void save() {
-        this.getContext().save(this);
-    }
-    public List<Region> getOverlappingRegions() {
-        return this.context_.getIn(this);
-    }
-    public void destroy(@Nullable Entity destructor){
-        RegionDestroyEvent event = new RegionDestroyEvent(this, destructor);
-        this.context_.callEvent(event);
-        if (event.isCancelled()) { return; }
-
-        this.insidePlayers_.clear();
-        this.isDestroyed_ = true;
-    }
-    public void destroy() {
-        this.destroy(null);
-    }
-    public void clearRules() {
-        this.rulesValues_.clear();
-    }
-    public boolean removeRule(String label) {
-        return this.rulesValues_.remove(label) != null;
-    }
-    public void setRuleValue(RuleValue<?> ruleValue) {
-        this.rulesValues_.put(ruleValue.getRule().getName(), ruleValue);
-    }
-    public <T> void setRuleValue(String name, T value) {
-        this.rulesValues_.put(name, ValueHolder.of(value));
-    }
-    public boolean hasRule(Rule<?> rule) {
-        ValueHolder<?> valueHolder = this.rulesValues_.get(rule.getName());
-        return rule.getValueType().equals(valueHolder.getType());
-    }
-    public boolean hasRule(String name) {
-        return this.rulesValues_.containsKey(name);
-    }
-    public void clearPermissions() {
-        this.permissions_.clear();
     }
     public void addPermission(Permission permission) {
         if (!permission.getRegion().equals(this)) {
@@ -322,6 +275,47 @@ public class Region implements Comparable<Region> {
     }
     public boolean removePermissions(Player player) {
         return this.permissions_.removeIf(p -> p.getPlayer().map(pl -> pl.equals(player)).orElse(false));
+    }
+    public void clearPermissions() {
+        this.permissions_.clear();
+    }
+
+
+    //RULE
+    public boolean hasRule(Rule<?> rule) {
+        ValueHolder<?> valueHolder = this.rulesValues_.get(rule.getName());
+        return rule.getValueType().equals(valueHolder.getType());
+    }
+    public boolean hasRule(String name) {
+        return this.rulesValues_.containsKey(name);
+    }
+    public void setRuleValue(RuleValue<?> ruleValue) {
+        this.rulesValues_.put(ruleValue.getRule().getName(), ruleValue);
+    }
+    public <T> void setRuleValue(String name, T value) {
+        this.rulesValues_.put(name, ValueHolder.of(value));
+    }
+    public boolean removeRule(String label) {
+        return this.rulesValues_.remove(label) != null;
+    }
+    public void clearRules() {
+        this.rulesValues_.clear();
+    }
+
+
+    //SHAPE
+    public boolean contains(Location location) {
+        return this.contains(location.getX(),location.getY(),location.getZ(),location.getWorld());
+    }
+    public boolean contains(double x, double y, double z, World world) {
+        if(!this.getWorld().equals(world)) { return false; }
+        return this.getBoundingBox().contains(x,y,z);
+    }
+    public boolean contains(BoundingBox boundingBox) {
+        return this.boundingBox_.contains(boundingBox);
+    }
+    public List<Region> getOverlappingRegions() {
+        return this.ctx_.getIn(this);
     }
     public void resize(double[] corners) {
         if (corners.length < 6) {
@@ -364,6 +358,41 @@ public class Region implements Comparable<Region> {
     }
 
 
+    //DISPLAY
+    public void display(Player player) {
+        this.ctx_.displayRegion(this, player);
+    }
+    public void display(AreaDisplayer displayer, Player player) {
+        this.ctx_.displayRegion(this, displayer, player);
+    }
+    public void display(long seconds, Player player) {
+        this.ctx_.displayRegion(this, seconds, player);
+    }
+    public void display(AreaDisplayer displayer, long seconds, Player player) {
+        this.ctx_.displayRegion(this, displayer, seconds, player);
+    }
+    public void stopDisplay() {
+        this.ctx_.stopDisplayRegion(this);
+    }
+
+
+    //LIFECYCLE
+    public void save() {
+        this.getContext().save(this);
+    }
+    public void destroy(@Nullable Entity destructor){
+        RegionDestroyEvent event = new RegionDestroyEvent(this, destructor);
+        this.ctx_.callEvent(event);
+        if (event.isCancelled()) { return; }
+
+        this.insidePlayers_.clear();
+        this.isDestroyed_ = true;
+    }
+    public void destroy() {
+        this.destroy(null);
+    }
+
+
     //IMPLEMENTATIONS
     @Override public boolean equals(Object o) {
         if (o == null) { return false; }
@@ -389,11 +418,11 @@ public class Region implements Comparable<Region> {
                 continue;
             }
             i.remove();
-            this.context_.getServer().getPluginManager().callEvent(new PlayerLeaveRegionEvent(p, this));
+            this.ctx_.getServer().getPluginManager().callEvent(new PlayerLeaveRegionEvent(p, this));
         }
         players.forEach(pl -> {
             this.insidePlayers_.add(pl);
-            this.context_.getServer().getPluginManager().callEvent(new PlayerEnterRegionEvent(pl, this));
+            this.ctx_.getServer().getPluginManager().callEvent(new PlayerEnterRegionEvent(pl, this));
         });
     }
 }
