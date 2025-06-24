@@ -10,7 +10,6 @@ import org.bukkit.event.block.BlockEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
-
 import javax.annotation.Nonnull;
 
 public class BlockRightClickedEvent extends BlockEvent implements Cancellable {
@@ -20,9 +19,7 @@ public class BlockRightClickedEvent extends BlockEvent implements Cancellable {
     public static HandlerList getHandlerList() {
         return HANDLERS;
     }
-    @Override
-    @Nonnull
-    public HandlerList getHandlers() {
+    @Override @Nonnull public HandlerList getHandlers() {
         return HANDLERS;
     }
     //===============================================================

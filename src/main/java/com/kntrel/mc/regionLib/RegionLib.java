@@ -3,6 +3,7 @@ package com.kntrel.mc.regionLib;
 import com.kntrel.mc.regionLib.command.RegionCommand;
 import com.kntrel.mc.regionLib.command.commanderProvider.annotation.RuleValue;
 import com.kntrel.mc.regionLib.command.commanderProvider.*;
+import com.kntrel.mc.regionLib.event.RegionLibEvent;
 import com.kntrel.mc.regionLib.io.Config;
 import com.kntrel.mc.regionLib.persistence.JsonHierarchyRepository;
 import com.kntrel.mc.regionLib.persistence.SQLiteRegionRepository;
@@ -26,26 +27,31 @@ public final class RegionLib extends JavaPlugin {
 
 
     //API
-    private static boolean EXISTING_CONTEXT = false;
-    private static boolean ENABLED = false;
+    private static Plugin OWNER_PLUGIN = null;
 
-    @SuppressWarnings("unchecked")
-    public static RegionContext newRegionContext(@Nonnull JavaPlugin plugin, @Nonnull URI dataBase, @Nonnull File hierarchies) {
-        if (EXISTING_CONTEXT) {
-            throw new IllegalStateException("An instance of RegionContext has already been provided.");
+
+    public static RegionContext enable(@Nonnull JavaPlugin plugin, @Nonnull URI dataBase, @Nonnull File hierarchies) {
+
+        //Handle already enabled
+        if (OWNER_PLUGIN != null) {
+            String msg = "RegionLib has already been enabled";
+            if (!(OWNER_PLUGIN instanceof RegionLib)) {
+                msg += " and it's owned by the '" + OWNER_PLUGIN.getName() + "' plugin";
+            }
+            throw new IllegalStateException(msg);
         }
-        RegionLib.enable(plugin);
 
-        RegionContext rc = new RegionContext(
-            plugin,
-            ctx -> new SQLiteRegionRepository(
-                plugin,
-                ctx,
-                dataBase,
-                new JsonHierarchyRepository(hierarchies)
-            )
-        );
+        //Enabling
+        OWNER_PLUGIN = plugin;
 
+        //Initialising internal events singleton
+        RegionLibEvent.enable(OWNER_PLUGIN);
+        OWNER_PLUGIN.getServer().getPluginManager().registerEvents(new RegionLibEventListener(plugin), plugin);
+
+        //Getting the main RegionContext
+        RegionContext rc = RegionLib.newRegionContext(plugin, dataBase, hierarchies);
+
+        //Registering the /region command based on the main RegionContext
         Commander commander = new Commander(plugin);
         commander.registerProvider(Hierarchy.Group.class, () -> new GroupProvider(rc));
         commander.registerProvider(Hierarchy.class, () -> new HierarchyProvider(rc));
@@ -54,13 +60,18 @@ public final class RegionLib extends JavaPlugin {
         commander.registerProvider(RuleValue.class, Object.class, () -> new RuleValueProvider(rc));
         commander.register(new RegionCommand(rc));
 
-        rc.getAbilityRegistry().registerFrom(Abilities.class);
-        rc.getRuleRegistry().registerFrom(Rules.class);
+        //Setting up custom logging handler
+        java.util.logging.Logger pluginLogger = plugin.getLogger();
+        pluginLogger.setLevel(Level.ALL);
+        pluginLogger.addHandler(new RegionLibLogHandler(plugin.getName()));
+        pluginLogger.setUseParentHandlers(false);
 
-        EXISTING_CONTEXT = true;
+
         return rc;
     }
-    public static RegionContext newRegionContext(@Nonnull JavaPlugin plugin) {
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public static RegionContext enable(@Nonnull JavaPlugin plugin) {
 
         File dbFile = new File(plugin.getDataFolder(), ".db");
         if (!dbFile.exists()) {
@@ -73,27 +84,33 @@ public final class RegionLib extends JavaPlugin {
             plugin.saveResource("hierarchies.json",true);
         }
 
-        return RegionLib.newRegionContext(plugin, dbFile.toURI(), hierarchiesFile);
+        return RegionLib.enable(plugin, dbFile.toURI(), hierarchiesFile);
     }
 
-    public static void enable(Plugin plugin) {
-        if (ENABLED) { return; }
-        plugin.getServer().getPluginManager().registerEvents(new RegionLibEventListener(plugin), plugin);
+    public static RegionContext newRegionContext(@Nonnull JavaPlugin plugin, @Nonnull URI dataBase, @Nonnull File hierarchies) {
 
-        java.util.logging.Logger pluginLogger = plugin.getLogger();
-        pluginLogger.setLevel(Level.ALL);
-        pluginLogger.addHandler(new RegionLibLogHandler(plugin.getName()));
-        pluginLogger.setUseParentHandlers(false);
+        RegionContext rc = new RegionContext(
+            plugin,
+            ctx -> new SQLiteRegionRepository(
+                plugin,
+                ctx,
+                dataBase,
+                new JsonHierarchyRepository(hierarchies)
+            )
+        );
+
+        rc.getAbilityRegistry().registerFrom(Abilities.class);
+        rc.getRuleRegistry().registerFrom(Rules.class);
+
+        return rc;
     }
-
 
     //FIELDS
     public static final Config CONFIG = new Config("./plugins/regionsLib/config.yml");
 
 
-    @Override
-    public void onEnable() {
-        RegionLib.newRegionContext(this);
+    @Override public void onEnable() {
+        RegionLib.enable(this);
     }
 
     @Override

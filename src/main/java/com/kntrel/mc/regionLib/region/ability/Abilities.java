@@ -3,19 +3,25 @@ package com.kntrel.mc.regionLib.region.ability;
 import com.kntrel.mc.regionLib.RegionLib;
 import com.kntrel.mc.regionLib.event.BlockRightClickedEvent;
 import com.kntrel.mc.regionLib.event.CopperBlockInteractEvent;
-import com.kntrel.mc.regionLib.event.LiquidRemoveEvent;
 import com.kntrel.mc.regionLib.region.react.EnumBuilder;
 import com.kntrel.mc.regionLib.util.Area;
 import org.bukkit.Material;
+import org.bukkit.Tag;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Levelled;
 import org.bukkit.entity.*;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
+import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.block.data.type.Lectern;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * This class provides a set of built-in abilities.
@@ -53,11 +59,7 @@ public final class Abilities {
             .by(BlockRightClickedEvent::getPlayer)
             .in(e -> Area.ofBlock(e.getBlock()))
             .withEnum(e -> e.getBlock().getType());
-    private static final EnumBuilder<LiquidRemoveEvent, LiquidRemoveEvent.Type, Ability> REMOVED_LIQUID = Ability.on(LiquidRemoveEvent.class)
-            .by(LiquidRemoveEvent::getPlayer)
-            .at(e -> e.getBlock().getLocation().add(.5,.5,.5))
-            .withEnum(LiquidRemoveEvent::getType);
-    private static final EnumBuilder<HangingBreakByEntityEvent, EntityType, Ability> HANGING_BREAK = Ability.on(HangingBreakByEntityEvent.class)
+    private static final EnumBuilder<HangingBreakByEntityEvent, EntityType, Ability> HANGING_BROKEN = Ability.on(HangingBreakByEntityEvent.class)
             .by(e -> DAMAGER_PLAYER_GETTER.apply(e.getRemover()))
             .at(e -> e.getEntity().getLocation())
             .withEnum(e -> e.getEntity().getType());
@@ -65,10 +67,22 @@ public final class Abilities {
             .by(e -> DAMAGER_PLAYER_GETTER.apply(e.getDamager()))
             .at(e -> e.getEntity().getLocation())
             .withEnum(e -> e.getEntity().getType());
-    private final static EnumBuilder<PlayerBucketEmptyEvent, Material, Ability> BUCKET_EMPTY = Ability.on(PlayerBucketEmptyEvent.class)
-            .by(PlayerBucketEmptyEvent::getPlayer)
+    private static final EnumBuilder<PlayerBucketFillEvent, Material, Ability> BUCKET_FILLED = Ability.on(PlayerBucketFillEvent.class)
+            .by(PlayerBucketFillEvent::getPlayer)
             .in(e -> Area.ofBlock(e.getBlock()))
+            .withEnum(e -> e.getBlock().getType());
+    private static final EnumBuilder<PlayerBucketEmptyEvent, Material, Ability> BUCKET_EMPTIED = Ability.on(PlayerBucketEmptyEvent.class)
+            .by(PlayerBucketEmptyEvent::getPlayer)
+            .in(e -> Area.ofBlock(e.getBlockClicked().getRelative(e.getBlockFace())))
             .withEnum(PlayerBucketEvent::getBucket);
+    private static final EnumBuilder<EntityPlaceEvent, EntityType, Ability> ENTITY_PLACED = Ability.on(EntityPlaceEvent.class)
+            .by(EntityPlaceEvent::getPlayer)
+            .in(e -> new Area(e.getEntity().getBoundingBox(), e.getEntity().getWorld()))
+            .withEnum(e -> e.getEntity().getType());
+    private static final EnumBuilder<HangingPlaceEvent, EntityType, Ability> HANGING_PLACED = Ability.on(HangingPlaceEvent.class)
+            .by(HangingPlaceEvent::getPlayer)
+            .in(e -> new Area(e.getEntity().getBoundingBox(), e.getEntity().getWorld()))
+            .withEnum(e -> e.getEntity().getType());
     
     
     //BlocBreakEvent
@@ -91,10 +105,6 @@ public final class Abilities {
     //BlockRightClickedEvent
     @DeclareAbility
     public static final Ability RIGHT_CLICK_BLOCKS = Ability.on(BlockRightClickedEvent.class).by(BlockRightClickedEvent::getPlayer).prioritize(-1).build(),
-    PLACE_ITEM_FRAMES = RIGHT_CLICKED_WITH_ITEM.build(Material.ITEM_FRAME),
-    PLACE_GLOW_ITEM_FRAMES = RIGHT_CLICKED_WITH_ITEM.build(Material.GLOW_ITEM_FRAME),
-    PLACE_PAINTINGS = RIGHT_CLICKED_WITH_ITEM.build(Material.PAINTING),
-    PLACE_ARMOR_STANDS = RIGHT_CLICKED_WITH_ITEM.build(Material.ARMOR_STAND),
     ACCESS_FURNACES = RIGHT_CLICKED_BLOCK.build(Material.FURNACE),
     ACCESS_BLAST_FURNACES = RIGHT_CLICKED_BLOCK.build(Material.BLAST_FURNACE),
     ACCESS_SMOKERS = RIGHT_CLICKED_BLOCK.build(Material.SMOKER),
@@ -126,10 +136,10 @@ public final class Abilities {
             .extend(ACCESS_LECTERNS)
             .build(),
     OPEN_CHESTS = RIGHT_CLICKED_BLOCK.buildOr(Material.CHEST, Material.TRAPPED_CHEST),
-    OPEN_DOORS = RIGHT_CLICKED_BLOCK.build(m -> m.toString().contains("DOOR")),
-    OPEN_TRAPDOORS = RIGHT_CLICKED_BLOCK.build(m -> m.toString().contains("TRAPDOOR")),
-    OPEN_FENCE_GATES = RIGHT_CLICKED_BLOCK.build(m -> m.toString().contains("FENCE_GATE")),
-    PRESS_BUTTONS = RIGHT_CLICKED_BLOCK.build(m -> m.toString().contains("BUTTON")),
+    OPEN_DOORS = RIGHT_CLICKED_BLOCK.build(Tag.WOODEN_DOORS::isTagged),
+    OPEN_TRAPDOORS = RIGHT_CLICKED_BLOCK.build(Tag.TRAPDOORS::isTagged),
+    OPEN_FENCE_GATES = RIGHT_CLICKED_BLOCK.build(Tag.FENCE_GATES::isTagged),
+    PRESS_BUTTONS = RIGHT_CLICKED_BLOCK.build(Tag.BUTTONS::isTagged),
     IGNITE = RIGHT_CLICKED_WITH_ITEM.build(Material.FLINT_AND_STEEL),
     IGNITE_TNT = Ability.on(BlockRightClickedEvent.class)
             .by(BlockRightClickedEvent::getPlayer)
@@ -137,14 +147,6 @@ public final class Abilities {
             .when(e -> e.getBlock().getType().equals(Material.TNT))
             .in(e -> Area.ofBlock(e.getBlock()))
             .build();
-
-
-    //LiquidRemoveEvent
-    @DeclareAbility
-    public static final Ability
-    TAKE_LAVA = REMOVED_LIQUID.build(LiquidRemoveEvent.Type.LAVA),
-    TAKE_WATER = REMOVED_LIQUID.build(LiquidRemoveEvent.Type.WATER),
-    TAKE_INFINITE_WATER = REMOVED_LIQUID.build(LiquidRemoveEvent.Type.INFINITE_WATER);
 
 
     //PlayerTakeLecternBookEvent
@@ -157,14 +159,6 @@ public final class Abilities {
     public static final Ability
     WAX_COPPER = Ability.on(CopperBlockInteractEvent.class).by(CopperBlockInteractEvent::getPlayer).when(e -> e.getAction().equals(CopperBlockInteractEvent.Action.WAX)).build(),
     SCRAP_COPPER = Ability.on(CopperBlockInteractEvent.class).by(CopperBlockInteractEvent::getPlayer).when(e -> e.getAction().equals(CopperBlockInteractEvent.Action.SCRAP)).build();
-
-
-    //HangingBreakByEntityEvent
-    @DeclareAbility
-    public static final Ability
-    BREAK_PAINTINGS = HANGING_BREAK.build(EntityType.PAINTING),
-    BREAK_ITEM_FRAMES = HANGING_BREAK.build(EntityType.ITEM_FRAME),
-    BREAK_GLOW_ITEM_FRAMES = HANGING_BREAK.build(EntityType.GLOW_ITEM_FRAME);
 
 
     //EntityDamageByEntityEvent
@@ -201,11 +195,52 @@ public final class Abilities {
             .build();
 
 
+    //EntityPlaceEvent
+    @DeclareAbility
+    public static final Ability
+    PLACE_ARMOR_STANDS = ENTITY_PLACED.build(EntityType.ARMOR_STAND),
+    PLACE_BOATS = ENTITY_PLACED.build(t -> t.toString().endsWith("BOAT"));
+
+
+    //HangingPlacedEvent
+    @DeclareAbility
+    public static final Ability
+    PLACE_PAINTINGS = HANGING_PLACED.build(EntityType.PAINTING),
+    PLACE_ITEM_FRAMES = HANGING_PLACED.build(EntityType.ITEM_FRAME),
+    PLACE_GLOW_ITEM_FRAMES = HANGING_PLACED.build(EntityType.GLOW_ITEM_FRAME);
+
+
+    //HangingBreakByEntityEvent
+    @DeclareAbility
+    public static final Ability
+    BREAK_PAINTINGS = HANGING_BROKEN.build(EntityType.PAINTING),
+    BREAK_ITEM_FRAMES = HANGING_BROKEN.build(EntityType.ITEM_FRAME),
+    BREAK_GLOW_ITEM_FRAMES = HANGING_BROKEN.build(EntityType.GLOW_ITEM_FRAME);
+
+
     //PlayerBucketEmptyEvent
     @DeclareAbility
     public static final Ability
-            PUT_WATER = BUCKET_EMPTY.build(Material.WATER_BUCKET),
-            PUT_LAVA = BUCKET_EMPTY.build(Material.LAVA_BUCKET);
+    PUT_WATER = BUCKET_EMPTIED.build(Material.WATER_BUCKET),
+    PUT_LAVA = BUCKET_EMPTIED.build(Material.LAVA_BUCKET);
+
+
+    //PlayerBucketFillEvent
+    @DeclareAbility
+    public static final Ability
+    TAKE_LAVA = BUCKET_FILLED.build(Material.LAVA),
+    TAKE_WATER = BUCKET_FILLED.build(Material.WATER),
+    TAKE_INFINITE_WATER = Ability.on(PlayerBucketFillEvent.class)
+            .extend(TAKE_WATER)
+            .when(e -> Stream.of(BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH)
+                    .map(f -> e.getBlock().getRelative(f))
+                    .filter(b -> b.getType().equals(Material.WATER))
+                    .map(Block::getBlockData)
+                    .filter(b -> b instanceof Levelled l && l.getLevel() == 0)
+                    .count() > 1)
+            .in(e -> Area.ofBlock(e.getBlockClicked().getRelative(e.getBlockFace())))
+            .prioritize(1)
+            .build();
 
 
     //PlayerInteractAtEntityEvent
