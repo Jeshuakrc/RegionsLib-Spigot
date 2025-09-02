@@ -1,6 +1,5 @@
 package com.kntrel.mc.regionLib.util.valueType;
 
-import org.apache.commons.lang3.StringUtils;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,7 +21,7 @@ public abstract class ValueType<T> {
             s -> { try { return Double.valueOf(s); } catch (NumberFormatException e) { return .0; }}
     );
     public static final ValueType<Boolean> BOOL = ValueType.create(Boolean.class, s -> {
-        String val = StringUtils.normalizeSpace(s);
+        String val = s.trim();
         if (val.equalsIgnoreCase("true") || val.equalsIgnoreCase("t")) { return true; }
         try { return Integer.parseInt(val) != 0; } catch (NumberFormatException ignored) {}
         try { return Double.parseDouble(val) != 0; } catch (NumberFormatException ignored) {}

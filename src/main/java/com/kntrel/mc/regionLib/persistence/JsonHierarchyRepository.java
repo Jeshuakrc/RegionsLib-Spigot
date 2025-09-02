@@ -4,7 +4,6 @@ import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
-import org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -100,7 +99,7 @@ public class JsonHierarchyRepository implements HierarchyRepository {
                 abilities = new ArrayList<>();
                 String ability;
                 for (JsonElement element1 : jsonGroup.get("abilities").getAsJsonArray()) {
-                    ability = StringUtils.normalizeSpace(element1.getAsString().toLowerCase());
+                    ability = element1.getAsString().toLowerCase().trim();
                     abilities.add(ability);
                 }
                 hierarchy.addGroup(

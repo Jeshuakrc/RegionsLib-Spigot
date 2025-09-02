@@ -8,7 +8,7 @@ import com.kntrel.mc.regionLib.util.AreaGetter;
 import com.kntrel.mc.regionLib.util.PointGetter;
 import com.kntrel.mc.regionLib.util.TriPredicate;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
-import org.apache.commons.lang3.function.TriConsumer;
+import org.apache.logging.log4j.util.TriConsumer;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import javax.annotation.Nonnull;

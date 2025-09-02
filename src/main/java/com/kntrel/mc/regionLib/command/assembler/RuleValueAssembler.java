@@ -1,0 +1,65 @@
+package com.kntrel.mc.regionLib.command.assembler;
+
+import com.kntrel.mc.commvoker.argument.context.ExecutionContext;
+import com.kntrel.mc.commvoker.assembler.Assembler;
+import com.kntrel.mc.commvoker.assembler.BiComposedAssembler;
+import com.kntrel.mc.commvoker.provided.assemblers.StringAssembler;
+import com.kntrel.mc.regionLib.region.rule.Rule;
+import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
+import com.kntrel.mc.regionLib.region.rule.RuleValue;
+import com.kntrel.mc.regionLib.util.valueType.ValueType;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import java.util.concurrent.CompletableFuture;
+
+public class RuleValueAssembler implements BiComposedAssembler<Object, Rule<?>, String, RuleValue<?>> {
+
+    //FACTORY
+    public static RuleValueAssembler ruleFromRegistry(RuleRegistry registry) {
+        return new RuleValueAssembler(registry);
+    }
+
+
+    //FIELDS
+    private final RuleRegistry registry_;
+
+
+    //CONSTRUCTOR
+    private RuleValueAssembler(RuleRegistry registry) {
+        this.registry_ = registry;
+    }
+
+
+    @Override
+    public Assembler<? super Object, ? extends Rule<?>> firstDelegate() {
+        return RuleAssembler.ruleFromRegistry(this.registry_);
+    }
+
+    @Override
+    public Assembler<? super Object, ? extends String> secondDelegate() {
+        return StringAssembler.string();
+    }
+
+    @Override
+    public RuleValue<?> compose(ExecutionContext<?> ctx, Rule<?> rule, String value) {
+        return new RuleValue<>(rule, value);
+    }
+
+    @Override
+    public CompletableFuture<Suggestions> firstSuggest(ExecutionContext<?> ctx, SuggestionsBuilder suggestionsBuilder) {
+        this.registry_.getAll().stream()
+                .map(Rule::getName)
+                .forEach(suggestionsBuilder::suggest);
+        return suggestionsBuilder.buildFuture();
+    }
+
+    @Override
+    public CompletableFuture<Suggestions> secondSuggest(ExecutionContext<?> ctx, Rule<?> rule, SuggestionsBuilder suggestionsBuilder) {
+        ValueType<?> valueType = rule.getValueType();
+        if (valueType.equals(ValueType.BOOL)) {
+            suggestionsBuilder.suggest("true");
+            suggestionsBuilder.suggest("false");
+        }
+        return suggestionsBuilder.buildFuture();
+    }
+}

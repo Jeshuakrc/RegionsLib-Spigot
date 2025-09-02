@@ -1,8 +1,8 @@
 package com.kntrel.mc.regionLib.region.hierarchy;
 
 import com.kntrel.mc.regionLib.region.ability.Ability;
-import org.apache.commons.lang3.StringUtils;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Hierarchy {
@@ -108,6 +108,11 @@ public class Hierarchy {
         }
     }
 
+    private static final Pattern WS = Pattern.compile("\\s+");
+    private static String normalizeSpace(String s) {
+        return WS.matcher(s.trim()).replaceAll(" ");
+    }
+
     //CLASSES
     public static class Group implements Comparable<Group> {
 
@@ -133,7 +138,7 @@ public class Hierarchy {
             this.name_ = name_;
         }
         protected void setAbilities(Collection<String> abilities) {
-            this.abilities_ = abilities.stream().map(StringUtils::normalizeSpace).collect(Collectors.toSet());
+            this.abilities_ = abilities.stream().map(Hierarchy::normalizeSpace).collect(Collectors.toSet());
         }
 
         //GETTERS
@@ -153,7 +158,7 @@ public class Hierarchy {
             return Integer.compare(level_, o.getLevel());
         }
         public boolean allowedTo(String ability) {
-            return this.abilities_.contains(StringUtils.normalizeSpace(ability.toLowerCase()));
+            return this.abilities_.contains(normalizeSpace(ability.toLowerCase()));
         }
         public boolean allowedTo(Ability ability) {
             return this.allowedTo(ability.getName());

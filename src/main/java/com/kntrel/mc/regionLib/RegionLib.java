@@ -1,20 +1,22 @@
 package com.kntrel.mc.regionLib;
 
+import com.kntrel.mc.commvoker.argument.ArgumentRegistry;
+import com.kntrel.mc.commvoker.argument.binder.ArgumentBinder;
+import com.kntrel.mc.commvoker.spigot.Commvoker;
 import com.kntrel.mc.regionLib.command.RegionCommand;
-import com.kntrel.mc.regionLib.command.commanderProvider.annotation.RuleValue;
-import com.kntrel.mc.regionLib.command.commanderProvider.*;
+import com.kntrel.mc.regionLib.command.assembler.*;
 import com.kntrel.mc.regionLib.event.RegionLibEvent;
 import com.kntrel.mc.regionLib.io.Config;
 import com.kntrel.mc.regionLib.persistence.JsonHierarchyRepository;
 import com.kntrel.mc.regionLib.persistence.SQLiteRegionRepository;
 import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.ability.Abilities;
-import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.Region;
+import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
+import com.kntrel.mc.regionLib.region.rule.RuleValue;
 import com.kntrel.mc.regionLib.region.rule.Rules;
-import com.kntrel.mc.commander.command.Commander;
-import com.kntrel.mc.commander.command.provider.CommandProvider;
+import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import javax.annotation.Nonnull;
@@ -52,13 +54,35 @@ public final class RegionLib extends JavaPlugin {
         RegionContext rc = RegionLib.newRegionContext(plugin, dataBase, hierarchies);
 
         //Registering the /region command based on the main RegionContext
-        Commander commander = new Commander(plugin);
-        commander.registerProvider(Hierarchy.Group.class, () -> new GroupProvider(rc));
-        commander.registerProvider(Hierarchy.class, () -> new HierarchyProvider(rc));
-        commander.registerProvider(Region.class, () -> new RegionProvider(rc));
-        commander.registerProvider(Rule.class, () -> (CommandProvider<Rule>) (CommandProvider<?>) new RuleProvider(rc));
-        commander.registerProvider(RuleValue.class, Object.class, () -> new RuleValueProvider(rc));
-        commander.register(new RegionCommand(rc));
+        Commvoker commvoker = new Commvoker(plugin);
+        ArgumentRegistry<CommandSender> argumentRegistry = commvoker.getArgumentRegistry();
+        argumentRegistry.register(
+                ArgumentBinder.argumentAssembler(() -> RegionAssembler.regionFromRepository(rc))
+                        .toClass(Region.class)
+                        .bind()
+        );
+        argumentRegistry.register(
+                ArgumentBinder.argumentAssembler(() -> HierarchyAssembler.hierarchyFromRegistry(rc.getHierarchyRepository()))
+                        .toClass(Hierarchy.class)
+                        .bind()
+        );
+        argumentRegistry.register(
+                ArgumentBinder.argumentAssembler(HierarchyGroupAssembler::hierarchyGroup)
+                        .toClass(Hierarchy.Group.class)
+                        .bind()
+        );
+        argumentRegistry.register(
+                ArgumentBinder.argumentAssembler(() -> RuleAssembler.ruleFromRegistry(rc.getRuleRegistry()))
+                        .toClass((Class<Rule<?>>) (Class<?>) Rule.class)
+                        .bind()
+        );
+        argumentRegistry.register(
+                ArgumentBinder.argumentAssembler(() -> RuleValueAssembler.ruleFromRegistry(rc.getRuleRegistry()))
+                        .toClass((Class<RuleValue<?>>) (Class<?>) RuleValue.class)
+                        .bind()
+        );
+
+        commvoker.register(new RegionCommand(rc));
 
         //Setting up custom logging handler
         java.util.logging.Logger pluginLogger = plugin.getLogger();
@@ -106,7 +130,7 @@ public final class RegionLib extends JavaPlugin {
     }
 
     //FIELDS
-    public static final Config CONFIG = new Config("./plugins/regionsLib/config.yml");
+    public static final Config CONFIG = new Config();
 
 
     @Override public void onEnable() {
