@@ -7,6 +7,7 @@ public final class Rules {
 
     private Rules() {}
 
+    @DeclareRule
     public static final Rule<Boolean> ANIMALS_TAKE_DAMAGE = Rule.on(EntityDamageEvent.class)
             .when(e -> e.getEntity() instanceof Animals)
             .at(e -> e.getEntity().getLocation())

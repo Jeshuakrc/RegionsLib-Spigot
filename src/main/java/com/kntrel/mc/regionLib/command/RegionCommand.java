@@ -1,6 +1,7 @@
 package com.kntrel.mc.regionLib.command;
 
 import com.kntrel.mc.commvoker.bukkit.provided.annotation.Sender;
+import com.kntrel.mc.commvoker.bukkit.requirement.RequiresPermission;
 import com.kntrel.mc.commvoker.command.Command;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionContext;
@@ -34,7 +35,7 @@ public class RegionCommand {
 
     //COMMANDS
     @Command("create {area} in {world} {hierarchy} {name}")
-    //@Requires(permission = "regions.create")
+    @RequiresPermission("regions.create")
     public void create(CommandSender sender, BoundingBox boundingBox, World world, Hierarchy hierarchy, String name) {
         Region region = new Region(
                 this.regionContext_,
@@ -49,13 +50,13 @@ public class RegionCommand {
     }
 
     @Command("create {area} {hierarchy} {name}")
-    //@Requires(permission = "regions.create")
+    @RequiresPermission("regions.create")
     public void create(@Sender Player player, BoundingBox boundingBox, Hierarchy hierarchy, String name) {
         create(player, boundingBox, player.getWorld(), hierarchy, name);
     }
 
     @Command("destroy {region}")
-    //@Requires(permission = "regions.destroy")
+    @RequiresPermission("regions.destroy")
     public void destroy(CommandSender sender, List<Region> regions) {
         if (regions.isEmpty()) { return; }
 
@@ -81,7 +82,7 @@ public class RegionCommand {
     }
 
     @Command("resize {region} {new_area}")
-    //@Requires(permission = "regions.resize")
+    @RequiresPermission("regions.resize")
     public void resize(CommandSender sender, Region region, BoundingBox newArea) {
         region.resize(newArea);
         region.save();
@@ -89,7 +90,7 @@ public class RegionCommand {
     }
 
     @Command("expand {region} {direction} {how_much}")
-    //@Requires(permission = "regions.resize")
+    @RequiresPermission("regions.resize")
     public void expand(CommandSender sender, Region region, BlockFace direction, Double howMuch) {
         region.expand(direction, howMuch);
         region.save();
@@ -97,7 +98,7 @@ public class RegionCommand {
     }
 
     @Command("rename {region} {new_name}")
-    //@Requires(permission = "regions.mod.local")
+    @RequiresPermission("regions.mod.local")
     public void rename(CommandSender sender, Region region, String name) {
         String oldName = region.getName();
         region.setName(name);
@@ -106,7 +107,7 @@ public class RegionCommand {
     }
 
     @Command("tp {entities} to {region}")
-    //@Requires(permission = "regions.command.tp-to")
+    @RequiresPermission("regions.command.tp-to")
     public void tpPlayerTo(List<Entity> entities, Region region) {
         Vector center = region.getBoundingBox().getCenter();
         World world = region.getWorld();
@@ -115,14 +116,14 @@ public class RegionCommand {
     }
 
     @Command("tp to {region}")
-    //@Requires(permission = "regions.command.tp-to")
+    @RequiresPermission("regions.command.tp-to")
     public void tpTo(@Sender Player sender, Region region) {
         this.tpPlayerTo(List.of(sender), region);
     }
 
 
     @Command("join {players} to {region} as {group}")
-    //@Requires(permission = "regions.mod.local")
+    @RequiresPermission("regions.mod.local")
     public void playerJoin(CommandSender sender, List<Player> players, Region region, Hierarchy.Group group) {
         if (players.isEmpty()) { return; }
 
@@ -152,7 +153,7 @@ public class RegionCommand {
     }
 
     @Command("kick {players} from {region}")
-    //@Requires(permission = "regions.mod.local")
+    @RequiresPermission("regions.mod.local")
     public void playerKick(CommandSender sender, List<Player> players, Region region) {
         if (players.isEmpty()) { return; }
 
@@ -176,7 +177,7 @@ public class RegionCommand {
     }
 
     @Command("set {ruleValue} in {regions}")
-    //@Requires(permission = "regions.mod.local")
+    @RequiresPermission("regions.mod.local")
     public void setRule(CommandSender sender, RuleValue<?> ruleValue, List<Region> regions) {
         if (regions.isEmpty()) { return; }
 
@@ -200,8 +201,8 @@ public class RegionCommand {
         sender.sendMessage(msg.toString());
     }
 
-    @Command("set {rule} default in {regions}")
-    //@Requires(permission = "regions.mod.local")
+    @Command("set default {rule} in {regions}")
+    @RequiresPermission("regions.mod.local")
     public void setRuleDefault(CommandSender sender, Rule<?> rule, List<Region> regions) {
         if (regions.isEmpty()) { return; }
 
@@ -224,13 +225,13 @@ public class RegionCommand {
     }
 
     @Command("view {region}")
-    //@Requires(permission = "regions.command.showlimit")
+    @RequiresPermission("regions.command.showlimit")
     public void showLimit(@Sender Player player, Region region) {
         region.display(player);
     }
 
     @Command("enable {regions}")
-    //@Requires(permission = "regions.onoff")
+    @RequiresPermission("regions.onoff")
     public void enable(CommandSender sender, List<Region> regions) {
         if (regions.isEmpty()) { return; }
 
@@ -271,7 +272,7 @@ public class RegionCommand {
     }
 
     @Command("disable {regions}")
-    //@Requires(permission = "regions.onoff")
+    @RequiresPermission("regions.onoff")
     public void disable(CommandSender sender, List<Region> regions) {
         if (regions.isEmpty()) { return; }
 

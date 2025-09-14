@@ -46,14 +46,6 @@ public class RuleValueAssembler implements BiComposedAssembler<Object, Rule<?>, 
     }
 
     @Override
-    public CompletableFuture<Suggestions> firstSuggest(ExecutionContext<?> ctx, SuggestionsBuilder suggestionsBuilder) {
-        this.registry_.getAll().stream()
-                .map(Rule::getName)
-                .forEach(suggestionsBuilder::suggest);
-        return suggestionsBuilder.buildFuture();
-    }
-
-    @Override
     public CompletableFuture<Suggestions> secondSuggest(ExecutionContext<?> ctx, Rule<?> rule, SuggestionsBuilder suggestionsBuilder) {
         ValueType<?> valueType = rule.getValueType();
         if (valueType.equals(ValueType.BOOL)) {
