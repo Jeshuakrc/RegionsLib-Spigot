@@ -2,6 +2,7 @@ package com.kntrel.mc.regionLib.command.assembler;
 
 import com.kntrel.mc.commvoker.argument.context.ExecutionContext;
 import com.kntrel.mc.commvoker.assembler.Assembler;
+import com.kntrel.mc.commvoker.assembler.AssemblyException;
 import com.kntrel.mc.commvoker.assembler.TransformAssembler;
 import com.kntrel.mc.commvoker.provided.assemblers.StringAssembler;
 import com.kntrel.mc.regionLib.region.Region;
@@ -37,10 +38,10 @@ public class RegionAssembler implements TransformAssembler<Object, String, Regio
         return StringAssembler.string();
     }
     @Override
-    public Region compose(ExecutionContext<?> ctx, String key) {
+    public Region compose(ExecutionContext<?> ctx, String key) throws AssemblyException {
         List<Region> result = this.regionRepository_.get(key);
         if (result.size() > 1) {
-            throw new NullPointerException("Ambiguous query: there's " + result.size() + " regions called '" + key + "'");
+            throw new AssemblyException("Ambiguous query: there's " + result.size() + " regions called '" + key + "'");
         }
         if (!result.isEmpty()) {
             return result.getFirst();
@@ -50,12 +51,12 @@ public class RegionAssembler implements TransformAssembler<Object, String, Regio
         try {
             id = Long.parseLong(key);
         } catch (NumberFormatException e) {
-            throw new NullPointerException("No region with name '" + key + "' was found");
+            throw new AssemblyException("No region with name '" + key + "' was found");
         }
 
         Region single = this.regionRepository_.get(id).filter(r -> !r.isDestroyed()).orElse(null);
         if (single == null) {
-            throw new NullPointerException("No region with id " + id + " was found");
+            throw new AssemblyException("No region with id " + id + " was found");
         }
 
         return single;

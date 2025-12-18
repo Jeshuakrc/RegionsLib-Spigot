@@ -1,5 +1,6 @@
 package com.kntrel.mc.regionLib.command;
 
+import com.kntrel.mc.commvoker.bukkit.CommandResult;
 import com.kntrel.mc.commvoker.bukkit.provided.annotation.Sender;
 import com.kntrel.mc.commvoker.bukkit.requirement.RequiresPermission;
 import com.kntrel.mc.commvoker.command.Command;
@@ -17,8 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 @Command("region")
 public class RegionCommand {
@@ -36,7 +36,7 @@ public class RegionCommand {
     //COMMANDS
     @Command("create {area} in {world} {hierarchy} {name}")
     @RequiresPermission("regions.create")
-    public void create(CommandSender sender, BoundingBox boundingBox, World world, Hierarchy hierarchy, String name) {
+    public String create(CommandSender sender, BoundingBox boundingBox, World world, Hierarchy hierarchy, String name) {
         Region region = new Region(
                 this.regionContext_,
                 boundingBox,
@@ -46,19 +46,19 @@ public class RegionCommand {
                 (sender instanceof Entity e) ? e : null
         );
         region.save();
-        sender.sendMessage("Region '" + name + "' created successfully!");
+        return  "Region '" + name + "' created successfully!";
     }
 
     @Command("create {area} {hierarchy} {name}")
     @RequiresPermission("regions.create")
-    public void create(@Sender Player player, BoundingBox boundingBox, Hierarchy hierarchy, String name) {
-        create(player, boundingBox, player.getWorld(), hierarchy, name);
+    public String create(@Sender Player player, BoundingBox boundingBox, Hierarchy hierarchy, String name) {
+        return create(player, boundingBox, player.getWorld(), hierarchy, name);
     }
 
     @Command("destroy {region}")
     @RequiresPermission("regions.destroy")
-    public void destroy(CommandSender sender, List<Region> regions) {
-        if (regions.isEmpty()) { return; }
+    public String destroy(CommandSender sender, List<Region> regions) {
+        if (regions.isEmpty()) { return ""; }
 
         final Entity destroyer = (sender instanceof Entity) ? (Entity) sender : null;
         regions.forEach(r -> { r.destroy(destroyer); r.save(); });
@@ -78,32 +78,32 @@ public class RegionCommand {
         }
         msg.append("been destroyed");
 
-        sender.sendMessage(msg.toString());
+        return msg.toString();
     }
 
     @Command("resize {region} {new_area}")
     @RequiresPermission("regions.resize")
-    public void resize(CommandSender sender, Region region, BoundingBox newArea) {
+    public String resize(Region region, BoundingBox newArea) {
         region.resize(newArea);
         region.save();
-        sender.sendMessage(region.getName() + " has been resized. New dimensions: [" + region.getWidthX() + " x " + region.getHeight() + " x " + region.getWidthZ() + "].");
+        return region.getName() + " has been resized. New dimensions: [" + region.getWidthX() + " x " + region.getHeight() + " x " + region.getWidthZ() + "].";
     }
 
     @Command("expand {region} {direction} {how_much}")
     @RequiresPermission("regions.resize")
-    public void expand(CommandSender sender, Region region, BlockFace direction, Double howMuch) {
+    public String expand(Region region, BlockFace direction, Double howMuch) {
         region.expand(direction, howMuch);
         region.save();
-        sender.sendMessage(region.getName() + " has been resized. New dimensions: [" + region.getWidthX() + " x " + region.getHeight() + " x " + region.getWidthZ() + "].");
+        return region.getName() + " has been resized. New dimensions: [" + region.getWidthX() + " x " + region.getHeight() + " x " + region.getWidthZ() + "].";
     }
 
     @Command("rename {region} {new_name}")
     @RequiresPermission("regions.mod.local")
-    public void rename(CommandSender sender, Region region, String name) {
+    public String rename(CommandSender sender, Region region, String name) {
         String oldName = region.getName();
         region.setName(name);
         region.save();
-        sender.sendMessage(oldName + "'s name has been changed to \"" + name + "\".");
+        return oldName + "'s name has been changed to \"" + name + "\".";
     }
 
     @Command("tp {entities} to {region}")
@@ -124,8 +124,10 @@ public class RegionCommand {
 
     @Command("join {players} to {region} as {group}")
     @RequiresPermission("regions.mod.local")
-    public void playerJoin(CommandSender sender, List<Player> players, Region region, Hierarchy.Group group) {
-        if (players.isEmpty()) { return; }
+    public CommandResult playerJoin(CommandSender sender, List<Player> players, Region region, Hierarchy.Group group) {
+        if (players.isEmpty()) { return CommandResult.success(); }
+
+        Map<Player, String> msgs = new HashMap<>(players.size());
 
         String individualMsg =
                 (sender instanceof Player p ? (p.getName() + " added you") : "You've been added")
@@ -140,7 +142,7 @@ public class RegionCommand {
                 msg.append("and ");
             }
             msg.append(p.getName()).append(" ");
-            p.sendMessage(individualMsg);
+            msgs.put(p, individualMsg);
         }
         msg.append((players.size() > 1) ? "have" : "has")
            .append(" benn added to ")
@@ -149,20 +151,23 @@ public class RegionCommand {
            .append(group.getName());
 
         region.save();
-        sender.sendMessage(msg.toString());
+        CommandResult res = CommandResult.success(msg.toString());
+        res.setPlayerMessageStrings(msgs);
+        return res;
     }
 
     @Command("kick {players} from {region}")
     @RequiresPermission("regions.mod.local")
-    public void playerKick(CommandSender sender, List<Player> players, Region region) {
-        if (players.isEmpty()) { return; }
+    public CommandResult playerKick(List<Player> players, Region region) {
+        if (players.isEmpty()) { return CommandResult.success(); }
 
         String individualMsg = "You've been kicked out of " + region.getName();
         StringBuilder msg = new StringBuilder();
+        Map<Player, String> msgs = new HashMap<>(players.size());
 
         for (int i = 0; i < players.size(); i++) {
             Player p = players.get(i);
-            if (region.removePermissions(p)) { p.sendMessage(individualMsg); }
+            if (region.removePermissions(p)) { msgs.put(p, individualMsg); }
             if (i == (players.size() - 1) && i > 0) {
                 msg.append("and ");
             }
@@ -173,13 +178,15 @@ public class RegionCommand {
                 .append(region.getName());
 
         region.save();
-        sender.sendMessage(msg.toString());
+        CommandResult res = CommandResult.success(msg.toString());
+        res.setPlayerMessageStrings(msgs);
+        return res;
     }
 
     @Command("set {ruleValue} in {regions}")
     @RequiresPermission("regions.mod.local")
-    public void setRule(CommandSender sender, RuleValue<?> ruleValue, List<Region> regions) {
-        if (regions.isEmpty()) { return; }
+    public String setRule(RuleValue<?> ruleValue, List<Region> regions) {
+        if (regions.isEmpty()) { return ""; }
 
         StringBuilder msg = new StringBuilder();
         for (int i = 0; i < regions.size(); i++) {
@@ -198,13 +205,13 @@ public class RegionCommand {
                 .append("'");
 
         regions.forEach(Region::save);
-        sender.sendMessage(msg.toString());
+        return msg.toString();
     }
 
     @Command("set default {rule} in {regions}")
     @RequiresPermission("regions.mod.local")
-    public void setRuleDefault(CommandSender sender, Rule<?> rule, List<Region> regions) {
-        if (regions.isEmpty()) { return; }
+    public String setRuleDefault(Rule<?> rule, List<Region> regions) {
+        if (regions.isEmpty()) { return ""; }
 
         StringBuilder msg = new StringBuilder();
         for (int i = 0; i < regions.size(); i++) {
@@ -221,7 +228,7 @@ public class RegionCommand {
                 .append("' set to default");
 
         regions.forEach(Region::save);
-        sender.sendMessage(msg.toString());
+        return msg.toString();
     }
 
     @Command("view {region}")
@@ -232,11 +239,13 @@ public class RegionCommand {
 
     @Command("enable {regions}")
     @RequiresPermission("regions.onoff")
-    public void enable(CommandSender sender, List<Region> regions) {
-        if (regions.isEmpty()) { return; }
+    public List<String> enable(List<Region> regions) {
+        if (regions.isEmpty()) { return Collections.emptyList(); }
 
         StringBuilder msg = new StringBuilder();
         List<Region> alreadyEnabled = new ArrayList<>();
+        List<String> out = new ArrayList<>(2);
+
         for (int i = 0; i < regions.size(); i++) {
             Region r = regions.get(i);
             if (r.isEnabled()) {
@@ -253,7 +262,7 @@ public class RegionCommand {
         if (!msg.isEmpty()) {
             msg.append((regions.size() > 1) ? "have" : "has")
                     .append(" benn enabled");
-            sender.sendMessage(msg.toString());
+            out.add(msg.toString());
         }
 
         if (!alreadyEnabled.isEmpty()) {
@@ -267,17 +276,21 @@ public class RegionCommand {
             }
             msg.append((alreadyEnabled.size() > 1) ? "were" : "was")
                     .append(" already enabled");
-            sender.sendMessage(msg.toString());
+            out.add(msg.toString());
         }
+
+        return out;
     }
 
     @Command("disable {regions}")
     @RequiresPermission("regions.onoff")
-    public void disable(CommandSender sender, List<Region> regions) {
-        if (regions.isEmpty()) { return; }
+    public List<String> disable(List<Region> regions) {
+        if (regions.isEmpty()) { return Collections.emptyList(); }
 
         StringBuilder msg = new StringBuilder();
         List<Region> alreadyDisabled = new ArrayList<>();
+        List<String> out = new ArrayList<>(2);
+
         for (int i = 0; i < regions.size(); i++) {
             Region r = regions.get(i);
             if (!r.isEnabled()) {
@@ -294,7 +307,7 @@ public class RegionCommand {
         if (!msg.isEmpty()) {
             msg.append((regions.size() > 1) ? "have" : "has")
                     .append(" benn disabled");
-            sender.sendMessage(msg.toString());
+            out.add(msg.toString());
         }
 
         if (!alreadyDisabled.isEmpty()) {
@@ -308,7 +321,9 @@ public class RegionCommand {
             }
             msg.append((alreadyDisabled.size() > 1) ? "were" : "was")
                     .append(" already disabled");
-            sender.sendMessage(msg.toString());
+            out.add(msg.toString());
         }
+
+        return out;
     }
 }
