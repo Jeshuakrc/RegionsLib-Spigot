@@ -1,7 +1,7 @@
 name: RegionLib
 version: '${project.version}'
 main: com.kntrel.mc.regionLib.RegionLib
-api-version: 1.21.5
+api-version: 1.21.11
 prefix: RegionLib
 authors: [ kntrel ]
 description: A Spigot plugin / library that allows other plugins to easily implement 3D Minecraft world reagions in therir code.
