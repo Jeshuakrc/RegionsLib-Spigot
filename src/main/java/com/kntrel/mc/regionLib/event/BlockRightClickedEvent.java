@@ -10,7 +10,7 @@ import org.bukkit.event.block.BlockEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 public class BlockRightClickedEvent extends BlockEvent implements Cancellable {
 
@@ -19,7 +19,7 @@ public class BlockRightClickedEvent extends BlockEvent implements Cancellable {
     public static HandlerList getHandlerList() {
         return HANDLERS;
     }
-    @Override @Nonnull public HandlerList getHandlers() {
+    @Override @NotNull public HandlerList getHandlers() {
         return HANDLERS;
     }
     //===============================================================
@@ -66,7 +66,7 @@ public class BlockRightClickedEvent extends BlockEvent implements Cancellable {
         this.cancelled_ = b;
     }
 
-    public BlockRightClickedEvent(Player who, ItemStack item, @Nonnull Block clickedBlock, BlockFace clickedFace, Vector clickedPosition, EquipmentSlot hand) {
+    public BlockRightClickedEvent(Player who, ItemStack item, @NotNull Block clickedBlock, BlockFace clickedFace, Vector clickedPosition, EquipmentSlot hand) {
         super(clickedBlock);
         this.player_ = who;
         this.item_ = item;

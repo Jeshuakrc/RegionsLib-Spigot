@@ -10,13 +10,13 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 class EventTriggerer implements Listener {
 
     //SINGLETON
     private static Plugin PLUGIN = null;
-    static void enable(@Nonnull Plugin plugin) {
+    static void enable(@NotNull Plugin plugin) {
         if (plugin.equals(PLUGIN)) { return; }
         if (PLUGIN != null) {
             throw new IllegalStateException("RegionLIb's event triggerer is already owned by the '" + PLUGIN.getName() + "' plugin.");

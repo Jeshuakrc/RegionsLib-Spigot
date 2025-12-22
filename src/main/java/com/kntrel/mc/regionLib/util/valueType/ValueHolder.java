@@ -1,15 +1,15 @@
 package com.kntrel.mc.regionLib.util.valueType;
 
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 public class ValueHolder<T> implements Comparable<ValueHolder<T>> {
 
     //API
     @SuppressWarnings("unchecked")
-    public static <T> ValueHolder<T> of(@Nonnull T value) {
+    public static <T> ValueHolder<T> of(@NotNull T value) {
         return new ValueHolder<T>((String) value, ValueType.of((Class<T>) value.getClass()));
     }
-    public static <T> ValueHolder<T> of(@Nonnull String value, @Nonnull ValueType<T> type) {
+    public static <T> ValueHolder<T> of(@NotNull String value, @NotNull ValueType<T> type) {
         return new ValueHolder<>(value, type);
     }
 
@@ -64,7 +64,7 @@ public class ValueHolder<T> implements Comparable<ValueHolder<T>> {
     }
     @Override
     @SuppressWarnings("unchecked")
-    public int compareTo(@Nonnull ValueHolder<T> other) {
+    public int compareTo(@NotNull ValueHolder<T> other) {
         if (!Comparable.class.isAssignableFrom(this.type_.getType())) { return 0; }
         return ((Comparable<T>) this.val_).compareTo(other.val_);
     }

@@ -19,7 +19,7 @@ import com.kntrel.mc.regionLib.region.rule.Rules;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -32,7 +32,7 @@ public final class RegionLib extends JavaPlugin {
     private static Plugin OWNER_PLUGIN = null;
 
 
-    public static RegionContext enable(@Nonnull JavaPlugin plugin, @Nonnull URI dataBase, @Nonnull File hierarchies) {
+    public static RegionContext enable(@NotNull JavaPlugin plugin, @NotNull URI dataBase, @NotNull File hierarchies) {
 
         //Handle already enabled
         if (OWNER_PLUGIN != null) {
@@ -95,7 +95,7 @@ public final class RegionLib extends JavaPlugin {
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public static RegionContext enable(@Nonnull JavaPlugin plugin) {
+    public static RegionContext enable(@NotNull JavaPlugin plugin) {
 
         File dbFile = new File(plugin.getDataFolder(), ".db");
         if (!dbFile.exists()) {
@@ -111,7 +111,7 @@ public final class RegionLib extends JavaPlugin {
         return RegionLib.enable(plugin, dbFile.toURI(), hierarchiesFile);
     }
 
-    public static RegionContext newRegionContext(@Nonnull JavaPlugin plugin, @Nonnull URI dataBase, @Nonnull File hierarchies) {
+    public static RegionContext newRegionContext(@NotNull JavaPlugin plugin, @NotNull URI dataBase, @NotNull File hierarchies) {
 
         RegionContext rc = new RegionContext(
             plugin,

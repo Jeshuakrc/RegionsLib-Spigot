@@ -4,6 +4,8 @@ import com.kntrel.mc.commvoker.bukkit.CommandResult;
 import com.kntrel.mc.commvoker.bukkit.provided.annotation.Sender;
 import com.kntrel.mc.commvoker.bukkit.requirement.RequiresPermission;
 import com.kntrel.mc.commvoker.command.Command;
+import com.kntrel.mc.commvoker.error.FailTrigger;
+import com.kntrel.mc.commvoker.exception.FailedCommandException;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
@@ -36,23 +38,27 @@ public class RegionCommand {
     //COMMANDS
     @Command("create {area} in {world} {hierarchy} {name}")
     @RequiresPermission("regions.create")
-    public String create(CommandSender sender, BoundingBox boundingBox, World world, Hierarchy hierarchy, String name) {
-        Region region = new Region(
-                this.regionContext_,
-                boundingBox,
-                world,
-                name,
-                hierarchy,
-                (sender instanceof Entity e) ? e : null
-        );
-        region.save();
+    public String create(FailTrigger ft, CommandSender sender, BoundingBox boundingBox, World world, Hierarchy hierarchy, String name) throws FailedCommandException {
+        try {
+            Region region = new Region(
+                    this.regionContext_,
+                    boundingBox,
+                    world,
+                    name,
+                    hierarchy,
+                    (sender instanceof Entity e) ? e : null
+            );
+            region.save();
+        } catch (IllegalArgumentException e) {
+            ft.fail(e.getMessage());
+        }
         return  "Region '" + name + "' created successfully!";
     }
 
     @Command("create {area} {hierarchy} {name}")
     @RequiresPermission("regions.create")
-    public String create(@Sender Player player, BoundingBox boundingBox, Hierarchy hierarchy, String name) {
-        return create(player, boundingBox, player.getWorld(), hierarchy, name);
+    public String create(FailTrigger ft, @Sender Player player, BoundingBox boundingBox, Hierarchy hierarchy, String name) throws FailedCommandException {
+        return create(ft, player, boundingBox, player.getWorld(), hierarchy, name);
     }
 
     @Command("destroy {region}")

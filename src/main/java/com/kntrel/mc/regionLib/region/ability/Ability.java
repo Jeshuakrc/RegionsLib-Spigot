@@ -13,7 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiPredicate;
@@ -34,12 +34,12 @@ public class Ability extends RegionEventReactor implements BiPredicate<Event, Re
 
 
     //CONSTRUCTORS
-    public Ability(@Nonnull String name, Class<? extends Event> eventClass, Predicate<Event> validator, Function<Event, Player> playerGetter, PointGetter pointGetter, int order, @Nullable EventPriority priority, @Nullable Ability dependsOn) {
+    public Ability(@NotNull String name, Class<? extends Event> eventClass, Predicate<Event> validator, Function<Event, Player> playerGetter, PointGetter pointGetter, int order, @Nullable EventPriority priority, @Nullable Ability dependsOn) {
         super(name, eventClass, pointGetter, validator, order, priority);
         this.playerGetter_ = playerGetter;
         this.extends_ = dependsOn;
     }
-    public Ability(@Nonnull String name, Class<? extends Event> eventClass, Predicate<Event> validator, Function<Event, Player> playerGetter, AreaGetter areaGetter, int order, @Nullable EventPriority priority, @Nullable Ability dependsOn) {
+    public Ability(@NotNull String name, Class<? extends Event> eventClass, Predicate<Event> validator, Function<Event, Player> playerGetter, AreaGetter areaGetter, int order, @Nullable EventPriority priority, @Nullable Ability dependsOn) {
         super(name, eventClass, areaGetter, validator, order, priority);
         this.playerGetter_ = playerGetter;
         this.extends_ = dependsOn;

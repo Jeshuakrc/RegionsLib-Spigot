@@ -19,8 +19,8 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Predicate;
 
@@ -403,7 +403,7 @@ public class Region implements Comparable<Region> {
     @Override public int hashCode() {
         return this.id_.hashCode();
     }
-    @Override public int compareTo(@Nonnull Region otherRegion) {
+    @Override public int compareTo(@NotNull Region otherRegion) {
         return Long.compare(this.getId(), otherRegion.getId());
     }
 

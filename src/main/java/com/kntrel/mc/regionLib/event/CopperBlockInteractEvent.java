@@ -6,7 +6,7 @@ import org.bukkit.event.Cancellable;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.block.BlockEvent;
 
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 public class CopperBlockInteractEvent extends BlockEvent implements Cancellable {
     //EVENT-REQUIRED ================================================
@@ -15,7 +15,7 @@ public class CopperBlockInteractEvent extends BlockEvent implements Cancellable 
         return HANDLERS;
     }
     @Override
-    @Nonnull
+    @NotNull
     public HandlerList getHandlers() {
         return HANDLERS;
     }

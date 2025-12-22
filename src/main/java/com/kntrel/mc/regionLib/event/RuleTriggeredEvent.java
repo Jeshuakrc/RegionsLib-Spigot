@@ -6,7 +6,7 @@ import com.kntrel.mc.regionLib.util.Area;
 import org.bukkit.Location;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 
 public class RuleTriggeredEvent extends Event {
@@ -16,7 +16,7 @@ public class RuleTriggeredEvent extends Event {
         return HANDLERS;
     }
     @Override
-    @Nonnull
+    @NotNull
     public HandlerList getHandlers() {
         return HANDLERS;
     }

@@ -5,7 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerEvent;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 public class PlayerEnterRegionEvent extends PlayerEvent {
     //EVENT-REQUIRED ================================================
@@ -14,7 +14,7 @@ public class PlayerEnterRegionEvent extends PlayerEvent {
         return HANDLERS;
     }
     @Override
-    @Nonnull
+    @NotNull
     public HandlerList getHandlers() {
         return HANDLERS;
     }

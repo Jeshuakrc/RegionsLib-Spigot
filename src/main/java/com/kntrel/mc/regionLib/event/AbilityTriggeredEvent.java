@@ -8,7 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerEvent;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 
 public class AbilityTriggeredEvent extends PlayerEvent {
@@ -19,7 +19,7 @@ public class AbilityTriggeredEvent extends PlayerEvent {
         return HANDLERS;
     }
     @Override
-    @Nonnull
+    @NotNull
     public HandlerList getHandlers() {
         return HANDLERS;
     }

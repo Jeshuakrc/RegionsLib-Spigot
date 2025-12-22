@@ -1,11 +1,11 @@
 package com.kntrel.mc.regionLib.event;
 
 import org.bukkit.plugin.Plugin;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 
 public interface RegionLibEvent {
-    static void enable(@Nonnull Plugin plugin) {
+    static void enable(@NotNull Plugin plugin) {
         EventTriggerer.enable(plugin);
     }
 }

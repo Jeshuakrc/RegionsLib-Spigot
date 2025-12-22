@@ -13,7 +13,7 @@ import org.bukkit.Location;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 import java.util.function.*;
 
 public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E, Rule<T>, RuleBuilder<E, T>> {
@@ -194,11 +194,11 @@ public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E
 
         private String name_;
 
-        public ReflectiveRule(@Nonnull Class<? extends Event> eventClass, @Nonnull ValueType<T> type, @Nonnull PointGetter pointGetter, @Nonnull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region> action) {
+        public ReflectiveRule(@NotNull Class<? extends Event> eventClass, @NotNull ValueType<T> type, @NotNull PointGetter pointGetter, @NotNull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region> action) {
             super("", eventClass, type, pointGetter, validator, priority, bukkitPriority, test, action);
             this.name_ = null;
         }
-        public ReflectiveRule(@Nonnull Class<? extends Event> eventClass, @Nonnull ValueType<T> type, @Nonnull AreaGetter areaGetter, @Nonnull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region> action) {
+        public ReflectiveRule(@NotNull Class<? extends Event> eventClass, @NotNull ValueType<T> type, @NotNull AreaGetter areaGetter, @NotNull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region> action) {
             super("", eventClass, type, areaGetter, validator, priority, bukkitPriority, test, action);
             this.name_ = null;
         }

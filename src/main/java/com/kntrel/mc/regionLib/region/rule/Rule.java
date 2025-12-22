@@ -11,7 +11,7 @@ import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.function.*;
 
@@ -30,13 +30,13 @@ public class Rule<T> extends RegionEventReactor implements BiConsumer<Event, Reg
 
 
     //CONSTRUCTORS
-    public Rule(@Nonnull String name, @Nonnull Class<? extends Event> eventClass, @Nonnull ValueType<T> type, @Nonnull PointGetter pointGetter, @Nonnull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region>action) {
+    public Rule(@NotNull String name, @NotNull Class<? extends Event> eventClass, @NotNull ValueType<T> type, @NotNull PointGetter pointGetter, @NotNull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region>action) {
         super(name, eventClass, pointGetter, validator, priority, bukkitPriority);
         this.test_ = test;
         this.action_ = action;
         this.type_ = type;
     }
-    public Rule(@Nonnull String name, @Nonnull Class<? extends Event> eventClass, @Nonnull ValueType<T> type, @Nonnull AreaGetter areaGetter, @Nonnull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region>action) {
+    public Rule(@NotNull String name, @NotNull Class<? extends Event> eventClass, @NotNull ValueType<T> type, @NotNull AreaGetter areaGetter, @NotNull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region>action) {
         super(name, eventClass, areaGetter, validator, priority, bukkitPriority);
         this.test_ = test;
         this.action_ = action;

@@ -6,7 +6,7 @@ import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 public class RegionDestroyEvent extends Event implements Cancellable {
     //EVENT-REQUIRED ================================================
@@ -15,7 +15,7 @@ public class RegionDestroyEvent extends Event implements Cancellable {
         return HANDLERS;
     }
     @Override
-    @Nonnull
+    @NotNull
     public HandlerList getHandlers() {
         return HANDLERS;
     }

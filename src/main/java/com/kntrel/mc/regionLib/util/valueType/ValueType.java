@@ -1,6 +1,6 @@
 package com.kntrel.mc.regionLib.util.valueType;
 
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +31,7 @@ public abstract class ValueType<T> {
 
     //API
     @SuppressWarnings({"unchecked" , "rawtypes"})
-    public static <T> ValueType<T> of(@Nonnull Class<T> clazz) {
+    public static <T> ValueType<T> of(@NotNull Class<T> clazz) {
         ValueType<?> r = REGISTRY.get(clazz);
 
         if (r == null && Enum.class.isAssignableFrom(clazz)) {

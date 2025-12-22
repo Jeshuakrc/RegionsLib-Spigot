@@ -4,7 +4,7 @@ import com.kntrel.mc.regionLib.region.Region;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 public class PlayerLeaveRegionEvent extends PlayerEnterRegionEvent {
     //EVENT-REQUIRED ================================================
@@ -13,7 +13,7 @@ public class PlayerLeaveRegionEvent extends PlayerEnterRegionEvent {
         return HANDLERS;
     }
     @Override
-    @Nonnull
+    @NotNull
     public HandlerList getHandlers() {
         return HANDLERS;
     }
