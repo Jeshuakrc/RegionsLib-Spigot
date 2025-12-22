@@ -10,6 +10,7 @@ import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
 import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
+import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
 import com.kntrel.mc.regionLib.region.rule.RuleValue;
 import com.kntrel.mc.regionLib.util.valueType.ValueHolder;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
@@ -190,8 +191,11 @@ public class Region implements Comparable<Region> {
     public Hierarchy getHierarchy() {
         return this.hierarchy_;
     }
-    public List<ValueHolder<?>> getRuleValues() {
-        return List.copyOf(this.rulesValues_.values());
+    public List<RuleValue<?>> getRuleValues() {
+        final RuleRegistry rr = this.ctx_.getRuleRegistry();
+        return this.rulesValues_.entrySet().stream()
+                .<RuleValue<?>>map(e -> new RuleValue<>(rr.get(e.getKey()).orElse(new OrphanRule(e.getKey())), e.getValue().toString()))
+                .toList();
     }
     public Optional<ValueHolder<?>> getRuleValue(String name) {
         return Optional.ofNullable(this.rulesValues_.get(name));

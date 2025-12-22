@@ -7,6 +7,7 @@ import com.kntrel.mc.regionLib.persistence.jpa.dto.RuleValueDTO;
 import com.kntrel.mc.regionLib.persistence.jpa.ext.IdHolder;
 import com.kntrel.mc.regionLib.persistence.jpa.ext.idHolderPermission;
 import com.kntrel.mc.regionLib.persistence.jpa.mapper.JpaEntityMapper;
+import com.kntrel.mc.regionLib.region.Permission;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.RegionRepository;
@@ -15,6 +16,7 @@ import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.region.rule.Rule;
+import com.kntrel.mc.regionLib.region.rule.RuleValue;
 import com.kntrel.mc.regionLib.util.valueType.ValueHolder;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import org.bukkit.World;
@@ -33,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 
 public class SQLiteRegionRepository implements RegionRepository {
@@ -124,14 +125,14 @@ public class SQLiteRegionRepository implements RegionRepository {
                 this.clearRegionChildren(regionId);
             }
 
-            this.insertRules(regionId, this.getRuleValues(region));
+            this.insertRules(region);
             this.insertData(regionId, region.getDataContainer().getAll());
             this.insertPermissions(regionId, region.getPermissions());
 
             this.conn_.commit();
         } catch (SQLException e) {
             try { this.conn_.rollback(); } catch (SQLException ignored) {}
-            throw new RuntimeException("Failed to save region", e);
+            throw new RegionSQLSaveException(region, e);
         } finally {
             try { this.conn_.setAutoCommit(true); } catch (SQLException ignored) {}
         }
@@ -142,9 +143,11 @@ public class SQLiteRegionRepository implements RegionRepository {
         return this.regionMapper_.hierarchyRepository_;
     }
 
-    private List<Region> fetchRegions(String sql, Consumer<PreparedStatement> binder) {
+
+    //HELPERS
+    private List<Region> fetchRegions(String sql, StatementBinder binder) {
         try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
-            binder.accept(stmt);
+            binder.bind(stmt);
 
             List<RegionDTO> regions = new ArrayList<>();
             try (ResultSet rs = stmt.executeQuery()) {
@@ -172,7 +175,7 @@ public class SQLiteRegionRepository implements RegionRepository {
 
             return regions.stream().map(this.regionMapper_::toModel).sorted().toList();
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to query regions", e);
+            throw new RegionSQLFetchException(sql, e);
         }
     }
 
@@ -254,24 +257,30 @@ public class SQLiteRegionRepository implements RegionRepository {
         regions.forEach(r -> r.setPermissions(perms.getOrDefault(r.getId(), List.of())));
     }
 
-    private Long insertRegion(Region region) throws SQLException {
+    private Long insertRegion(Region region) {
         String sql = "INSERT INTO region (name, world, enabled, hierarchy, min_x, min_y, min_z, max_x, max_y, max_z, destroyed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = this.conn_.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             this.bindRegion(stmt, region);
             stmt.executeUpdate();
             try (ResultSet keys = stmt.getGeneratedKeys()) {
-                if (keys.next()) { return keys.getLong(1); }
+                if (keys.next()) {
+                    return keys.getLong(1);
+                }
             }
+            throw new RegionSQLSaveException(region, sql, new SQLException("Failed to retrieve generated region id"));
+        } catch (SQLException e) {
+            throw new RegionSQLSaveException(region, sql, e);
         }
-        throw new SQLException("Failed to retrieve generated region id");
     }
 
-    private void updateRegion(Region region) throws SQLException {
+    private void updateRegion(Region region) {
         String sql = "UPDATE region SET name = ?, world = ?, enabled = ?, hierarchy = ?, min_x = ?, min_y = ?, min_z = ?, max_x = ?, max_y = ?, max_z = ?, destroyed = ? WHERE id = ?";
         try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
             this.bindRegion(stmt, region);
             stmt.setLong(12, region.getId());
             stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new RegionSQLSaveException(region, sql, e);
         }
     }
 
@@ -289,43 +298,35 @@ public class SQLiteRegionRepository implements RegionRepository {
         stmt.setBoolean(11, region.isDestroyed());
     }
 
-    private void clearRegionChildren(Long regionId) throws SQLException {
+    private void clearRegionChildren(Long regionId) {
         for (String table : List.of("regionRule", "regionData", "regionPermission")) {
-            try (PreparedStatement stmt = this.conn_.prepareStatement("DELETE FROM " + table + " WHERE region_id = ?")) {
+            String sql = "DELETE FROM " + table + " WHERE region_id = ?";
+            try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
                 stmt.setLong(1, regionId);
                 stmt.executeUpdate();
+            } catch (SQLException e) {
+                throw new RegionSQLSaveException(null, sql, e);
             }
         }
     }
 
-    private Map<String, ValueHolder<?>> getRuleValues(Region region) {
-        try {
-            var field = Region.class.getDeclaredField("rulesValues_");
-            field.setAccessible(true);
-            @SuppressWarnings("unchecked")
-            Map<String, ValueHolder<?>> rules = (Map<String, ValueHolder<?>>) field.get(region);
-            return rules;
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to access region rule values", e);
-        }
-    }
-
-    private void insertRules(Long regionId, Map<String, ValueHolder<?>> rules) throws SQLException {
-        if (rules.isEmpty()) { return; }
+    private void insertRules(Region region) {
 
         String sql = "INSERT INTO regionRule (region_id, key, value) VALUES (?, ?, ?)";
         try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
-            for (Map.Entry<String, ValueHolder<?>> entry : rules.entrySet()) {
-                stmt.setLong(1, regionId);
-                stmt.setString(2, entry.getKey());
-                stmt.setString(3, entry.getValue().toString());
+            for (RuleValue<?> val : region.getRuleValues()) {
+                stmt.setLong(1, region.getId());
+                stmt.setString(2, val.getRule().getName());
+                stmt.setString(3, val.toString());
                 stmt.addBatch();
             }
             stmt.executeBatch();
+        } catch (SQLException e) {
+            throw new RegionSQLSaveException(null, sql, e);
         }
     }
 
-    private void insertData(Long regionId, List<RegionData> data) throws SQLException {
+    private void insertData(Long regionId, List<RegionData> data) {
         if (data.isEmpty()) { return; }
 
         String sql = "INSERT INTO regionData (region_id, key, value) VALUES (?, ?, ?)";
@@ -333,14 +334,16 @@ public class SQLiteRegionRepository implements RegionRepository {
             for (RegionData datum : data) {
                 stmt.setLong(1, regionId);
                 stmt.setString(2, datum.getKey());
-                stmt.setString(3, datum.getValue());
+                stmt.setString(3, datum.getValue().getAsString());
                 stmt.addBatch();
             }
             stmt.executeBatch();
+        } catch (SQLException e) {
+            throw new RegionSQLSaveException(null, sql, e);
         }
     }
 
-    private void insertPermissions(Long regionId, List<Permission> permissions) throws SQLException {
+    private void insertPermissions(Long regionId, List<Permission> permissions) {
         if (permissions.isEmpty()) { return; }
 
         String sql = "INSERT INTO regionPermission (region_id, player_uuid, level) VALUES (?, ?, ?)";
@@ -352,11 +355,17 @@ public class SQLiteRegionRepository implements RegionRepository {
                 stmt.addBatch();
             }
             stmt.executeBatch();
+        } catch (SQLException e) {
+            throw new RegionSQLSaveException(null, sql, e);
         }
     }
 
 
     //INNER CLASSES
+    @FunctionalInterface private interface StatementBinder {
+        void bind(PreparedStatement stmt) throws SQLException;
+    }
+
     private static class RegionMapper implements JpaEntityMapper<Region, RegionDTO> {
 
         //FIELDS
