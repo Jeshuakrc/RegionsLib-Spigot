@@ -17,26 +17,35 @@ import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.util.valueType.ValueHolder;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
-import io.ebean.Database;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BoundingBox;
 import java.net.URI;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 
 public class SQLiteRegionRepository implements RegionRepository {
 
     // FIELDS
     private final RegionMapper regionMapper_;
-    private final Database db_;
+    private final Connection conn_;
 
 
     // CONSTRUCTORS
     public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database, HierarchyRepository hierarchyRepository) {
-        this.db_ = DataBaseInitializer.getDatabase(plugin, database);
+        this.conn_ = DataBaseInitializer.getConnection(plugin, database);
         this.regionMapper_ = new RegionMapper(plugin, context, hierarchyRepository, new RuleMapper(context), new RegionDataMapper());
     }
 
@@ -44,47 +53,36 @@ public class SQLiteRegionRepository implements RegionRepository {
     // IMPLEMENTATION
     @Override
     public List<Region> getAll() {
-        return this.db_.find(RegionDTO.class)
-                .findStream()
-                .map(this.regionMapper_::toModel)
-                .toList();
+        return this.fetchRegions("SELECT * FROM region", stmt -> {});
     }
 
     @Override
     public Optional<Region> get(Long id) {
-        return Optional.ofNullable(this.db_.find(RegionDTO.class, id)).map(this.regionMapper_::toModel);
+        List<Region> regions = this.fetchRegions("SELECT * FROM region WHERE id = ?", stmt -> stmt.setLong(1, id));
+        return regions.stream().findFirst();
     }
 
     @Override
     public List<Region> get(String name) {
-        return this.db_.find(RegionDTO.class).where().eq("name", name).findList().stream().map(this.regionMapper_::toModel).toList();
+        return this.fetchRegions("SELECT * FROM region WHERE name = ?", stmt -> stmt.setString(1, name));
     }
 
     @Override
     public List<Region> getAt(double x, double y, double z, World world) {
-        return this.db_.find(RegionDTO.class)
-                .where()
-                .raw("? BETWEEN minX AND maxX", x)
-                .raw("? BETWEEN minY AND maxY", y)
-                .raw("? BETWEEN minZ AND maxZ", z)
-                .eq("world", world.getName())
-                .findList()
-                .stream()
-                .map(this.regionMapper_::toModel)
-                .sorted()
-                .toList();
+        return this.fetchRegions(
+                "SELECT * FROM region WHERE ? BETWEEN min_x AND max_x AND ? BETWEEN min_y AND max_y AND ? BETWEEN min_z AND max_z AND world = ?",
+                stmt -> {
+                    stmt.setDouble(1, x);
+                    stmt.setDouble(2, y);
+                    stmt.setDouble(3, z);
+                    stmt.setString(4, world.getName());
+                }
+        );
     }
 
     @Override
     public List<Region> getIn(World world) {
-        return this.db_.find(RegionDTO.class)
-                .where()
-                .eq("world", world.getName())
-                .findList()
-                .stream()
-                .map(this.regionMapper_::toModel)
-                .sorted()
-                .toList();
+        return this.fetchRegions("SELECT * FROM region WHERE world = ?", stmt -> stmt.setString(1, world.getName()));
     }
 
     @Override
@@ -93,19 +91,17 @@ public class SQLiteRegionRepository implements RegionRepository {
                 minY = Math.min(y1, y2), maxY = Math.max(y1, y2),
                 minZ = Math.min(z1, z2), maxZ = Math.max(z1, z2);
 
-        return this.db_.find(RegionDTO.class)
-                .where()
-                .lt("minX", maxX)
-                .lt("minY", maxY)
-                .lt("minZ", maxZ)
-                .gt("maxX", minX)
-                .gt("maxY", minY)
-                .gt("maxZ", minZ)
-                .findList()
-                .stream()
-                .map(this.regionMapper_::toModel)
-                .sorted()
-                .toList();
+        return this.fetchRegions(
+                "SELECT * FROM region WHERE min_x < ? AND min_y < ? AND min_z < ? AND max_x > ? AND max_y > ? AND max_z > ?",
+                stmt -> {
+                    stmt.setDouble(1, maxX);
+                    stmt.setDouble(2, maxY);
+                    stmt.setDouble(3, maxZ);
+                    stmt.setDouble(4, minX);
+                    stmt.setDouble(5, minY);
+                    stmt.setDouble(6, minZ);
+                }
+        );
     }
 
     @Override
@@ -116,17 +112,247 @@ public class SQLiteRegionRepository implements RegionRepository {
 
     @Override
     public void save(Region region) {
-        RegionDTO dto = this.regionMapper_.toEntity(region);
-        if (region.getId() == null) {
-            this.db_.save(dto);
-        } else {
-            this.db_.update(dto);
+        try {
+            this.conn_.setAutoCommit(false);
+
+            Long regionId = region.getId();
+            if (regionId == null) {
+                regionId = this.insertRegion(region);
+                region.setId(regionId);
+            } else {
+                this.updateRegion(region);
+                this.clearRegionChildren(regionId);
+            }
+
+            this.insertRules(regionId, this.getRuleValues(region));
+            this.insertData(regionId, region.getDataContainer().getAll());
+            this.insertPermissions(regionId, region.getPermissions());
+
+            this.conn_.commit();
+        } catch (SQLException e) {
+            try { this.conn_.rollback(); } catch (SQLException ignored) {}
+            throw new RuntimeException("Failed to save region", e);
+        } finally {
+            try { this.conn_.setAutoCommit(true); } catch (SQLException ignored) {}
         }
     }
 
     @Override
     public HierarchyRepository getHierarchyRepository() {
         return this.regionMapper_.hierarchyRepository_;
+    }
+
+    private List<Region> fetchRegions(String sql, Consumer<PreparedStatement> binder) {
+        try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
+            binder.accept(stmt);
+
+            List<RegionDTO> regions = new ArrayList<>();
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    RegionDTO dto = new RegionDTO();
+                    dto.setId(rs.getLong("id"));
+                    dto.setName(rs.getString("name"));
+                    dto.setWorld(rs.getString("world"));
+                    dto.setEnabled(rs.getBoolean("enabled"));
+                    dto.setDestroyed(rs.getBoolean("destroyed"));
+                    dto.setMinX(rs.getDouble("min_x"));
+                    dto.setMinY(rs.getDouble("min_y"));
+                    dto.setMinZ(rs.getDouble("min_z"));
+                    dto.setMaxX(rs.getDouble("max_x"));
+                    dto.setMaxY(rs.getDouble("max_y"));
+                    dto.setMaxZ(rs.getDouble("max_z"));
+                    dto.setHierarchyId(rs.getLong("hierarchy"));
+                    regions.add(dto);
+                }
+            }
+
+            this.loadRules(regions);
+            this.loadData(regions);
+            this.loadPermissions(regions);
+
+            return regions.stream().map(this.regionMapper_::toModel).sorted().toList();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to query regions", e);
+        }
+    }
+
+    private void loadRules(List<RegionDTO> regions) throws SQLException {
+        if (regions.isEmpty()) { return; }
+
+        Map<Long, List<RuleValueDTO>> ruleMap = new HashMap<>();
+        String placeholders = String.join(",", Collections.nCopies(regions.size(), "?"));
+        String sql = "SELECT id, region_id, key, value FROM regionRule WHERE region_id IN (" + placeholders + ")";
+        try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
+            for (int i = 0; i < regions.size(); i++) {
+                stmt.setLong(i + 1, regions.get(i).getId());
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    RuleValueDTO dto = new RuleValueDTO();
+                    dto.setId(rs.getLong("id"));
+                    dto.setKey(rs.getString("key"));
+                    dto.setValue(rs.getString("value"));
+                    long regionId = rs.getLong("region_id");
+                    ruleMap.computeIfAbsent(regionId, k -> new ArrayList<>()).add(dto);
+                }
+            }
+        }
+
+        regions.forEach(r -> r.setRules(ruleMap.getOrDefault(r.getId(), List.of())));
+    }
+
+    private void loadData(List<RegionDTO> regions) throws SQLException {
+        if (regions.isEmpty()) { return; }
+
+        Map<Long, List<RegionDataDTO>> dataMap = new HashMap<>();
+        String placeholders = String.join(",", Collections.nCopies(regions.size(), "?"));
+        String sql = "SELECT id, region_id, key, value FROM regionData WHERE region_id IN (" + placeholders + ")";
+        try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
+            for (int i = 0; i < regions.size(); i++) {
+                stmt.setLong(i + 1, regions.get(i).getId());
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    RegionDataDTO dto = new RegionDataDTO();
+                    dto.setId(rs.getLong("id"));
+                    dto.setKey(rs.getString("key"));
+                    dto.setValue(rs.getString("value"));
+                    long regionId = rs.getLong("region_id");
+                    dataMap.computeIfAbsent(regionId, k -> new ArrayList<>()).add(dto);
+                }
+            }
+        }
+
+        regions.forEach(r -> r.setDataContainer(dataMap.getOrDefault(r.getId(), List.of())));
+    }
+
+    private void loadPermissions(List<RegionDTO> regions) throws SQLException {
+        if (regions.isEmpty()) { return; }
+
+        Map<Long, List<PermissionDTO>> perms = new HashMap<>();
+        String placeholders = String.join(",", Collections.nCopies(regions.size(), "?"));
+        String sql = "SELECT id, region_id, player_uuid, level FROM regionPermission WHERE region_id IN (" + placeholders + ")";
+        try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
+            for (int i = 0; i < regions.size(); i++) {
+                stmt.setLong(i + 1, regions.get(i).getId());
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    PermissionDTO dto = new PermissionDTO();
+                    dto.setId(rs.getLong("id"));
+                    dto.setPlayerUUID(rs.getString("player_uuid"));
+                    dto.setLevel(rs.getInt("level"));
+                    long regionId = rs.getLong("region_id");
+                    perms.computeIfAbsent(regionId, k -> new ArrayList<>()).add(dto);
+                }
+            }
+        }
+
+        regions.forEach(r -> r.setPermissions(perms.getOrDefault(r.getId(), List.of())));
+    }
+
+    private Long insertRegion(Region region) throws SQLException {
+        String sql = "INSERT INTO region (name, world, enabled, hierarchy, min_x, min_y, min_z, max_x, max_y, max_z, destroyed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement stmt = this.conn_.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            this.bindRegion(stmt, region);
+            stmt.executeUpdate();
+            try (ResultSet keys = stmt.getGeneratedKeys()) {
+                if (keys.next()) { return keys.getLong(1); }
+            }
+        }
+        throw new SQLException("Failed to retrieve generated region id");
+    }
+
+    private void updateRegion(Region region) throws SQLException {
+        String sql = "UPDATE region SET name = ?, world = ?, enabled = ?, hierarchy = ?, min_x = ?, min_y = ?, min_z = ?, max_x = ?, max_y = ?, max_z = ?, destroyed = ? WHERE id = ?";
+        try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
+            this.bindRegion(stmt, region);
+            stmt.setLong(12, region.getId());
+            stmt.executeUpdate();
+        }
+    }
+
+    private void bindRegion(PreparedStatement stmt, Region region) throws SQLException {
+        stmt.setString(1, region.getName());
+        stmt.setString(2, region.getWorld().getName());
+        stmt.setBoolean(3, region.isEnabled());
+        stmt.setLong(4, region.getHierarchy().getId());
+        stmt.setDouble(5, region.getMinX());
+        stmt.setDouble(6, region.getMinY());
+        stmt.setDouble(7, region.getMinZ());
+        stmt.setDouble(8, region.getMaxX());
+        stmt.setDouble(9, region.getMaxY());
+        stmt.setDouble(10, region.getMaxZ());
+        stmt.setBoolean(11, region.isDestroyed());
+    }
+
+    private void clearRegionChildren(Long regionId) throws SQLException {
+        for (String table : List.of("regionRule", "regionData", "regionPermission")) {
+            try (PreparedStatement stmt = this.conn_.prepareStatement("DELETE FROM " + table + " WHERE region_id = ?")) {
+                stmt.setLong(1, regionId);
+                stmt.executeUpdate();
+            }
+        }
+    }
+
+    private Map<String, ValueHolder<?>> getRuleValues(Region region) {
+        try {
+            var field = Region.class.getDeclaredField("rulesValues_");
+            field.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            Map<String, ValueHolder<?>> rules = (Map<String, ValueHolder<?>>) field.get(region);
+            return rules;
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException("Failed to access region rule values", e);
+        }
+    }
+
+    private void insertRules(Long regionId, Map<String, ValueHolder<?>> rules) throws SQLException {
+        if (rules.isEmpty()) { return; }
+
+        String sql = "INSERT INTO regionRule (region_id, key, value) VALUES (?, ?, ?)";
+        try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
+            for (Map.Entry<String, ValueHolder<?>> entry : rules.entrySet()) {
+                stmt.setLong(1, regionId);
+                stmt.setString(2, entry.getKey());
+                stmt.setString(3, entry.getValue().toString());
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        }
+    }
+
+    private void insertData(Long regionId, List<RegionData> data) throws SQLException {
+        if (data.isEmpty()) { return; }
+
+        String sql = "INSERT INTO regionData (region_id, key, value) VALUES (?, ?, ?)";
+        try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
+            for (RegionData datum : data) {
+                stmt.setLong(1, regionId);
+                stmt.setString(2, datum.getKey());
+                stmt.setString(3, datum.getValue());
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        }
+    }
+
+    private void insertPermissions(Long regionId, List<Permission> permissions) throws SQLException {
+        if (permissions.isEmpty()) { return; }
+
+        String sql = "INSERT INTO regionPermission (region_id, player_uuid, level) VALUES (?, ?, ?)";
+        try (PreparedStatement stmt = this.conn_.prepareStatement(sql)) {
+            for (Permission permission : permissions) {
+                stmt.setLong(1, regionId);
+                stmt.setString(2, permission.getPlayerId().toString());
+                stmt.setInt(3, permission.getGroup().getLevel());
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+        }
     }
 
 
