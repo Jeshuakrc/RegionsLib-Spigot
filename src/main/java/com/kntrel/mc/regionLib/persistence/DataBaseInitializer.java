@@ -1,21 +1,18 @@
 package com.kntrel.mc.regionLib.persistence;
 
-import com.kntrel.mc.regionLib.persistence.jpa.dto.PermissionDTO;
-import com.kntrel.mc.regionLib.persistence.jpa.dto.RegionDTO;
-import com.kntrel.mc.regionLib.persistence.jpa.dto.RegionDataDTO;
-import com.kntrel.mc.regionLib.persistence.jpa.dto.RuleValueDTO;
-import io.ebean.Database;
-import io.ebean.DatabaseFactory;
-import io.ebean.SqlRow;
-import io.ebean.Transaction;
-import io.ebean.config.DatabaseConfig;
-import io.ebean.datasource.DataSourceConfig;
-import io.ebean.platform.sqlite.SQLitePlatform;
 import org.bukkit.plugin.Plugin;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.SortedMap;
@@ -60,12 +57,43 @@ class DataBaseInitializer {
         return out;
     }
 
-    private static void migrate(Plugin plugin, Database db) {
+    private static void runScript(Connection conn, URL script) throws IOException, SQLException {
+        StringBuilder cleaned = new StringBuilder();
+        for (String line : new String(script.openStream().readAllBytes(), StandardCharsets.UTF_8).split("\n")) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty() || trimmed.startsWith("--")) { continue; }
+            cleaned.append(line).append('\n');
+        }
 
-        int curr = 0;
-        SqlRow row = db.sqlQuery("PRAGMA user_version").findOne();
-        if (row != null) {
-            curr = row.getInteger("user_version");
+        for (String statement : cleaned.toString().split(";")) {
+            String trimmed = statement.trim();
+            if (trimmed.isEmpty()) { continue; }
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute(trimmed);
+            }
+        }
+    }
+
+    private static int getUserVersion(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery("PRAGMA user_version")) {
+            if (rs.next()) { return rs.getInt(1); }
+        }
+        return 0;
+    }
+
+    private static void setUserVersion(Connection conn, int version) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("PRAGMA user_version = " + version);
+        }
+    }
+
+    private static void migrate(Plugin plugin, Connection conn) {
+
+        int curr;
+        try {
+            curr = DataBaseInitializer.getUserVersion(conn);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed reading database version", e);
         }
 
         SortedMap<Integer, String> migrations;
@@ -79,44 +107,41 @@ class DataBaseInitializer {
 
         ClassLoader cl = plugin.getClass().getClassLoader();
         plugin.getServer().getLogger().log(Level.INFO, "Database schema is behind. Migrating.");
-        try (Transaction txn = db.beginTransaction()) {
-            int latest = curr;
+        int latest = curr;
+        try {
+            conn.setAutoCommit(false);
             for (Map.Entry<Integer, String> entry : migrations.entrySet()) {
                 latest = entry.getKey();
                 plugin.getServer().getLogger().log(Level.INFO, "Migrating RegionLib database to v" + latest);
                 URL script = cl.getResource(entry.getValue());
-                db.script().run(script);
+                if (script == null) { throw new IOException("Missing migration script " + entry.getValue()); }
+                DataBaseInitializer.runScript(conn, script);
             }
-            db.execute(db.sqlUpdate("PRAGMA user_version = " + latest));
-            txn.commit();
+            DataBaseInitializer.setUserVersion(conn, latest);
+            conn.commit();
+        } catch (SQLException | IOException e) {
+            try { conn.rollback(); } catch (SQLException ignored) {}
+            throw new RuntimeException("Failed migrating database", e);
+        } finally {
+            try { conn.setAutoCommit(true); } catch (SQLException ignored) {}
         }
     }
 
-    public static Database getDatabase(Plugin plugin, URI location) {
-        DataSourceConfig dsConfig = new DataSourceConfig();
-        dsConfig.setDriver("org.sqlite.JDBC");
-        dsConfig.setUrl("jdbc:sqlite:" + location.getPath());
-        dsConfig.setUsername("");
-        dsConfig.setPassword("");
+    public static Connection getConnection(Plugin plugin, URI location) {
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException("SQLite JDBC driver not found", e);
+        }
 
-        DatabaseConfig dbConfig = new DatabaseConfig();
-        dbConfig.setName("SQLite");
-        dbConfig.setDatabasePlatform(new SQLitePlatform());
-        dbConfig.setDataSourceConfig(dsConfig);
-        dbConfig.setDdlGenerate(false);
-        dbConfig.setDdlRun(false);
+        Path dbPath = Paths.get(location);
 
-        // Register your @Entity classes
-        dbConfig.addClass(RegionDTO.class);
-        dbConfig.addClass(RegionDataDTO.class);
-        dbConfig.addClass(PermissionDTO.class);
-        dbConfig.addClass(RuleValueDTO.class);
-
-        ClassLoader pluginLoader = plugin.getClass().getClassLoader();
-        Database db = DatabaseFactory.createWithContextClassLoader(dbConfig, pluginLoader);
-
-        DataBaseInitializer.migrate(plugin, db);
-
-        return db;
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+            DataBaseInitializer.migrate(plugin, conn);
+            return conn;
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to initialize SQLite connection", e);
+        }
     }
 }
