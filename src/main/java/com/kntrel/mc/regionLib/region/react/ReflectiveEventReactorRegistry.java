@@ -1,7 +1,7 @@
 package com.kntrel.mc.regionLib.region.react;
 
 import com.kntrel.mc.regionLib.region.RegionContext;
-import io.avaje.lang.Nullable;
+import org.jetbrains.annotations.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
