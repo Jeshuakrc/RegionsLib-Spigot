@@ -7,7 +7,7 @@ import com.kntrel.mc.commvoker.assembler.TransformAssembler;
 import com.kntrel.mc.commvoker.provided.assemblers.StringAssembler;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionContext;
-import com.kntrel.mc.regionLib.region.RegionRepository;
+import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import java.util.List;
