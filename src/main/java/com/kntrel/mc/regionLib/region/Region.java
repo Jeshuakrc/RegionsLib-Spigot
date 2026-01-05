@@ -12,6 +12,7 @@ import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
 import com.kntrel.mc.regionLib.region.rule.RuleValue;
+import com.kntrel.mc.regionLib.util.Area;
 import com.kntrel.mc.regionLib.util.valueType.ValueHolder;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import org.bukkit.*;
@@ -318,6 +319,10 @@ public class Region implements Comparable<Region> {
     public boolean contains(BoundingBox boundingBox) {
         return this.boundingBox_.contains(boundingBox);
     }
+    public boolean contains(Area area) {
+        if (!this.getWorld().equals(area.getWorld())) { return false; }
+        return this.contains((BoundingBox) area);
+    }
     public List<Region> getOverlappingRegions() {
         return this.ctx_.getIn(this);
     }
@@ -396,6 +401,10 @@ public class Region implements Comparable<Region> {
         this.destroy(null);
     }
 
+    //FIELDS
+    public <T> T getField(RegionField<T> field) {
+        return field.extract(this);
+    }
 
     //IMPLEMENTATIONS
     @Override public boolean equals(Object o) {
