@@ -6,6 +6,8 @@ import com.kntrel.mc.regionLib.region.ability.AbilityRegistry;
 import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
 import com.kntrel.mc.regionLib.region.display.BlockDisplayAreaDisplayer;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
+import com.kntrel.mc.regionLib.region.repository.Query;
+import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
 import org.bukkit.Chunk;
 import org.bukkit.Server;
@@ -82,37 +84,14 @@ public class RegionContext implements RegionRepository {
 
 
     //IMPLEMENTATION
-    @Override public List<Region> getAll() {
-        return this.regionRepository_.getAll();
-    }
-    @Override public Optional<Region> get(Long id) {
-        return this.regionRepository_.get(id);
-    }
-    @Override public List<Region> get(String name) {
-        return this.regionRepository_.get(name);
-    }
-    @Override public List<Region> getAt(double x, double y, double z, World world) {
-        return this.regionRepository_.getAt(x, y, z, world);
-    }
-    @Override public List<Region> getIn(World world) {
-        return this.regionRepository_.getIn(world);
-    }
-    @Override public List<Region> getIn(double x1, double y1, double z1, double x2, double y2, double z2, World world) {
-        return this.regionRepository_.getIn(x1, y1, z1, x2, y2, z2, world);
-    }
-    @Override public List<Region> getInChunk(int x, int z, World world) {
-        return this.regionRepository_.getInChunk(x, z, world);
-    }
-    @Override public List<Region> getInChunk(Chunk chunk) {
-        return this.regionRepository_.getInChunk(chunk);
+    @Override public List<Region> get(Query query) {
+        return this.regionRepository_.get(query);
     }
     @Override public void save(Region region) {
         this.regionRepository_.save(region);
     }
-    @Override public void saveAll(Iterable<Region> regions) {
-        this.regionRepository_.saveAll(regions);
-    }
     @Override public HierarchyRepository getHierarchyRepository() {
         return this.regionRepository_.getHierarchyRepository();
     }
+
 }
