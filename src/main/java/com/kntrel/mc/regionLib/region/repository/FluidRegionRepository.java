@@ -174,12 +174,12 @@ public final class FluidRegionRepository {
 
 
         //ORDERING
-        public <T extends Comparable<T>> Finisher orderBy(RegionField<T> field) {
+        public <T extends Comparable<T>> Limiter orderBy(RegionField<T> field) {
             this.orderBy_ = field;
             this.ascending_ = true;
             return this;
         }
-        public <T extends Comparable<T>> Finisher orderByDesc(RegionField<T> field) {
+        public <T extends Comparable<T>> Limiter orderByDesc(RegionField<T> field) {
             this.orderBy_ = field;
             this.ascending_ = false;
             return this;
@@ -211,7 +211,7 @@ public final class FluidRegionRepository {
         }
     }
 
-    public interface Limiter {
+    public interface Limiter extends Finisher {
         Finisher limit(int count);
         List<Region> getFirst(int count);
         Optional<Region> getFirst();
