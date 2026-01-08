@@ -51,6 +51,15 @@ public class Hierarchy {
     public Optional<Hierarchy.Group> getGroupAtOrBellow(int level) {
         return Optional.ofNullable(groups_.floorEntry(level)).map(Map.Entry::getValue);
     }
+    public Optional<Hierarchy.Group> getLowestGroupAllowedTo(String ability) {
+        return this.getGroups().stream()
+                .filter(g -> g.allowedTo(ability))
+                .sorted()
+                .findFirst();
+    }
+    public Optional<Hierarchy.Group> getLowestGroupAllowedTo(Ability ability) {
+        return this.getLowestGroupAllowedTo(ability.getName());
+    }
     public Optional<Hierarchy.Group> getGroup(String name) {
         if (name == null) {
             return Optional.empty();
