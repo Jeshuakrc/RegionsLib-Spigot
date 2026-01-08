@@ -5,6 +5,12 @@ import java.util.Optional;
 
 public class Query {
 
+    //FACTORY
+    public static FluidRegionRepository.QueryBuilder builder(RegionRepository repo) {
+        return new FluidRegionRepository.QueryBuilder(repo);
+    }
+
+
     //ASSETS
     public record Ordering(RegionField<? extends Comparable<?>> field, boolean ascending) {};
 

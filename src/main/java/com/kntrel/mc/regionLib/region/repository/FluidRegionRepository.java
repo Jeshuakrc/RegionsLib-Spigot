@@ -20,7 +20,7 @@ public final class FluidRegionRepository {
     private FluidRegionRepository() {}
 
 
-    public static class QueryBuilder implements Finisher {
+    public static class QueryBuilder implements Finisher, Limiter {
         //FIELDS
         private final RegionRepository repo_;
         private Condition.Or root_;
@@ -28,6 +28,7 @@ public final class FluidRegionRepository {
         private RegionField<? extends Comparable<?>> orderBy_;
         private boolean ascending_;
         private boolean includeDestroyed_;
+        private int limit_;
 
 
         //CONSTRUCTOR
@@ -38,6 +39,7 @@ public final class FluidRegionRepository {
             this.orderBy_ = null;
             this.ascending_ = true;
             this.includeDestroyed_ = false;
+            this.limit_ = -1;
         }
 
 
@@ -47,10 +49,10 @@ public final class FluidRegionRepository {
             return this;
         }
         public QueryBuilder or() {
-            Condition prev = Condition.and(this.current_);
+            Condition prev = Condition.AND(this.current_);
             this.current_.clear();
             this.root_ = (this.root_ == null)
-                    ? Condition.or(List.of(prev))
+                    ? Condition.OR(List.of(prev))
                     : this.root_.or(prev);
             return this;
         }
@@ -185,35 +187,38 @@ public final class FluidRegionRepository {
 
 
         //FINISHERS
-        public List<Region> get() {
-            Query query = buildQuery(-1);
-            return this.repo_.get(query);
+        @Override public Finisher limit(int count) {
+            this.limit_ = count;
+            return this;
         }
-
-        public List<Region> getFirst(int count) {
-            Query query = buildQuery(count);
-            return this.repo_.get(query);
+        @Override public List<Region> getFirst(int count) {
+            return this.limit(count).get();
         }
-
         public Optional<Region> getFirst() {
             return this.getFirst(1).stream().findFirst();
         }
 
-
-        //PRIVATE
-        private Query buildQuery(int limit) {
-            Condition finished = Condition.and(this.current_);
+        //FINISHERS
+        public List<Region> get() {
+            return this.repo_.get(this.asQuery());
+        }
+        public Query asQuery() {
+            Condition finished = Condition.AND(this.current_);
             Condition finalCondition = this.root_ == null
                     ? finished
                     : this.root_.or(finished);
-            return new Query(finalCondition, this.orderBy_, this.ascending_, limit, this.includeDestroyed_);
+            return new Query(finalCondition, this.orderBy_, this.ascending_, this.limit_, this.includeDestroyed_);
         }
+    }
+
+    public interface Limiter {
+        Finisher limit(int count);
+        List<Region> getFirst(int count);
+        Optional<Region> getFirst();
     }
 
     public interface Finisher {
         List<Region> get();
-        List<Region> getFirst(int count);
-        Optional<Region> getFirst();
-
+        Query asQuery();
     }
 }

@@ -22,10 +22,10 @@ public sealed interface Condition extends Predicate<Region> {
 
     // FACTORY
     static Condition.Not not(Condition condition) { return new Condition.Not(condition); }
-    static Condition.And and(Condition... conditions) { return new Condition.And(conditions); }
-    static Condition.And and(List<Condition> conditions) { return new Condition.And(conditions); }
-    static Condition.Or or(Condition... conditions) { return new Condition.Or(conditions); }
-    static Condition.Or or(List<Condition> conditions) { return new Condition.Or(conditions); }
+    static Condition.And AND(Condition... conditions) { return new Condition.And(conditions); }
+    static Condition.And AND(List<Condition> conditions) { return new Condition.And(conditions); }
+    static Condition.Or OR(Condition... conditions) { return new Condition.Or(conditions); }
+    static Condition.Or OR(List<Condition> conditions) { return new Condition.Or(conditions); }
     static <T> Condition.Equal<T> equal(RegionField<T> field, T value) { return new Condition.Equal<>(field, value); }
     static Condition isTrue(RegionField<Boolean> field) { return new Condition.Equal<>(field, true); }
     static Condition isFalse(RegionField<Boolean> field) { return new Condition.Equal<>(field, false); }
