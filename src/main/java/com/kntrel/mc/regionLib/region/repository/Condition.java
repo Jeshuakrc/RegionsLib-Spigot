@@ -32,6 +32,8 @@ public sealed interface Condition extends Predicate<Region> {
     static <T> Condition notEqual(RegionField<T> field, T value) { return new Condition.Not(new Condition.Equal<>(field, value)); }
     static <T extends Comparable<T>> Condition.GreaterThan<T> greaterThan(RegionField<T> field, T value) { return new Condition.GreaterThan<>(field, value); }
     static <T extends Comparable<T>> Condition.LessThan<T> lessThan(RegionField<T> field, T value) { return new Condition.LessThan<>(field, value); }
+    static <T extends Comparable<T>> Condition.GreaterThanEqual<T> greaterThanEqual(RegionField<T> field, T value) { return new Condition.GreaterThanEqual<>(field, value); }
+    static <T extends Comparable<T>> Condition.LessThanEqual<T> lessThanEqual(RegionField<T> field, T value) { return new Condition.LessThanEqual<>(field, value); }
     static Condition.Contains contains(RegionField<String> field, String value) { return new Condition.Contains(field, value); }
     static Condition.HasMember hasMember(Player player) { return new Condition.HasMember(player); }
     static Condition.HasMemberWithLevel hasMemberWithLevel(Player player, int level) { return new Condition.HasMemberWithLevel(player, level); }
@@ -159,6 +161,20 @@ public sealed interface Condition extends Predicate<Region> {
             T val = region.getField(this.field());
             if (val == null || this.value() == null) { return false; }
             return val.compareTo(this.value()) < 0;
+        }
+    }
+    record GreaterThanEqual<T extends Comparable<T>>(RegionField<T> field, T value) implements Comparative<T> {
+        @Override public boolean test(Region region) {
+            T val = region.getField(this.field());
+            if (val == null || this.value() == null) { return false; }
+            return val.compareTo(this.value()) >+ 0;
+        }
+    }
+    record LessThanEqual<T extends Comparable<T>>(RegionField<T> field, T value) implements Comparative<T> {
+        @Override public boolean test(Region region) {
+            T val = region.getField(this.field());
+            if (val == null || this.value() == null) { return false; }
+            return val.compareTo(this.value()) <= 0;
         }
     }
     record Contains(RegionField<String> field, String value) implements Comparative<String> {
