@@ -36,23 +36,20 @@ final class DTO {
     ) {}
 
     @Table("regionPermission") record Permission(
-            @Id @Column("id") long id,
-            @Column("region_id") long regionId,
-            @Column("player_uuid") String playerUUID,
+            @Id @Column("region_id") long regionId,
+            @Id @Column("player_uuid") String playerUUID,
             @Column("level") int level
     ) {}
 
     @Table("regionRule") record Rule(
-            @Id @Column("id") long id,
-            @Column("region_id") long regionId,
-            @Column("key") String key,
+            @Id @Column("region_id") long regionId,
+            @Id @Column("key") String key,
             @Column("value") String value
     ) {}
 
     @Table("regionData") record Data(
-            @Id @Column("id") long id,
-            @Column("region_id") long regionId,
-            @Column("key") String key,
+            @Id @Column("region_id") long regionId,
+            @Id @Column("key") String key,
             @Column("value") String value
     ) {}
 }
