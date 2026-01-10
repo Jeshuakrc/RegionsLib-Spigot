@@ -2,7 +2,6 @@ package com.kntrel.mc.regionLib.persistence.sqlite;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.kntrel.mc.regionLib.persistence.RegionSQLFetchException;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionData;

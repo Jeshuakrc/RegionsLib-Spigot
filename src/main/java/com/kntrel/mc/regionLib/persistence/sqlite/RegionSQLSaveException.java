@@ -1,4 +1,4 @@
-package com.kntrel.mc.regionLib.persistence;
+package com.kntrel.mc.regionLib.persistence.sqlite;
 
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.exception.RegionPersistenceException;

@@ -2,16 +2,29 @@ package com.kntrel.mc.regionLib.persistence.sqlite;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 class DTODescriptor {
 
     //ASSETS
-    record Column(int index, String name, RecordComponent component, boolean isId) {
-        public Class<?> type() { return this.component().getType(); }
+    private static final Map<Class<?>, Class<?>> WRAPPERS = Map.ofEntries(
+        Map.entry(int.class, Integer.class),
+        Map.entry(long.class, Long.class),
+        Map.entry(double.class, Double.class),
+        Map.entry(float.class, Float.class),
+        Map.entry(boolean.class, Boolean.class),
+        Map.entry(byte.class, Byte.class),
+        Map.entry(char.class, Character.class),
+        Map.entry(short.class, Short.class)
+    );
+
+    record Column(int index, String name, Parameter constructorParameter, RecordComponent component, boolean isId) {
+        public Class<?> type() { return WRAPPERS.getOrDefault(this.component.getType(), this.component.getType()); }
         public Method accessor() { return this.component().getAccessor(); }
     }
 
@@ -31,7 +44,7 @@ class DTODescriptor {
         this.dtoClass_ = dtoClass;
         this.tableName_ = findTableName(dtoClass);
         this.constructor_ = findConstructor(dtoClass);
-        this.columns_ = findColumns(dtoClass);
+        this.columns_ = findColumns(dtoClass, this.constructor_);
         this.idColumns_ = this.columns_.stream().filter(Column::isId).toList();
         this.insertSQL_ = buildInsert(this.tableName_, this.columns_);
         this.updateSQL_ = buildUpdate(this.tableName_, this.columns_);
@@ -81,24 +94,30 @@ class DTODescriptor {
         }
     }
     private static Constructor<?> findConstructor(Class<?> dtoClass) {
-        Constructor<?>[] constructors = dtoClass.getConstructors();
+        Constructor<?>[] constructors = dtoClass.getDeclaredConstructors();
         if (constructors.length != 1) {
             throw new IllegalArgumentException("DTO record must consist only of the canonical constructor");
         }
         return constructors[0];
     }
-    private static List<Column> findColumns(Class<?> dtoClass) {
+    private static List<Column> findColumns(Class<?> dtoClass, Constructor<?> constructor) {
         RecordComponent[] components = dtoClass.getRecordComponents();
+        Parameter[] constructorParameters = constructor.getParameters();
         List<Column> out = new ArrayList<>();
         for (int i = 0; i < components.length; i++) {
+            Parameter constructorParameter = constructorParameters[i];
             RecordComponent component = components[i];
             DTO.Column columnAnnotation = component.getAnnotation(DTO.Column.class);
+            if (columnAnnotation == null) {
+                columnAnnotation = constructorParameter.getAnnotation(DTO.Column.class);
+            }
             String columnName = (columnAnnotation == null)
                     ? component.getName()
                     : columnAnnotation.value();
             out.add(new Column(
                     i,
                     columnName,
+                    constructorParameter,
                     component,
                     component.isAnnotationPresent(DTO.Id.class)
             ));

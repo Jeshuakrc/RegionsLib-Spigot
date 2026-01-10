@@ -57,7 +57,7 @@ class DataBaseInitializer {
         return out;
     }
 
-    private static void runScript(Connection conn, URL script) throws IOException, SQLException {
+    static void runScript(Connection conn, URL script) throws IOException, SQLException {
         StringBuilder cleaned = new StringBuilder();
         for (String line : new String(script.openStream().readAllBytes(), StandardCharsets.UTF_8).split("\n")) {
             String trimmed = line.trim();
