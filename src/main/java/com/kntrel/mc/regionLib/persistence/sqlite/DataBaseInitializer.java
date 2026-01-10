@@ -1,4 +1,4 @@
-package com.kntrel.mc.regionLib.persistence;
+package com.kntrel.mc.regionLib.persistence.sqlite;
 
 import org.bukkit.plugin.Plugin;
 import java.io.IOException;

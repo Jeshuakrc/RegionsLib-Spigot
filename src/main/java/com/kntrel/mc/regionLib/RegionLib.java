@@ -8,7 +8,7 @@ import com.kntrel.mc.regionLib.command.assembler.*;
 import com.kntrel.mc.regionLib.event.RegionLibEvent;
 import com.kntrel.mc.regionLib.io.Config;
 import com.kntrel.mc.regionLib.persistence.JsonHierarchyRepository;
-import com.kntrel.mc.regionLib.persistence.SQLiteRegionRepository;
+import com.kntrel.mc.regionLib.persistence.sqlite.SQLiteRegionRepository;
 import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.ability.Abilities;
 import com.kntrel.mc.regionLib.region.Region;
