@@ -119,7 +119,7 @@ class DTODescriptor {
                     columnName,
                     constructorParameter,
                     component,
-                    component.isAnnotationPresent(DTO.Id.class)
+                    component.isAnnotationPresent(DTO.Id.class) || constructorParameter.isAnnotationPresent(DTO.Id.class)
             ));
         }
         return List.copyOf(out);
