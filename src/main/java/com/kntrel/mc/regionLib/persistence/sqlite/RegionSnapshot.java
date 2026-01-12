@@ -1,41 +1,137 @@
 package com.kntrel.mc.regionLib.persistence.sqlite;
 
+import com.kntrel.util.Fingerprint64;
 import org.bukkit.util.BoundingBox;
 import java.util.*;
 
-record RegionSnapshot(DTO.Region region, DTO.Permission[] perms, DTO.Rule[] rules, DTO.Data[] data) {
+class RegionSnapshot {
 
+    //ASSETS
+    private static final long FP_SEED = 42L;
+
+    //FIELDS
+    private final DTO.Region region_;
+    private final DTO.Permission[] perms_;
+    private final DTO.Rule[] rules_;
+    private final DTO.Data[] data_;
+    private final long fingerprint_, regionFingerprint_, permsFingerprint_, rulesFingerprint_, dataFingerprint_;
+
+
+    //CONSTRUCTORS
     RegionSnapshot(DTO.Region region, DTO.Permission[] perms, DTO.Rule[] rules, DTO.Data[] data) {
-        this.region = region;
-        this.perms = perms;
-        this.rules = rules;
-        this.data = data;
-
-        Arrays.sort(perms, Comparator.comparing(DTO.Permission::playerUUID));
-        Arrays.sort(rules, Comparator.comparing(DTO.Rule::key));
-        Arrays.sort(data, Comparator.comparing(DTO.Data::key));
+        this.region_ = region;
+        this.perms_ = perms;
+        this.rules_ = rules;
+        this.data_ = data;
+        this.regionFingerprint_ = computeRegionFingerprint(this.region_);
+        this.permsFingerprint_ = computePermsFingerprint(this.perms_);
+        this.rulesFingerprint_ = computeRulesFingerPrint(this.rules_);
+        this.dataFingerprint_ = computeDataFingerprint(this.data_);
+        this.fingerprint_ = mixFingerprint(this.regionFingerprint_, this.permsFingerprint_, this.rulesFingerprint_, this.dataFingerprint_);
     }
 
     RegionSnapshot(DTO.Region region, Collection<DTO.Permission> perms, Collection<DTO.Rule> rules, Collection<DTO.Data> data) {
         this(region, perms.toArray(new DTO.Permission[0]), rules.toArray(new DTO.Rule[0]), data.toArray(new DTO.Data[0]));
     }
 
-    public BoundingBox boundingBox() {
-        return new BoundingBox(region.minX(), region.minY(), region.minZ(), region.maxX(), region.maxY(), region.maxZ());
+
+    //GETTERS
+    public DTO.Region region() {
+        return region_;
     }
-    public String worldName() {
-        return region.world();
+    public DTO.Permission[] permissions() {
+        return perms_;
     }
-    public String name() {
-        return region.name();
+    public DTO.Rule[] rules() {
+        return rules_;
     }
 
-    @Override public int hashCode() {
-        return Objects.hash(
-                region,
-                Arrays.hashCode(perms),
-                Arrays.hashCode(rules),
-                Arrays.hashCode(data)
-        );
+    public DTO.Data[] data() {
+        return data_;
+    }
+
+    public long fingerPrint() {
+        return fingerprint_;
+    }
+
+    public long regionFingerprint() {
+        return regionFingerprint_;
+    }
+
+    public long permissionsFingerprint() {
+        return permsFingerprint_;
+    }
+
+    public long rulesFingerprint() {
+        return rulesFingerprint_;
+    }
+
+    public long dataFingerprint() {
+        return dataFingerprint_;
+    }
+
+
+    //ACCESSORS
+    public BoundingBox boundingBox() {
+        return new BoundingBox(this.region_.minX(), this.region_.minY(), this.region_.minZ(), this.region_.maxX(), this.region_.maxY(), this.region_.maxZ());
+    }
+    public String worldName() {
+        return this.region_.world();
+    }
+    public String name() {
+        return this.region_.name();
+    }
+
+
+    //HELPERS
+    private static long computePermsFingerprint(DTO.Permission[] perms) {
+        Arrays.sort(perms, Comparator.comparing(DTO.Permission::playerUUID));
+        Fingerprint64 fp = new Fingerprint64(FP_SEED);
+        for (DTO.Permission perm : perms) {
+                fp.addString(perm.playerUUID()).addInt(perm.level());
+        }
+        fp.addInt(perms.length);
+        return fp.finish();
+    }
+    private static long computeRulesFingerPrint(DTO.Rule[] rules) {
+        Arrays.sort(rules, Comparator.comparing(DTO.Rule::key));
+        Fingerprint64 fp = new Fingerprint64(FP_SEED);
+        for (DTO.Rule rule : rules) {
+            fp.addString(rule.key()).addString(rule.value());
+        }
+        fp.addInt(rules.length);
+        return fp.finish();
+    }
+    private static long computeDataFingerprint(DTO.Data[] data) {
+        Arrays.sort(data, Comparator.comparing(DTO.Data::key));
+        Fingerprint64 fp = new Fingerprint64(FP_SEED);
+        for (DTO.Data d : data) {
+            fp.addString(d.key()).addString(d.value());
+        }
+        fp.addInt(data.length);
+        return fp.finish();
+    }
+
+    private static long computeRegionFingerprint(DTO.Region region) {
+        return new Fingerprint64(FP_SEED)
+                .addLong(region.id())
+                .addString(region.name())
+                .addString(region.world())
+                .addBool(region.enabled())
+                .addInt(region.hierarchy())
+                .addDouble(region.minX())
+                .addDouble(region.minY())
+                .addDouble(region.minZ())
+                .addDouble(region.maxX())
+                .addDouble(region.maxY())
+                .addDouble(region.maxZ())
+                .addBool(region.destroyed())
+                .finish();
+    }
+
+    private static long mixFingerprint(long... fingerprints) {
+        Fingerprint64 fp = new Fingerprint64(FP_SEED);
+        for (long l : fingerprints) { fp.addLong(l); }
+        return fp.finish();
     }
 }

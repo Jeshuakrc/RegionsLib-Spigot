@@ -10,7 +10,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 public class DataBaseTest {
 
@@ -88,7 +87,7 @@ public class DataBaseTest {
         assertDoesNotThrow(() -> {
             this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
-                    .flatMap(s -> Arrays.stream(s.perms()))
+                    .flatMap(s -> Arrays.stream(s.permissions()))
                     .toList());
             this.dataBase_.insert(snapshots.stream()
                     .flatMap(s -> Arrays.stream(s.rules()))
@@ -104,7 +103,7 @@ public class DataBaseTest {
                 assertEquals(20, rs.getInt(1));
             }
             sql = "SELECT COUNT(*) FROM regionPermission;";
-            int count = (int) snapshots.stream().flatMap(s -> Arrays.stream(s.perms())).count();
+            int count = (int) snapshots.stream().flatMap(s -> Arrays.stream(s.permissions())).count();
             try (PreparedStatement stmt = conn_.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
                 assertTrue(rs.next());
                 assertEquals(count, rs.getInt(1));
@@ -202,7 +201,7 @@ public class DataBaseTest {
         assertDoesNotThrow(() -> {
             this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
-                    .flatMap(s -> Arrays.stream(s.perms()))
+                    .flatMap(s -> Arrays.stream(s.permissions()))
                     .toList());
         });
 
@@ -333,7 +332,7 @@ public class DataBaseTest {
         assertDoesNotThrow(() -> {
             this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
-                    .flatMap(s -> Arrays.stream(s.perms()))
+                    .flatMap(s -> Arrays.stream(s.permissions()))
                     .toList());
         });
 
@@ -425,7 +424,7 @@ public class DataBaseTest {
         assertDoesNotThrow(() -> {
             this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
-                    .flatMap(s -> Arrays.stream(s.perms()))
+                    .flatMap(s -> Arrays.stream(s.permissions()))
                     .toList());
         });
 

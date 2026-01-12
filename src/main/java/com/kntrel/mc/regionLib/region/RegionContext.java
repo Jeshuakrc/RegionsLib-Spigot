@@ -87,8 +87,8 @@ public class RegionContext implements RegionRepository {
     @Override public List<Region> get(Query query) {
         return this.regionRepository_.get(query);
     }
-    @Override public void save(Region region) {
-        this.regionRepository_.save(region);
+    @Override public void save(Region... regions) {
+        this.regionRepository_.save(regions);
     }
     @Override public HierarchyRepository getHierarchyRepository() {
         return this.regionRepository_.getHierarchyRepository();

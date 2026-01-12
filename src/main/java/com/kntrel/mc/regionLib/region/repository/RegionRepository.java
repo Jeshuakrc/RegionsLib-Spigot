@@ -10,12 +10,13 @@ import org.bukkit.World;
 import org.bukkit.util.BoundingBox;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.StreamSupport;
 
 public interface RegionRepository {
 
     //ABSTRACT
     List<Region> get(Query query);
-    void save(Region region);
+    void save(Region... region);
     HierarchyRepository getHierarchyRepository();
 
 
@@ -23,8 +24,8 @@ public interface RegionRepository {
     default List<Region> get(Condition condition) {
         return get(new Query(condition, false));
     }
-    default void saveAll(Iterable<Region> regions) {
-        regions.forEach(this::save);
+    default void save(Iterable<Region> regions) {
+        this.save(StreamSupport.stream(regions.spliterator(), false).toArray(Region[]::new));
     }
     default void delete(Region region) {
         region.destroy();
