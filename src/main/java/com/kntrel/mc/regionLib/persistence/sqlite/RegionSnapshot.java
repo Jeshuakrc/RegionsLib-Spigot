@@ -34,7 +34,6 @@ class RegionSnapshot {
         this(region, perms.toArray(new DTO.Permission[0]), rules.toArray(new DTO.Rule[0]), data.toArray(new DTO.Data[0]));
     }
 
-
     //GETTERS
     public DTO.Region region() {
         return region_;
@@ -80,6 +79,30 @@ class RegionSnapshot {
     }
     public String name() {
         return this.region_.name();
+    }
+
+
+    //IMPLEMENTATION
+    @Override public int hashCode() {
+        return Long.hashCode(this.fingerprint_);
+    }
+    @Override public boolean equals(Object obj) {
+        if (this == obj) { return true; }
+        if (obj == null) { return false; }
+        if (!(obj instanceof RegionSnapshot other)) { return false; }
+
+        return this.region_.equals(other.region_)
+                && Arrays.equals(this.perms_, other.perms_)
+                && Arrays.equals(this.rules_, other.rules_)
+                && Arrays.equals(this.data_, other.data_);
+    }
+    @Override public RegionSnapshot clone() {
+        return new RegionSnapshot(
+                this.region_,
+                Arrays.copyOf(this.perms_, this.perms_.length),
+                Arrays.copyOf(this.rules_, this.rules_.length),
+                Arrays.copyOf(this.data_, this.data_.length)
+        );
     }
 
 

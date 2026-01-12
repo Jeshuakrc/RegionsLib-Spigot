@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static com.kntrel.mc.regionLib.persistence.sqlite.RegionSnapshotTest.snapshots;
 
 public class DataBaseTest {
 
@@ -459,61 +459,4 @@ public class DataBaseTest {
             assertEquals(7, perm.level());
         }
     }
-
-
-    // HELPERS
-    private static List<RegionSnapshot> snapshots(int count) {
-        List<RegionSnapshot> regionSnapshots = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-
-            double x1 = ThreadLocalRandom.current().nextDouble(-400, 400),
-                   y1 = ThreadLocalRandom.current().nextDouble(-64, 320),
-                   z1 = ThreadLocalRandom.current().nextDouble(-400, 400),
-                   x2 = ThreadLocalRandom.current().nextDouble(-400, 400),
-                   y2 = ThreadLocalRandom.current().nextDouble(-64, 320),
-                   z2 =  ThreadLocalRandom.current().nextDouble(-400, 400);
-
-            DTO.Region region = new DTO.Region(
-                    i,
-                    "Region" + i,
-                    "world",
-                    true,
-                    0,
-                    Math.min(x1, x2),
-                    Math.min(y1, y2),
-                    Math.min(z1, z2),
-                    Math.max(x1, x2),
-                    Math.max(y1, y2),
-                    Math.max(z1, z2),
-                    false
-            );
-            List<DTO.Permission> permissions = new ArrayList<>();
-            for (int j = 0; j < 3; j++) {
-                permissions.add(new DTO.Permission(
-                        i,
-                        UUID.randomUUID().toString(),
-                        ThreadLocalRandom.current().nextInt(0, 10)
-                ));
-            }
-            List<DTO.Rule> rules = new ArrayList<>();
-            for (int j = 0; j < 3; j++) {
-                rules.add(new DTO.Rule(
-                        i,
-                        "rule_key_" + j,
-                        "rule_value_" + j
-                ));
-            }
-            List<DTO.Data> data = new ArrayList<>();
-            for (int j = 0; j < 3; j++) {
-                data.add(new DTO.Data(
-                        i,
-                        "data_key_" + j,
-                        "data_value_" + j
-                ));
-            }
-            regionSnapshots.add(new RegionSnapshot(region, permissions, rules, data));
-        }
-        return regionSnapshots;
-    }
-
 }
