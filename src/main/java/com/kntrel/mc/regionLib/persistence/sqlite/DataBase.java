@@ -88,7 +88,9 @@ class DataBase {
     public void delete(Collection<?> DTOs) throws SQLException {
         this.write(null, null, DTOs);
     }
-
+    public Connection getConnection() {
+        return this.conn_;
+    }
 
     //PRIVATE
     private DTODescriptor getDescriptor(Class<?> dtoClass) {

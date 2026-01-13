@@ -60,18 +60,28 @@ public class SQLiteRegionRepository implements RegionRepository {
 
 
     // CONSTRUCTORS
-    public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database, HierarchyRepository hierarchyRepository) {
-        Connection conn = DataBaseInitializer.getConnection(plugin, database);
+    SQLiteRegionRepository(Server server, RegionContext context, DataBase database, QueryParser queryParser, ExecutorService writesExecutor, HierarchyRepository hierarchyRepository) {   //Testing constructor
         this.context_ = context;
-        this.server_ = plugin.getServer();
-        this.dataBase_ = new DataBase(conn);
-        this.queryParser_ = new QueryParser(context);
+        this.server_ = server;
+        this.dataBase_ = database;
+        this.queryParser_ = queryParser;
         this.relationalTableCache_ = new HashMap<>();
         this.hierarchyRepository_ = hierarchyRepository;
         this.snapshotCache_ = new ConcurrentHashMap<>();
-        this.writeExecutor_ = Executors.newSingleThreadExecutor();
-        this.idCount_ = new AtomicLong(queryNextId(conn));
+        this.writeExecutor_ = writesExecutor;
+        this.idCount_ = new AtomicLong(queryNextId(this.dataBase_.getConnection()));
     }
+    public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database, HierarchyRepository hierarchyRepository) {
+        this(
+                plugin.getServer(),
+                context,
+                new DataBase(DataBaseInitializer.getConnection(plugin, database)),
+                new QueryParser(context),
+                Executors.newSingleThreadExecutor(),
+                hierarchyRepository
+        );
+    }
+
 
 
     @Override
@@ -131,7 +141,7 @@ public class SQLiteRegionRepository implements RegionRepository {
 
         return r;
     }
-    public void saveInner(Region... regions) {
+    private void saveInner(Region... regions) {
         Patch<Object> patch = new Patch<>();
         for (Region r : regions) {
             RegionSnapshot oldSnapshot = null;

@@ -30,6 +30,7 @@ public final class RegionLib extends JavaPlugin {
 
     //API
     private static Plugin OWNER_PLUGIN = null;
+    public static final Config CONFIG = new Config();
 
 
     public static RegionContext enable(@NotNull JavaPlugin plugin, @NotNull URI dataBase, @NotNull File hierarchies) {
@@ -128,9 +129,6 @@ public final class RegionLib extends JavaPlugin {
 
         return rc;
     }
-
-    //FIELDS
-    public static final Config CONFIG = new Config();
 
 
     @Override public void onEnable() {

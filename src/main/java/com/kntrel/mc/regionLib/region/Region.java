@@ -398,6 +398,9 @@ public class Region implements Comparable<Region> {
         this.isDestroyed_ = true;
     }
     public void destroy() {
+        this.permissions_.clear();
+        this.rulesValues_.clear();
+        this.dataContainer_.clear();
         this.destroy(null);
     }
 

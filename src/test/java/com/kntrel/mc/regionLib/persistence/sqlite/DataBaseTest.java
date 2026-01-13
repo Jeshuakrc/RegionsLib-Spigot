@@ -459,4 +459,16 @@ public class DataBaseTest {
             assertEquals(7, perm.level());
         }
     }
+
+
+    //HELPERS
+    static DataBase memoryDatabase() {
+        try {
+            Connection conn = DriverManager.getConnection("jdbc:sqlite::memory:");
+            DataBaseInitializer.runScript(conn, DataBaseTest.class.getClassLoader().getResource("schema/v1.sql"));
+            return new DataBase(conn);
+        } catch (SQLException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
