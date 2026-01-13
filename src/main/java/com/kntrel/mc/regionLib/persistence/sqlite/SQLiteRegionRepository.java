@@ -128,6 +128,15 @@ public class SQLiteRegionRepository implements RegionRepository {
         Hierarchy hierarchy = this.context_.getHierarchyRepository().get((long) snapshot.region().hierarchy()).orElseThrow();
         Region r = new Region(this.context_, snapshot.boundingBox(), world, snapshot.name(), hierarchy);
 
+        r.setId(snapshot.region().id());
+
+        if (!snapshot.region().enabled()) {
+            r.enabled(false);
+        }
+        if (snapshot.region().destroyed()) {
+            r.destroy();
+        }
+
         for (DTO.Rule rule : snapshot.rules()) {
             r.setRuleValue(rule.key(), rule.value());
         }

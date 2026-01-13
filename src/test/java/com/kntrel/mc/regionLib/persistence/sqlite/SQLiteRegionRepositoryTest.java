@@ -5,8 +5,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionData;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
+import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.test.Regions;
 import com.kntrel.mc.regionLib.test.mock.MockHierarchyRepository;
@@ -18,10 +20,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -235,5 +241,81 @@ public class SQLiteRegionRepositoryTest {
                 fail("Unexpected DTO type in deletes: " + o.getClass().getName());
             }
         }
+    }
+
+    @Test
+    void testQuery() {
+        Hierarchy hierarchy = this.hierarchyRepository.getAll().getFirst();
+        Map<String, Region> regions = Stream.of(
+                Regions.newRegion(this.regionContext, hierarchy, "Alpha"),
+                Regions.newRegion(this.regionContext, hierarchy, "Beta"),
+                Regions.newRegion(this.regionContext, hierarchy, "Gamma"),
+                Regions.newRegion(this.regionContext, hierarchy, "Theta"),
+                Regions.newRegion(this.regionContext, hierarchy, "Spawn"),
+                Regions.newRegion(this.regionContext, hierarchy, "Toilets"),
+                Regions.newRegion(this.regionContext, hierarchy, "Admin Area"),
+                Regions.newRegion(this.regionContext, hierarchy, "Lobby")
+        ).collect(Collectors.toMap(Region::getName, r -> r));
+
+        Set<String> disabled = Set.of("Alpha", "Theta", "Toilets");
+        regions.values().stream().filter(r -> disabled.contains(r.getName()))
+                .forEach(r -> r.enabled(false));
+
+        regions.get("Spawn").getDataContainer().add(new RegionData("welcome_message", "Welcome to the server!"));
+        regions.get("Lobby").destroy();
+        regions.get("Beta").resize(10<<4, 0, 20<<4, (10<<4) + 1, 1, (20<<4) + 1); // Chunk (10,20)
+
+        this.regionRepository.save(regions.values().stream().toList());
+
+        List<Region> result = this.regionRepository.where().isFalse(RegionField.ENABLED).get();
+        assertEquals(3, result.size());
+        for (Region r : result) {
+            assertFalse(r.isEnabled());
+            assertTrue(disabled.contains(r.getName()));
+        }
+
+        result = this.regionRepository.where().nameIs("Admin Area").get();
+        assertEquals(1, result.size());
+        assertEquals("Admin Area", result.getFirst().getName());
+
+        result = this.regionRepository.where().dataValueIs("welcome_message", new JsonPrimitive("Welcome to the server!")).get();
+        assertEquals(1, result.size());
+        assertEquals("Spawn", result.getFirst().getName());
+
+        result = this.regionRepository.getAll();
+        assertEquals(7, result.size());
+
+        result = this.regionRepository.where().includeDestroyed().get();
+        assertEquals(8, result.size());
+
+        result = this.regionRepository.where()
+                    .isEnabled()
+                .or()
+                    .nameIs("Toilets")
+                .get();
+        assertEquals(5, result.size());
+
+        result = this.regionRepository.where()
+                .inChunk(0, 0, result.getFirst().getWorld())
+                .get();
+        assertEquals(6, result.size());
+
+        result = this.regionRepository.where()
+                .inChunk(0, 0, result.getFirst().getWorld())
+                .limit(4)
+                .get();
+        assertEquals(4, result.size());
+
+        result = this.regionRepository.where()
+                .inChunk(0, 0, result.getFirst().getWorld())
+                .includeDestroyed()
+                .get();
+        assertEquals(7, result.size());
+
+        result = this.regionRepository.where()
+                .inChunk(0, 0, result.getFirst().getWorld())
+                .isEnabled()
+                .get();
+        assertEquals(3, result.size());
     }
 }

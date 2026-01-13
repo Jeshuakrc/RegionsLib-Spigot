@@ -1,5 +1,6 @@
 package com.kntrel.mc.regionLib.persistence.sqlite;
 
+import com.google.gson.JsonPrimitive;
 import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.ability.Ability;
@@ -377,12 +378,12 @@ class QueryParserTest {
         @DisplayName("Parse DataValueIs condition")
         void testDataValueIsCondition() {
             Query query = Query.builder(null)
-                    .and(Condition.dataValueIs("key1", "value1"))
+                    .and(Condition.dataValueIs("key1", new JsonPrimitive("value1")))
                     .asQuery();
             String sql = parser.parse(query);
 
             assertEquals(
-                    "SELECT DISTINCT region.* FROM region LEFT JOIN regionData ON region.id = regionData.region_id WHERE regionData.key = 'key1' AND regionData.value = 'value1' AND region.destroyed = 0;",
+                    "SELECT DISTINCT region.* FROM region LEFT JOIN regionData ON region.id = regionData.region_id WHERE regionData.key = 'key1' AND regionData.value = '\"value1\"' AND region.destroyed = 0;",
                     sql
             );
         }
@@ -779,7 +780,7 @@ class QueryParserTest {
         @DisplayName("Escape single quotes in DataValueIs condition")
         void testEscapeSingleQuotesInDataValueIs() {
             Query query = Query.builder(null)
-                    .and(Condition.dataValueIs("key'1", "val'ue"))
+                    .and(Condition.dataValueIs("key'1", new JsonPrimitive("val'ue")))
                     .asQuery();
             String sql = parser.parse(query);
 
@@ -877,6 +878,49 @@ class QueryParserTest {
 
             assertTrue(whereIndex < orderIndex);
             assertTrue(orderIndex < limitIndex);
+        }
+
+        @Test
+        void testIncludeDestroyed() {
+            Query query = Query.builder(null).nameIs("TestRegion").asQuery();
+            String sql = parser.parse(query);
+            assertEquals(
+                    regionSelect("WHERE region.name = 'TestRegion' AND region.destroyed = 0"),
+                    sql
+            );
+
+            query = Query.builder(null).nameIs("TestRegion").includeDestroyed().asQuery();
+            sql = parser.parse(query);
+            assertEquals(
+                    regionSelect("WHERE region.name = 'TestRegion'"),
+                    sql
+            );
+
+            query = Query.builder(null)
+                    .nameIs("TestRegion")
+                    .isEnabled()
+                    .greaterThan(RegionField.ID, 15L)
+                    .asQuery();
+            sql = parser.parse(query);
+            assertEquals(
+                    regionSelect("WHERE region.name = 'TestRegion' AND region.enabled != 0 AND region.id > 15 AND region.destroyed = 0"),
+                    sql
+            );
+
+            query = Query.builder(null)
+                        .nameIs("TestRegion")
+                        .isEnabled()
+                    .or()
+                        .greaterThan(RegionField.ID, 15L)
+                    .or()
+                        .idIs(42L)
+                    .asQuery();
+            sql = parser.parse(query);
+            assertEquals(
+                    regionSelect("WHERE ((region.name = 'TestRegion' AND region.enabled != 0) OR (region.id > 15) OR (region.id = 42)) AND region.destroyed = 0"),
+                    sql
+            );
+
         }
     }
 }

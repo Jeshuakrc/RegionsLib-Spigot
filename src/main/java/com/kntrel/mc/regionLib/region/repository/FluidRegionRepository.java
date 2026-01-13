@@ -1,5 +1,6 @@
 package com.kntrel.mc.regionLib.region.repository;
 
+import com.google.gson.JsonElement;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionField;
 import java.util.ArrayList;
@@ -111,7 +112,7 @@ public final class FluidRegionRepository {
             this.current_.add(Condition.hasDataKey(key));
             return this;
         }
-        public QueryBuilder dataValueIs(String key, String value) {
+        public QueryBuilder dataValueIs(String key, JsonElement value) {
             this.current_.add(Condition.dataValueIs(key, value));
             return this;
         }

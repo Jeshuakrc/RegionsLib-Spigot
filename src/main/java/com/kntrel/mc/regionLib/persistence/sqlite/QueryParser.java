@@ -74,6 +74,9 @@ class QueryParser {
         Condition condition = query.getCondition();
         if (condition != null) {
             String conditionSql = this.parseCondition(condition);
+            if (condition instanceof Condition.Or && !query.includesDestroyed()) {
+                conditionSql = "(" + conditionSql + ")";
+            }
             if (!conditionSql.isEmpty()) {
                 clauses.add(conditionSql);
             }
@@ -142,7 +145,7 @@ class QueryParser {
 
             case Condition.HasDataKey hasDataKey -> "regionData.key = '" + escapeSqlString(hasDataKey.key()) + "'";
 
-            case Condition.DataValueIs dataValueIs -> "regionData.key = '" + escapeSqlString(dataValueIs.key()) + "' AND regionData.value = '" + escapeSqlString(dataValueIs.value()) + "'";
+            case Condition.DataValueIs dataValueIs -> "regionData.key = '" + escapeSqlString(dataValueIs.key()) + "' AND regionData.value = '" + escapeSqlString(dataValueIs.value().toString()) + "'";
 
             case Condition.HasMember hasMember -> "regionPermission.player_uuid = '" + escapeSqlString(hasMember.player().getUniqueId().toString()) + "'";
 

@@ -1,5 +1,6 @@
 package com.kntrel.mc.regionLib.region.repository;
 
+import com.google.gson.JsonElement;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.ability.Ability;
@@ -41,7 +42,7 @@ public sealed interface Condition extends Predicate<Region> {
     static Condition.HasRule hasRule(String ruleName) { return new Condition.HasRule(ruleName); }
     static <T> Condition.RuleIs<T> ruleIs(Rule<T> rule, T value) { return new Condition.RuleIs<>(rule, value); }
     static Condition.HasDataKey hasDataKey(String key) { return new Condition.HasDataKey(key); }
-    static Condition.DataValueIs dataValueIs(String key, String value) { return new Condition.DataValueIs(key, value); }
+    static Condition.DataValueIs dataValueIs(String key, JsonElement value) { return new Condition.DataValueIs(key, value); }
     static Condition.At at(Location point) { return new Condition.At(point); }
     static Condition.In in(Area area) { return new Condition.In(area); }
     static Condition.InChunk inChunk(int x, int z, World world) { return new Condition.InChunk(x, z, world); }
@@ -220,10 +221,10 @@ public sealed interface Condition extends Predicate<Region> {
             return region.getDataContainer().has(this.key());
         }
     }
-    record DataValueIs(String key, String value) implements Relational {
+    record DataValueIs(String key, JsonElement value) implements Relational {
         @Override public boolean test(Region region) {
             RegionData data = region.getDataContainer().get(this.key());
-            String val = (data == null) ? null : data.getAsString();
+            JsonElement val = (data == null) ? null : data.getValue();
             if (val == null && this.value() == null) { return true; }
             if (val == null || this.value() == null) { return false; }
             return val.equals(this.value());
