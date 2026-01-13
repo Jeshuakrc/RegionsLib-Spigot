@@ -3,6 +3,7 @@ package com.kntrel.mc.regionLib.persistence.sqlite;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
+import com.kntrel.mc.regionLib.region.Permission;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.RegionField;
@@ -59,7 +60,7 @@ public class SQLiteRegionRepositoryTest {
 
         this.dataBase = spy(DataBaseTest.memoryDatabase());
         this.server = MockServer.mockServer();
-        this.hierarchyRepository = MockHierarchyRepository.ofSingle("hierarchy");
+        this.hierarchyRepository = MockHierarchyRepository.ofSingle("hierarchy", 3);
         Plugin plugin = mock(Plugin.class);
         when(plugin.getServer()).thenReturn(this.server);
         this.regionContext = new RegionContext(plugin, ctx -> {
@@ -241,6 +242,112 @@ public class SQLiteRegionRepositoryTest {
                 fail("Unexpected DTO type in deletes: " + o.getClass().getName());
             }
         }
+    }
+
+    @Test
+    void testMixedWrites() {
+        Hierarchy hierarchy = this.hierarchyRepository.getAll().getFirst();
+        Region region = Regions.newRegion(this.regionContext, hierarchy, "Test Region");
+        
+        ArgumentCaptor<List<Object>> inserts = ArgumentCaptor.forClass(List.class),
+                                     updates = ArgumentCaptor.forClass(List.class),
+                                     deletes = ArgumentCaptor.forClass(List.class);
+        
+        // Test region insertion
+        this.regionRepository.save(region);
+        
+        assertDoesNotThrow(() ->
+            verify(this.dataBase).write(inserts.capture(), updates.capture(), deletes.capture())
+        );
+        
+        List<Object> insertValues = inserts.getValue(),
+                     updateValues = updates.getValue(),
+                     deleteValues = deletes.getValue();
+        
+        assertTrue(updateValues.isEmpty());
+        assertTrue(deleteValues.isEmpty());
+        assertEquals(1, insertValues.size());               // 1 region inserted
+        assertInstanceOf(DTO.Region.class, insertValues.getFirst());
+        
+        // Test permission insertion
+        Permission permission = new Permission(UUID.randomUUID(), region, 1);
+        region.addPermission(permission);
+        this.regionRepository.save(region);
+        
+        assertDoesNotThrow(() ->
+            verify(this.dataBase, times(2)).write(inserts.capture(), updates.capture(), deletes.capture())
+        );
+        
+        insertValues = inserts.getValue();
+        updateValues = updates.getValue();
+        deleteValues = deletes.getValue();
+        
+        assertTrue(updateValues.isEmpty());
+        assertTrue(deleteValues.isEmpty());
+        assertEquals(1, insertValues.size());               // 1 permission inserted
+        DTO.Permission perm = assertInstanceOf(DTO.Permission.class, insertValues.get(0));
+        assertEquals(1, perm.level());
+        
+        // Test permission update
+        region.removePermission(permission);
+        permission = new Permission(permission.getPlayerId(), region, 2);
+        region.addPermission(permission);
+        this.regionRepository.save(region);
+        
+        assertDoesNotThrow(() ->
+            verify(this.dataBase, times(3)).write(inserts.capture(), updates.capture(), deletes.capture())
+        );
+        
+        insertValues = inserts.getValue();
+        updateValues = updates.getValue();
+        deleteValues = deletes.getValue();
+        
+        assertTrue(insertValues.isEmpty());
+        assertTrue(deleteValues.isEmpty());
+        assertEquals(1, updateValues.size());               // 1 permission updated
+        perm = assertInstanceOf(DTO.Permission.class, updateValues.getFirst());
+        assertEquals(2, perm.level());
+        
+        // Test data insertion
+        RegionDataContainer dataContainer = region.getDataContainer();
+        dataContainer.add(new RegionData("key1", "value1"));
+        dataContainer.add(new RegionData("key2", "value2"));
+        dataContainer.add(new RegionData("key3", "value3"));
+        this.regionRepository.save(region);
+        
+        assertDoesNotThrow(() ->
+            verify(this.dataBase, times(4)).write(inserts.capture(), updates.capture(), deletes.capture())
+        );
+        
+        insertValues = inserts.getValue();
+        updateValues = updates.getValue();
+        deleteValues = deletes.getValue();
+        
+        assertTrue(updateValues.isEmpty());
+        assertTrue(deleteValues.isEmpty());
+        assertEquals(3, insertValues.size());               // 3 data entries inserted
+        for (Object o : insertValues) {
+            assertInstanceOf(DTO.Data.class, o);
+        }
+        
+        // Test Remove and change data entries
+        dataContainer.remove("key1");
+        dataContainer.get("key2").setValue("value2_updated");
+        this.regionRepository.save(List.of(region));
+        
+        assertDoesNotThrow(() ->
+            verify(this.dataBase, times(5)).write(inserts.capture(), updates.capture(), deletes.capture())
+        );
+        
+        insertValues = inserts.getValue();
+        updateValues = updates.getValue();
+        deleteValues = deletes.getValue();
+        
+        assertTrue(insertValues.isEmpty());
+        assertEquals(1, updateValues.size());               // 1 data entry updated
+        assertEquals(1, deleteValues.size());               // 1 data entry deleted
+        assertInstanceOf(DTO.Data.class, updateValues.getFirst());
+        assertInstanceOf(DTO.Data.class, deleteValues.getFirst());
     }
 
     @Test

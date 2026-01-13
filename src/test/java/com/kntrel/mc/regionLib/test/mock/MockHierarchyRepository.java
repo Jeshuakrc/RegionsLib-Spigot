@@ -11,10 +11,15 @@ public class MockHierarchyRepository implements HierarchyRepository {
     public static MockHierarchyRepository ofSingle(Hierarchy hierarchy) {
         return new MockHierarchyRepository(List.of(hierarchy));
     }
-    public static MockHierarchyRepository ofSingle(String name) {
+    public static MockHierarchyRepository ofSingle(String name, int groups) {
         Hierarchy hierarchy = new Hierarchy(0L, name);
-        hierarchy.addGroup("default", 1, Collections.emptyList());
+        for (int i = 1; i <= groups; i++) {
+            hierarchy.addGroup("group" + i, i, Collections.emptyList());
+        }
         return ofSingle(hierarchy);
+    }
+    public static MockHierarchyRepository ofSingle(String name) {
+        return ofSingle(name, 1);
     }
     public static MockHierarchyRepository with(String... names) {
         List<Hierarchy> hierarchies = new ArrayList<>();
