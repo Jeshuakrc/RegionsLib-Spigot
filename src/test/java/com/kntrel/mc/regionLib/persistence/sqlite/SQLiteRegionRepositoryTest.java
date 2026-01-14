@@ -14,6 +14,7 @@ import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.test.Regions;
 import com.kntrel.mc.regionLib.test.mock.MockHierarchyRepository;
 import com.kntrel.mc.regionLib.test.mock.MockServer;
+import com.kntrel.util.cache.ConcurrentRLUCache;
 import org.bukkit.Server;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -65,7 +66,7 @@ public class SQLiteRegionRepositoryTest {
         when(plugin.getServer()).thenReturn(this.server);
         this.regionContext = new RegionContext(plugin, ctx -> {
             this.queryParser = new QueryParser(ctx);
-            return new SQLiteRegionRepository(this.server, ctx, this.dataBase, this.queryParser, this.executorService, this.hierarchyRepository);
+            return new SQLiteRegionRepository(this.server, ctx, this.dataBase, this.queryParser, this.executorService, this.hierarchyRepository, () -> new ConcurrentRLUCache<>(10));
         });
         this.regionRepository = (SQLiteRegionRepository) this.regionContext.getRegionRepository();
     }
@@ -424,5 +425,56 @@ public class SQLiteRegionRepositoryTest {
                 .isEnabled()
                 .get();
         assertEquals(3, result.size());
+    }
+
+    @Test
+    void testRLUCache() {
+        //Injected an ConcurrentLRUCache with capacity = 10
+
+        //Filling th cache up
+        Map<String, Region> regs = Regions.newRegions(
+                this.regionContext,
+                this.hierarchyRepository.getAll().getFirst(),
+                "region1",
+                "region2",
+                "region3",
+                "region4",
+                "region5",
+                "region6",
+                "region7",
+                "region8",
+                "region9",
+                "region10"
+        ).stream().collect(Collectors.toMap(Region::getName, r -> r));
+        this.regionRepository.save(regs.values());
+
+        // Re-saving regions shouldn't cause database calls
+        this.regionRepository.save(regs.get("region8"));
+        this.regionRepository.save(regs.get("region3"));
+        this.regionRepository.save(regs.get("region1"));    // region1 was next to be evicted but this call resents its LRU value
+        assertDoesNotThrow(() ->
+            verify(this.dataBase, never()).query(anyString(), any(), anyInt())
+        );
+
+        // Adding a new region should evict the least recently used region (region2)
+        Region newReg = Regions.newRegion(this.regionContext, this.hierarchyRepository.getAll().getFirst(), "Region11");
+        this.regionRepository.save(newReg);
+        assertDoesNotThrow(() ->
+                verify(this.dataBase, never()).query(anyString(), any(), anyInt())
+        );
+
+        // Accessing any other regions shouldn't cause reads
+        this.regionRepository.save(regs.get("region5"));
+        this.regionRepository.save(regs.get("region4"));
+        this.regionRepository.save(newReg);
+        assertDoesNotThrow(() ->
+                verify(this.dataBase, never()).query(anyString(), any(), anyInt())
+        );
+
+        // Accessing region2 should cause a read from the database since it was evicted
+        this.regionRepository.save(regs.get("region2"));
+        assertDoesNotThrow(() ->
+                verify(this.dataBase, atLeastOnce()).query(anyString(), any(), anyInt())
+        );
     }
 }
