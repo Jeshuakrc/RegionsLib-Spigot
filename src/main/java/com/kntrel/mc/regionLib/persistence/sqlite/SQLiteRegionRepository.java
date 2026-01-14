@@ -9,7 +9,6 @@ import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.repository.Query;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
-import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.util.cache.ConcurrentRLUCache;
 import org.bukkit.Server;
 import org.bukkit.World;
@@ -55,7 +54,6 @@ public class SQLiteRegionRepository implements RegionRepository {
     private final DataBase dataBase_;
     private final QueryParser queryParser_;
     private final Map<Class<?>, String> relationalTableCache_;
-    private final HierarchyRepository hierarchyRepository_;
     private final ConcurrentMap<Long, RegionSnapshot> snapshotCache_;
     private final ExecutorService writeExecutor_;
     private final AtomicLong idCount_;
@@ -68,7 +66,6 @@ public class SQLiteRegionRepository implements RegionRepository {
             DataBase database,
             QueryParser queryParser,
             ExecutorService writesExecutor,
-            HierarchyRepository hierarchyRepository,
             Supplier<? extends ConcurrentMap<Long, RegionSnapshot>> cacheFactory
     ) {                                                 //Testing constructor
         this.context_ = context;
@@ -76,28 +73,25 @@ public class SQLiteRegionRepository implements RegionRepository {
         this.dataBase_ = database;
         this.queryParser_ = queryParser;
         this.relationalTableCache_ = new HashMap<>();
-        this.hierarchyRepository_ = hierarchyRepository;
         this.snapshotCache_ = cacheFactory.get();
         this.writeExecutor_ = writesExecutor;
         this.idCount_ = new AtomicLong(queryNextId(this.dataBase_.getConnection()));
     }
-    public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database, HierarchyRepository hierarchyRepository, Supplier<? extends ConcurrentMap<Long, RegionSnapshot>> cacheFactory) {
+    public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database, Supplier<? extends ConcurrentMap<Long, RegionSnapshot>> cacheFactory) {
         this(
                 plugin.getServer(),
                 context,
                 new DataBase(DataBaseInitializer.getConnection(plugin, database)),
                 new QueryParser(context),
                 Executors.newSingleThreadExecutor(),
-                hierarchyRepository,
                 cacheFactory
         );
     }
-    public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database, HierarchyRepository hierarchyRepository) {
+    public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database) {
         this(
                 plugin,
                 context,
                 database,
-                hierarchyRepository,
                 () -> new ConcurrentRLUCache<>(1024)
         );
     }
@@ -114,11 +108,6 @@ public class SQLiteRegionRepository implements RegionRepository {
     @Override
     public void save(Region... regions) {
         this.writeExecutor_.execute(() -> this.saveInner(regions));
-    }
-
-    @Override
-    public HierarchyRepository getHierarchyRepository() {
-        return this.hierarchyRepository_;
     }
 
 

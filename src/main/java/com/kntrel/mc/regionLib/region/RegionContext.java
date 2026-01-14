@@ -22,20 +22,25 @@ import java.util.function.Function;
 public class RegionContext implements RegionRepository {
 
     //FIELDS
-    private final RegionRepository regionRepository_;
     private final Plugin plugin_;
+    private final RegionRepository regionRepository_;
+    private final HierarchyRepository hierarchyRepository_;
     private final AbilityRegistry abilityRegistry_;
     private final RuleRegistry ruleRegistry_;
     private final DisplayController displayController_;
 
 
     //CONSTRUCTORS
-    public RegionContext(Plugin plugin, Function<RegionContext, RegionRepository> repositoryFactory) {
-        this.regionRepository_ = repositoryFactory.apply(this);
+    public RegionContext(Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
         this.plugin_ = plugin;
+        this.regionRepository_ = regionRepFactory.apply(this);
+        this.hierarchyRepository_ = hierarchyRepFactory.apply(this);
         this.abilityRegistry_ = new AbilityRegistry(this);
         this.ruleRegistry_ = new RuleRegistry(this);
         this.displayController_ = new DisplayController(this, new BlockDisplayAreaDisplayer(this));
+    }
+    public RegionContext(Plugin plugin, RegionRepository regionRep, HierarchyRepository hierarchyRep) {
+        this(plugin, rc -> regionRep, rc -> hierarchyRep);
     }
 
 
@@ -55,8 +60,12 @@ public class RegionContext implements RegionRepository {
     public RuleRegistry getRuleRegistry() {
         return this.ruleRegistry_;
     }
+    public HierarchyRepository getHierarchyRepository() {
+        return this.hierarchyRepository_;
+    }
 
-    //UTILITIES
+
+    //API
     public void callEvent(Event event) {
         this.plugin_.getServer().getPluginManager().callEvent(event);
     }
@@ -90,8 +99,4 @@ public class RegionContext implements RegionRepository {
     @Override public void save(Region... regions) {
         this.regionRepository_.save(regions);
     }
-    @Override public HierarchyRepository getHierarchyRepository() {
-        return this.regionRepository_.getHierarchyRepository();
-    }
-
 }

@@ -64,10 +64,14 @@ public class SQLiteRegionRepositoryTest {
         this.hierarchyRepository = MockHierarchyRepository.ofSingle("hierarchy", 3);
         Plugin plugin = mock(Plugin.class);
         when(plugin.getServer()).thenReturn(this.server);
-        this.regionContext = new RegionContext(plugin, ctx -> {
-            this.queryParser = new QueryParser(ctx);
-            return new SQLiteRegionRepository(this.server, ctx, this.dataBase, this.queryParser, this.executorService, this.hierarchyRepository, () -> new ConcurrentRLUCache<>(10));
-        });
+        this.regionContext = new RegionContext(
+                plugin,
+                ctx -> {
+                    this.queryParser = new QueryParser(ctx);
+                    return new SQLiteRegionRepository(this.server, ctx, this.dataBase, this.queryParser, this.executorService, () -> new ConcurrentRLUCache<>(10));
+                },
+                ctx -> this.hierarchyRepository
+        );
         this.regionRepository = (SQLiteRegionRepository) this.regionContext.getRegionRepository();
     }
 

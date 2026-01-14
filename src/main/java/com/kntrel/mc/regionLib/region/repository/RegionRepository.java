@@ -19,7 +19,6 @@ public interface RegionRepository {
     //ABSTRACT
     List<Region> get(Query query);
     void save(Region... region);
-    HierarchyRepository getHierarchyRepository();
 
 
     //DEFAULT METHODS

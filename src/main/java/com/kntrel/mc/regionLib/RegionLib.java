@@ -116,12 +116,8 @@ public final class RegionLib extends JavaPlugin {
 
         RegionContext rc = new RegionContext(
             plugin,
-            ctx -> new SQLiteRegionRepository(
-                plugin,
-                ctx,
-                dataBase,
-                new JsonHierarchyRepository(hierarchies)
-            )
+            ctx -> new SQLiteRegionRepository(plugin, ctx, dataBase),
+            ctx -> new JsonHierarchyRepository(hierarchies)
         );
 
         rc.getAbilityRegistry().registerFrom(Abilities.class);
