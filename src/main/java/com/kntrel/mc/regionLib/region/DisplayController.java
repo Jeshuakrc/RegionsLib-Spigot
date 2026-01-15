@@ -15,13 +15,15 @@ class DisplayController {
     private final AreaDisplayer displayer_;
     private final RegionContext ctx_;
     private final Map<Region, DisplayContext> taskMap_;
+    private final int displayDuration_;
 
 
     //CONSTRUCTORS
-    DisplayController(RegionContext regionContext, AreaDisplayer displayer) {
+    DisplayController(RegionContext regionContext, AreaDisplayer displayer, int displayDurationSeconds) {
         this.displayer_ = displayer;
         this.ctx_ = regionContext;
         this.taskMap_ = new HashMap<>();
+        this.displayDuration_ = displayDurationSeconds;
     }
 
 
@@ -43,10 +45,10 @@ class DisplayController {
         this.display(region, this.displayer_, second, player);
     }
     void display(Region region, AreaDisplayer displayer, Player player) {
-        this.display(region, displayer, RegionLib.CONFIG.regionDisplayDuration, player);
+        this.display(region, displayer, this.displayDuration_, player);
     }
     void display(Region region, Player player) {
-        this.display(region, this.displayer_ , RegionLib.CONFIG.regionDisplayDuration, player);
+        this.display(region, this.displayer_ , this.displayDuration_, player);
     }
 
 

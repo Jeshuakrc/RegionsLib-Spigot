@@ -1,8 +1,6 @@
 package com.kntrel.mc.regionLib.region.ability;
 
-import com.kntrel.mc.regionLib.RegionLib;
 import com.kntrel.mc.regionLib.event.AbilityTriggeredEvent;
-import com.kntrel.mc.regionLib.io.Config;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.react.RegionEventReactor;
@@ -84,7 +82,7 @@ public class Ability extends RegionEventReactor implements BiPredicate<Event, Re
             results[i++] = e.isAllowed();
         }
 
-        boolean r = overlappingPermissionCheck_(results, RegionLib.CONFIG.overlappingPermissionsMode);
+        boolean r = overlappingPermissionCheck_(results, context.getConfig().permissionsOverlapMode);
         if (!cancellable.isCancelled()) { cancellable.setCancelled(!r); }
         return r;
     }
@@ -103,17 +101,17 @@ public class Ability extends RegionEventReactor implements BiPredicate<Event, Re
 
 
     //PRIVATE
-    private static boolean overlappingPermissionCheck_(boolean[] bools, Config.OverlappingPermissionsMode mode) {
+    private static boolean overlappingPermissionCheck_(boolean[] bools, Permission.OverlapMode mode) {
         return switch (mode) {
-            case newest -> bools[0];
-            case oldest -> bools[bools.length - 1];
-            case all -> {
+            case NEWEST -> bools[0];
+            case OLDEST -> bools[bools.length - 1];
+            case ALL -> {
                 for (boolean b : bools) {
                     if (!b) { yield false; }
                 }
                 yield true;
             }
-            case any -> {
+            case ANY -> {
                 for (boolean b : bools) {
                     if (b) { yield true; }
                 }

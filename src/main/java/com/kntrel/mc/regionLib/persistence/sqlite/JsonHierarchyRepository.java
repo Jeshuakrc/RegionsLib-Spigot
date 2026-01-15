@@ -1,4 +1,4 @@
-package com.kntrel.mc.regionLib.persistence;
+package com.kntrel.mc.regionLib.persistence.sqlite;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;

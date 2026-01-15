@@ -6,6 +6,7 @@ import com.kntrel.mc.regionLib.event.PlayerLeaveRegionEvent;
 import com.kntrel.mc.regionLib.event.RegionCreateEvent;
 import com.kntrel.mc.regionLib.event.RegionDestroyEvent;
 import com.kntrel.mc.regionLib.region.ability.Ability;
+import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
 import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
@@ -78,10 +79,10 @@ public class Region implements Comparable<Region> {
     public void setName(String name) {
         int l = name.length();
 
-        int compare = RegionLib.CONFIG.minNameLength;
+        int compare = this.ctx_.getConfig().minNameLength;
         if (l < compare) { throw new IllegalArgumentException("The name is too short! Regions names may have a minimum of " + compare + " characters."); }
 
-        compare = RegionLib.CONFIG.maxNameLength;
+        compare = this.ctx_.getConfig().maxNameLength;
         if (l > compare && compare > 0) { throw new IllegalArgumentException("The name is too long! Regions names may have a maximum of " + compare + " characters."); }
 
         name_ = name;

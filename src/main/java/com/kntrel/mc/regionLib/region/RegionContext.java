@@ -3,25 +3,41 @@ package com.kntrel.mc.regionLib.region;
 import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.ability.AbilityBuilder;
 import com.kntrel.mc.regionLib.region.ability.AbilityRegistry;
+import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
 import com.kntrel.mc.regionLib.region.display.BlockDisplayAreaDisplayer;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.region.repository.Query;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
-import org.bukkit.Chunk;
 import org.bukkit.Server;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.plugin.Plugin;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 
 public class RegionContext implements RegionRepository {
 
+    //SUBTYPES
+    public static class Config {
+        public final int minNameLength;
+        public final int maxNameLength;
+        public final Permission.OverlapMode permissionsOverlapMode;
+        public final int regionDisplayDurationSeconds;
+
+        public Config(int minNameLength, int maxNameLength, Permission.OverlapMode permissionsOverlapMode, int regionDisplayDurationSeconds) {
+            this.minNameLength = minNameLength;
+            this.maxNameLength = maxNameLength;
+            this.permissionsOverlapMode = permissionsOverlapMode;
+            this.regionDisplayDurationSeconds = regionDisplayDurationSeconds;
+        }
+
+    }
+
+
     //FIELDS
+    private final Config config_;
     private final Plugin plugin_;
     private final RegionRepository regionRepository_;
     private final HierarchyRepository hierarchyRepository_;
@@ -31,20 +47,24 @@ public class RegionContext implements RegionRepository {
 
 
     //CONSTRUCTORS
-    public RegionContext(Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
+    public RegionContext(Config config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
+        this.config_ = config;
         this.plugin_ = plugin;
         this.regionRepository_ = regionRepFactory.apply(this);
         this.hierarchyRepository_ = hierarchyRepFactory.apply(this);
         this.abilityRegistry_ = new AbilityRegistry(this);
         this.ruleRegistry_ = new RuleRegistry(this);
-        this.displayController_ = new DisplayController(this, new BlockDisplayAreaDisplayer(this));
+        this.displayController_ = new DisplayController(this, new BlockDisplayAreaDisplayer(this), this.config_.regionDisplayDurationSeconds);
     }
-    public RegionContext(Plugin plugin, RegionRepository regionRep, HierarchyRepository hierarchyRep) {
-        this(plugin, rc -> regionRep, rc -> hierarchyRep);
+    public RegionContext(Config config, Plugin plugin, RegionRepository regionRep, HierarchyRepository hierarchyRep) {
+        this(config, plugin, rc -> regionRep, rc -> hierarchyRep);
     }
 
 
     //GETTERS
+    public Config getConfig() {
+        return this.config_;
+    }
     public RegionRepository getRegionRepository() {
         return this.regionRepository_;
     }

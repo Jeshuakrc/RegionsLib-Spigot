@@ -1,11 +1,16 @@
-package com.kntrel.mc.regionLib.region;
+package com.kntrel.mc.regionLib.region.ability;
 
+import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import org.bukkit.entity.Player;
 import java.util.Optional;
 import java.util.UUID;
 
 public class Permission {
+
+    //SUBTYPE
+    public enum OverlapMode { ALL, ANY, OLDEST, NEWEST }
+
 
     //FIELDS
     private final UUID playerId;

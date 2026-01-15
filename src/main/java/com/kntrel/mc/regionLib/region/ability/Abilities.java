@@ -19,6 +19,8 @@ import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.block.data.type.Lectern;
+
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -31,6 +33,26 @@ public final class Abilities {
     //PRIVATE CONSTRUCTOR
     private Abilities() {
         throw new AssertionError("You cannot instantiate the Abilities class!");
+    }
+
+
+    //CONSTANTS
+    public static class Constants {
+
+        private static Set<Material> PLANTABLE_BLOCKS = Set.of(
+                Material.WHEAT, Material.CARROTS, Material.POTATOES, Material.BEETROOTS, Material.KELP, Material.BAMBOO_SAPLING,
+                Material.SUGAR_CANE, Material.BROWN_MUSHROOM, Material.RED_MUSHROOM, Material.NETHER_WART, Material.ACACIA_SAPLING,
+                Material.SPRUCE_SAPLING, Material.BIRCH_SAPLING, Material.DARK_OAK_SAPLING, Material.JUNGLE_SAPLING, Material.OAK_SAPLING
+        );
+        private static Set<Material> BREACKABLE_REDSTONE_BLOCKS = Set.of(Material.REDSTONE_WIRE);
+
+
+        public static void setPlantableBlocks(List<Material> materials) {
+            PLANTABLE_BLOCKS = Set.copyOf(materials);
+        }
+        public static Set<Material> getPlantableBlocks() {
+            return PLANTABLE_BLOCKS;
+        }
     }
 
 
@@ -89,8 +111,8 @@ public final class Abilities {
     @DeclareAbility
     public static final Ability
     BREAK_BLOCKS = Ability.on(BlockBreakEvent.class).by(BlockBreakEvent::getPlayer).prioritize(-1).build(),
-    BREAK_CROPS = Ability.on(BlockBreakEvent.class).when(e -> RegionLib.CONFIG.plantableBlocks.contains(e.getBlock().getType())).by(BlockBreakEvent::getPlayer).build(),
-    BREAK_REDSTONE = Ability.on(BlockBreakEvent.class).when(e -> RegionLib.CONFIG.breakableRedstoneBlocks.contains(e.getBlock().getType())).by(BlockBreakEvent::getPlayer).build(),
+    BREAK_CROPS = Ability.on(BlockBreakEvent.class).when(e -> Constants.PLANTABLE_BLOCKS.contains(e.getBlock().getType())).by(BlockBreakEvent::getPlayer).build(),
+    BREAK_REDSTONE = Ability.on(BlockBreakEvent.class).when(e -> Constants.BREACKABLE_REDSTONE_BLOCKS.contains(e.getBlock().getType())).by(BlockBreakEvent::getPlayer).build(),
     EXTINGUISH_FIRE = Ability.on(BlockBreakEvent.class).when(e -> e.getBlock().getType().equals(Material.FIRE)).by(BlockBreakEvent::getPlayer).build();
 
 
@@ -98,8 +120,8 @@ public final class Abilities {
     @DeclareAbility
     public static final Ability
     PLACE_BLOCKS = Ability.on(BlockPlaceEvent.class).by(BlockPlaceEvent::getPlayer).prioritize(-1).build(),
-    PLANT = Ability.on(BlockPlaceEvent.class).when(e -> RegionLib.CONFIG.plantableBlocks.contains(e.getBlock().getType())).by(BlockPlaceEvent::getPlayer).build(),
-    PLACE_REDSTONE = Ability.on(BlockPlaceEvent.class).when(e -> RegionLib.CONFIG.breakableRedstoneBlocks.contains(e.getBlock().getType())).by(BlockPlaceEvent::getPlayer).build();
+    PLANT = Ability.on(BlockPlaceEvent.class).when(e -> Constants.PLANTABLE_BLOCKS.contains(e.getBlock().getType())).by(BlockPlaceEvent::getPlayer).build(),
+    PLACE_REDSTONE = Ability.on(BlockPlaceEvent.class).when(e -> Constants.BREACKABLE_REDSTONE_BLOCKS.contains(e.getBlock().getType())).by(BlockPlaceEvent::getPlayer).build();
 
 
     //BlockRightClickedEvent

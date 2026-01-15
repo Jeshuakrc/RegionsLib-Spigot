@@ -3,7 +3,7 @@ package com.kntrel.mc.regionLib.persistence.sqlite;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
-import com.kntrel.mc.regionLib.region.Permission;
+import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.RegionField;
@@ -65,6 +65,7 @@ public class SQLiteRegionRepositoryTest {
         Plugin plugin = mock(Plugin.class);
         when(plugin.getServer()).thenReturn(this.server);
         this.regionContext = new RegionContext(
+                new RegionContext.Config(3, 32, Permission.OverlapMode.NEWEST, 5),
                 plugin,
                 ctx -> {
                     this.queryParser = new QueryParser(ctx);
