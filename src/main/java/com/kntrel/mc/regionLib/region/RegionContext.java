@@ -37,6 +37,7 @@ public class RegionContext implements RegionRepository {
 
 
     //FIELDS
+    private final String namespace_;
     private final Config config_;
     private final Plugin plugin_;
     private final RegionRepository regionRepository_;
@@ -47,7 +48,8 @@ public class RegionContext implements RegionRepository {
 
 
     //CONSTRUCTORS
-    public RegionContext(Config config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
+    public RegionContext(String namespace, Config config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
+        this.namespace_ = namespace;
         this.config_ = config;
         this.plugin_ = plugin;
         this.regionRepository_ = regionRepFactory.apply(this);
@@ -56,12 +58,21 @@ public class RegionContext implements RegionRepository {
         this.ruleRegistry_ = new RuleRegistry(this);
         this.displayController_ = new DisplayController(this, new BlockDisplayAreaDisplayer(this), this.config_.regionDisplayDurationSeconds);
     }
+    public RegionContext(Config config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
+        this(plugin.getName(), config, plugin, regionRepFactory, hierarchyRepFactory);
+    }
+    public RegionContext(String namespace, Config config, Plugin plugin, RegionRepository regionRep, HierarchyRepository hierarchyRep) {
+        this(namespace, config, plugin, rc -> regionRep, rc -> hierarchyRep);
+    }
     public RegionContext(Config config, Plugin plugin, RegionRepository regionRep, HierarchyRepository hierarchyRep) {
-        this(config, plugin, rc -> regionRep, rc -> hierarchyRep);
+        this(plugin.getName(), config, plugin, rc -> regionRep, rc -> hierarchyRep);
     }
 
 
     //GETTERS
+    public String getNamespace() {
+        return this.namespace_;
+    }
     public Config getConfig() {
         return this.config_;
     }

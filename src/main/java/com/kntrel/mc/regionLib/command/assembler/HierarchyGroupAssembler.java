@@ -2,6 +2,7 @@ package com.kntrel.mc.regionLib.command.assembler;
 
 import com.kntrel.mc.commvoker.argument.context.ExecutionContext;
 import com.kntrel.mc.commvoker.assembler.Assembler;
+import com.kntrel.mc.commvoker.assembler.AssemblyException;
 import com.kntrel.mc.commvoker.assembler.TransformAssembler;
 import com.kntrel.mc.commvoker.provided.assemblers.StringAssembler;
 import com.kntrel.mc.regionLib.region.Region;
@@ -28,7 +29,7 @@ public class HierarchyGroupAssembler implements TransformAssembler<Object, Strin
     @Override public Assembler<? super Object, ? extends String> delegate() {
         return StringAssembler.string();
     }
-    @Override public Hierarchy.Group compose(ExecutionContext<?> ctx, String object) {
+    @Override public Hierarchy.Group compose(ExecutionContext<?> ctx, String object) throws AssemblyException {
         Hierarchy hierarchy = ctx.previousArgumentOfType(Hierarchy.class);
 
         if (hierarchy == null) {
@@ -39,11 +40,11 @@ public class HierarchyGroupAssembler implements TransformAssembler<Object, Strin
         }
 
         if (hierarchy == null) {
-            throw new NullPointerException("No hierarchy context found for group '" + object + "'");
+            throw new AssemblyException("No hierarchy context found for group '" + object + "'");
         }
         Hierarchy.Group group = hierarchy.getGroup(object).orElse(null);
         if (group == null) {
-            throw new NullPointerException("No group called '" + object + "' was found in hierarchy '" + hierarchy.getName() + "'");
+            throw new AssemblyException("No group called '" + object + "' was found in hierarchy '" + hierarchy.getName() + "'");
         }
         return group;
     }

@@ -1,13 +1,17 @@
-package com.kntrel.mc.regionLib.event;
+package com.kntrel.mc.regionLib;
 
+import com.kntrel.mc.regionLib.event.BlockRightClickedEvent;
+import com.kntrel.mc.regionLib.event.CopperBlockInteractEvent;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -15,15 +19,30 @@ import org.jetbrains.annotations.NotNull;
 class EventTriggerer implements Listener {
 
     //SINGLETON
-    private static Plugin PLUGIN = null;
+    private static EventTriggerer INSTANCE = null;
     static void enable(@NotNull Plugin plugin) {
-        if (plugin.equals(PLUGIN)) { return; }
-        if (PLUGIN != null) {
-            throw new IllegalStateException("RegionLIb's event triggerer is already owned by the '" + PLUGIN.getName() + "' plugin.");
+        if (INSTANCE != null) {
+            if (INSTANCE.plugin_ == plugin) { return; }
+            HandlerList.unregisterAll(INSTANCE);
         }
 
-        PLUGIN = plugin;
-        PLUGIN.getServer().getPluginManager().registerEvents(new EventTriggerer(), PLUGIN);
+        INSTANCE = new EventTriggerer(plugin);
+        plugin.getServer().getPluginManager().registerEvents(INSTANCE, plugin);
+    }
+    static void disable() {
+        if (INSTANCE != null) {
+            HandlerList.unregisterAll(INSTANCE);
+            INSTANCE = null;
+        }
+    }
+
+    //FIELDS
+    private final Plugin plugin_;
+
+
+    //CONSTRUCTORS
+    private EventTriggerer(Plugin plugin) {
+        this.plugin_ = plugin;
     }
 
 
@@ -68,9 +87,16 @@ class EventTriggerer implements Listener {
         e.setCancelled(event.isCancelled());
     }
 
+    @EventHandler
+    public void onPluginDisable(PluginDisableEvent event) {
+        if (event.getPlugin() == plugin_) {
+            disable();
+        }
+    }
+
 
     //HELPERS
-    private static void trigger(Event e) {
-        PLUGIN.getServer().getPluginManager().callEvent(e);
+    private void trigger(Event e) {
+        this.plugin_.getServer().getPluginManager().callEvent(e);
     }
 }

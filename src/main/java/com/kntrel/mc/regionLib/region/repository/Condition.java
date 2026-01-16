@@ -46,6 +46,12 @@ public sealed interface Condition extends Predicate<Region> {
     static Condition.At at(Location point) { return new Condition.At(point); }
     static Condition.In in(Area area) { return new Condition.In(area); }
     static Condition.InChunk inChunk(int x, int z, World world) { return new Condition.InChunk(x, z, world); }
+    static <T extends Comparable<T>> Condition between(RegionField<T> field, T minValue, T maxValue) {
+        return new Condition.And(
+                new Condition.GreaterThanEqual<>(field, minValue),
+                new Condition.LessThanEqual<>(field, maxValue)
+        );
+    }
     static Condition.At at(double x, double y, double z, World world) {
         return new Condition.At(new Location(world, x, y, z));
     }

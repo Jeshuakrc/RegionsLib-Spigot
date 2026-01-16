@@ -6,8 +6,8 @@ import com.kntrel.mc.commvoker.bukkit.requirement.RequiresPermission;
 import com.kntrel.mc.commvoker.command.Command;
 import com.kntrel.mc.commvoker.error.FailTrigger;
 import com.kntrel.mc.commvoker.exception.FailedCommandException;
+import com.kntrel.mc.regionLib.region.NamespaceRegionKey;
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.RuleValue;
@@ -25,26 +25,18 @@ import java.util.*;
 @Command("region")
 public class RegionCommand {
 
-    //FIELDS
-    private final RegionContext regionContext_;
-
-
-    //CONSTRUCTOR
-    public RegionCommand(RegionContext context) {
-        this.regionContext_ = context;
-    }
-
 
     //COMMANDS
     @Command("create {area} in {world} {hierarchy} {name}")
     @RequiresPermission("regions.create")
     public String create(FailTrigger ft, CommandSender sender, BoundingBox boundingBox, World world, Hierarchy hierarchy, String name) throws FailedCommandException {
+        NamespaceRegionKey rk = NamespaceRegionKey.of(name);
         try {
             Region region = new Region(
-                    this.regionContext_,
+                    rk.getRegionContext(),
                     boundingBox,
                     world,
-                    name,
+                    rk.name(),
                     hierarchy,
                     (sender instanceof Entity e) ? e : null
             );

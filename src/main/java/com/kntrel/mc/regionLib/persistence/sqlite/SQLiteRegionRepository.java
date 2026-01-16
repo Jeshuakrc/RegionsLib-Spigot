@@ -50,7 +50,6 @@ public class SQLiteRegionRepository implements RegionRepository {
 
     // FIELDS
     private final RegionContext context_;
-    private final Server server_;
     private final DataBase dataBase_;
     private final QueryParser queryParser_;
     private final Map<Class<?>, String> relationalTableCache_;
@@ -61,7 +60,6 @@ public class SQLiteRegionRepository implements RegionRepository {
 
     // CONSTRUCTORS
     SQLiteRegionRepository(
-            Server server,
             RegionContext context,
             DataBase database,
             QueryParser queryParser,
@@ -69,7 +67,6 @@ public class SQLiteRegionRepository implements RegionRepository {
             Supplier<? extends ConcurrentMap<Long, RegionSnapshot>> cacheFactory
     ) {                                                 //Testing constructor
         this.context_ = context;
-        this.server_ = server;
         this.dataBase_ = database;
         this.queryParser_ = queryParser;
         this.relationalTableCache_ = new HashMap<>();
@@ -79,7 +76,6 @@ public class SQLiteRegionRepository implements RegionRepository {
     }
     public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database, Supplier<? extends ConcurrentMap<Long, RegionSnapshot>> cacheFactory) {
         this(
-                plugin.getServer(),
                 context,
                 new DataBase(DataBaseInitializer.getConnection(plugin, database)),
                 new QueryParser(context),
@@ -133,7 +129,7 @@ public class SQLiteRegionRepository implements RegionRepository {
         return this.dataBase_.query(sql, dtoClass);
     }
     private Region buildRegion(RegionSnapshot snapshot) {
-        World world = this.server_.getWorld(snapshot.worldName());
+        World world = this.context_.getServer().getWorld(snapshot.worldName());
         Hierarchy hierarchy = this.context_.getHierarchyRepository().get((long) snapshot.region().hierarchy()).orElseThrow();
         Region r = new Region(this.context_, snapshot.boundingBox(), world, snapshot.name(), hierarchy);
 

@@ -69,7 +69,7 @@ public class SQLiteRegionRepositoryTest {
                 plugin,
                 ctx -> {
                     this.queryParser = new QueryParser(ctx);
-                    return new SQLiteRegionRepository(this.server, ctx, this.dataBase, this.queryParser, this.executorService, () -> new ConcurrentRLUCache<>(10));
+                    return new SQLiteRegionRepository(ctx, this.dataBase, this.queryParser, this.executorService, () -> new ConcurrentRLUCache<>(10));
                 },
                 ctx -> this.hierarchyRepository
         );

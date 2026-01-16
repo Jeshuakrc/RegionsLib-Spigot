@@ -2,8 +2,10 @@ package com.kntrel.mc.regionLib.command.assembler;
 
 import com.kntrel.mc.commvoker.argument.context.ExecutionContext;
 import com.kntrel.mc.commvoker.assembler.Assembler;
+import com.kntrel.mc.commvoker.assembler.AssemblyException;
 import com.kntrel.mc.commvoker.assembler.TransformAssembler;
 import com.kntrel.mc.commvoker.provided.assemblers.StringAssembler;
+import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.mojang.brigadier.suggestion.Suggestions;
@@ -11,22 +13,18 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static com.kntrel.mc.regionLib.command.assembler.RegionLibAssemblerUtils.*;
+
 public class HierarchyAssembler implements TransformAssembler<Object, String, Hierarchy> {
 
     //FACTORY
-    public static HierarchyAssembler hierarchyFromRegistry(HierarchyRepository hierarchyRepository) {
-        return new HierarchyAssembler(hierarchyRepository);
+    public static HierarchyAssembler hierarchy() {
+        return new HierarchyAssembler();
     }
-
-
-    //FIELDS
-    private final HierarchyRepository hierarchyRepository_;
 
 
     //CONSTRUCTOR
-    private HierarchyAssembler(HierarchyRepository hierarchyRepository) {
-        this.hierarchyRepository_ = hierarchyRepository;
-    }
+    private HierarchyAssembler() {}
 
 
     //IMPLEMENTATION
@@ -35,25 +33,26 @@ public class HierarchyAssembler implements TransformAssembler<Object, String, Hi
         return StringAssembler.string();
     }
     @Override
-    public Hierarchy compose(ExecutionContext<?> ctx, String key) {
+    public Hierarchy compose(ExecutionContext<?> ctx, String key) throws AssemblyException {
 
-        Long id = null;
+        //Finding the region context
+        RegionContext rc = findRegionContextOrThrow(ctx);
+        HierarchyRepository hr = rc.getHierarchyRepository();
+
+        //Try by ID first
         try {
-            id = Long.parseLong(key);
+            Long id = Long.parseLong(key);
+            Hierarchy out = hr.get(id).orElse(null);
+            if (out != null) { return out; }
         } catch (NumberFormatException ignored) {}
 
-        if (id != null) {
-            Hierarchy out = this.hierarchyRepository_.get(id).orElse(null);
-            if (out != null) { return out; }
-        }
-
-        List<Hierarchy> result = this.hierarchyRepository_.getByName(key);
-
+        //Try by name
+        List<Hierarchy> result = hr.getByName(key);
         if (result.size() > 1) {
-            throw new NullPointerException("Ambiguous query: there's " + result.size() + " hierarchies called '" + key + "'");
+            throw new AssemblyException("Ambiguous query: there's " + result.size() + " hierarchies called '" + key + "'");
         }
         if (result.isEmpty()) {
-            throw new NullPointerException("No hierarchy called '" + key + "' was found");
+            throw new AssemblyException("No hierarchy called '" + key + "' was found");
 
         }
 
@@ -61,7 +60,14 @@ public class HierarchyAssembler implements TransformAssembler<Object, String, Hi
     }
     @Override
     public CompletableFuture<Suggestions> suggest(ExecutionContext<?> context, SuggestionsBuilder builder) {
-        this.hierarchyRepository_.getAll().stream()
+        HierarchyRepository hr = findRegionContext(context)
+                .map(RegionContext::getHierarchyRepository)
+                .orElse(null);
+        if (hr == null) {
+            return builder.buildFuture();
+        }
+
+        hr.getAll().stream()
                 .map(Hierarchy::getName)
                 .distinct()
                 .forEach(builder::suggest);

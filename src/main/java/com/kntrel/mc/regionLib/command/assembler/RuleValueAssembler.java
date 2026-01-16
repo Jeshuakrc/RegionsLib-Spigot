@@ -5,7 +5,6 @@ import com.kntrel.mc.commvoker.assembler.Assembler;
 import com.kntrel.mc.commvoker.assembler.BiComposedAssembler;
 import com.kntrel.mc.commvoker.provided.assemblers.StringAssembler;
 import com.kntrel.mc.regionLib.region.rule.Rule;
-import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
 import com.kntrel.mc.regionLib.region.rule.RuleValue;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import com.mojang.brigadier.suggestion.Suggestions;
@@ -15,24 +14,18 @@ import java.util.concurrent.CompletableFuture;
 public class RuleValueAssembler implements BiComposedAssembler<Object, Rule<?>, String, RuleValue<?>> {
 
     //FACTORY
-    public static RuleValueAssembler ruleFromRegistry(RuleRegistry registry) {
-        return new RuleValueAssembler(registry);
+    public static RuleValueAssembler ruleValue() {
+        return new RuleValueAssembler();
     }
-
-
-    //FIELDS
-    private final RuleRegistry registry_;
 
 
     //CONSTRUCTOR
-    private RuleValueAssembler(RuleRegistry registry) {
-        this.registry_ = registry;
-    }
+    private RuleValueAssembler() {}
 
 
     @Override
     public Assembler<? super Object, ? extends Rule<?>> firstDelegate() {
-        return RuleAssembler.ruleFromRegistry(this.registry_);
+        return RuleAssembler.rule();
     }
 
     @Override
