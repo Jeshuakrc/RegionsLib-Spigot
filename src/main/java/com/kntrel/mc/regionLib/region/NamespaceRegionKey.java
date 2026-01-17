@@ -9,9 +9,19 @@ public record NamespaceRegionKey(@NotNull String namespace, @Nullable String nam
 
     //Factory
     public static NamespaceRegionKey of(String raw) {
-        int split = raw.indexOf(':');
-        if (split < 0) { split = Integer.MAX_VALUE; }
-        split = Math.min(split, raw.indexOf("#"));
+        int split;
+
+        int colonPos = raw.indexOf(':');
+        int hashPos = raw.indexOf('#');
+        if (colonPos < 0 && hashPos < 0) {
+            split = -1;
+        } else if (colonPos < 0) {
+            split = hashPos;
+        } else if (hashPos < 0) {
+            split = colonPos;
+        } else {
+            split = Math.min(colonPos, hashPos);
+        }
 
         if (split < 0) {
             RegionContext defaultCtx = RegionLib.getDefaultContext();

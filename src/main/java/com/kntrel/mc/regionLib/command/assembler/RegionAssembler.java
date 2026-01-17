@@ -86,7 +86,6 @@ public class RegionAssembler implements TransformAssembler<Object, String, Regio
         }
         input = input.substring(start + 1);
         NamespaceRegionKey ns = null;
-
         if (read && (input.contains(":") || input.contains("#"))) {
             try { ns = parseKey(input); } catch (AssemblyException ignored) { return builder.buildFuture(); }
         }
@@ -170,7 +169,7 @@ public class RegionAssembler implements TransformAssembler<Object, String, Regio
             start *= 10;
             end = (end * 10) + 9;
             conditions.add(
-                    Condition.between(RegionField.ID, start, input + end)
+                    Condition.between(RegionField.ID, start, start + end)
             );
         }
         return ctx.where(Condition.OR(conditions))
