@@ -84,6 +84,14 @@ public final class FluidRegionRepository {
             this.current_.add(Condition.lessThan(field, value));
             return this;
         }
+        public <T extends Comparable<T>> QueryBuilder greaterThanEqual(RegionField<T> field, T value) {
+            this.current_.add(Condition.greaterThanEqual(field, value));
+            return this;
+        }
+        public <T extends Comparable<T>> QueryBuilder lessThanEqual(RegionField<T> field, T value) {
+            this.current_.add(Condition.lessThanEqual(field, value));
+            return this;
+        }
         public QueryBuilder contains(RegionField<String> field, String value) {
             this.current_.add(Condition.contains(field, value));
             return this;

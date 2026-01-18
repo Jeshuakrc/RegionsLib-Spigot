@@ -78,8 +78,8 @@ public class Area extends BoundingBox {
         if (!this.getWorld().equals(world)) {
             return false;
         }
-        double chunkMinX = x * 16.0;
-        double chunkMinZ = z * 16.0;
+        double chunkMinX = x << 4;
+        double chunkMinZ = z << 4;
         double chunkMaxX = chunkMinX + 16.0;
         double chunkMaxZ = chunkMinZ + 16.0;
 
