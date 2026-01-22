@@ -1,5 +1,6 @@
 package com.kntrel.mc.regionLib.util;
 
+import com.kntrel.mc.regionLib.Constants;
 import com.kntrel.mc.regionLib.region.Region;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -78,10 +79,10 @@ public class Area extends BoundingBox {
         if (!this.getWorld().equals(world)) {
             return false;
         }
-        double chunkMinX = x << 4;
-        double chunkMinZ = z << 4;
-        double chunkMaxX = chunkMinX + 16.0;
-        double chunkMaxZ = chunkMinZ + 16.0;
+        double chunkMinX = x << Constants.CHUNK_SHIFT;
+        double chunkMinZ = z << Constants.CHUNK_SHIFT;
+        double chunkMaxX = chunkMinX + Constants.CHUNK_SIZE;
+        double chunkMaxZ = chunkMinZ + Constants.CHUNK_SIZE;
 
         return     this.getMinX() < chunkMaxX
                 && this.getMaxX() > chunkMinX

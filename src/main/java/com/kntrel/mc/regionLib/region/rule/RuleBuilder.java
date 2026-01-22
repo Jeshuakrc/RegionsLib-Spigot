@@ -6,7 +6,7 @@ import com.kntrel.mc.regionLib.region.react.RegionEventReactorBuilder;
 import com.kntrel.mc.regionLib.util.Area;
 import com.kntrel.mc.regionLib.util.AreaGetter;
 import com.kntrel.mc.regionLib.util.PointGetter;
-import com.kntrel.mc.regionLib.util.TriPredicate;
+import com.kntrel.util.TriPredicate;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.bukkit.Location;

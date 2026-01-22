@@ -250,7 +250,8 @@ public sealed interface Condition extends Predicate<Region> {
     }
     record InChunk(int x, int z, World world) implements Positional {
         @Override public boolean test(Region region) {
-            return Area.ofRegion(region).touchesChunk(this.x(), this.z(), this.world());
+            if (!this.world().getUID().equals(region.getWorld().getUID())) { return false; }
+            return region.touchesChunk(this.x(), this.z());
         }
     }
 }

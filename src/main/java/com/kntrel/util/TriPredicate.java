@@ -1,4 +1,4 @@
-package com.kntrel.mc.regionLib.util;
+package com.kntrel.util;
 
 @FunctionalInterface
 public interface TriPredicate<A, B, C> {

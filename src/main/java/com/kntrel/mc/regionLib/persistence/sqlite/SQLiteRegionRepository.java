@@ -103,7 +103,14 @@ public class SQLiteRegionRepository implements RegionRepository {
 
     @Override
     public void save(Region... regions) {
-        this.writeExecutor_.execute(() -> this.saveInner(regions));
+        Set<Long> newRegions = new HashSet<>();
+        for (Region r : regions) {
+            if (r.getId() != null) { continue; }
+            long id = this.idCount_.getAndIncrement();
+            r.setId(id);
+            newRegions.add(id);
+        }
+        this.writeExecutor_.execute(() -> this.saveInner(regions, newRegions));
     }
 
 
@@ -155,7 +162,7 @@ public class SQLiteRegionRepository implements RegionRepository {
 
         return r;
     }
-    private void saveInner(Region... regions) {
+    private void saveInner(Region[] regions, Set<Long> newRegions) {
         Patch<Object> patch = new Patch<>();
         for (Region r : regions) {
             RegionSnapshot oldSnapshot = null;
@@ -163,7 +170,7 @@ public class SQLiteRegionRepository implements RegionRepository {
             //Is a new region
             if (r.getId() == null) {
                 r.setId(this.idCount_.getAndIncrement());
-            } else {
+            } else if (!newRegions.contains(r.getId())) {
                 oldSnapshot = this.snapshotCache_.get(r.getId());
                 if (oldSnapshot == null) {
                     List<RegionSnapshot> fetched = this.getInner(Query.builder(this).idIs(r.getId()).asQuery());

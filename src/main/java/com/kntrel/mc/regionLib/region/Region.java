@@ -1,5 +1,6 @@
 package com.kntrel.mc.regionLib.region;
 
+import com.kntrel.mc.regionLib.Constants;
 import com.kntrel.mc.regionLib.RegionLib;
 import com.kntrel.mc.regionLib.event.PlayerEnterRegionEvent;
 import com.kntrel.mc.regionLib.event.PlayerLeaveRegionEvent;
@@ -235,6 +236,13 @@ public class Region implements Comparable<Region> {
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .toList();
+    }
+    public boolean touchesChunk(int x, int z) {
+        final int minX = x << Constants.CHUNK_SHIFT, minZ = z << Constants.CHUNK_SHIFT;
+        return     this.getMinX() < minX + Constants.CHUNK_SIZE
+                && this.getMaxX() > minZ + Constants.CHUNK_SIZE
+                && this.getMinZ() < minX
+                && this.getMaxZ() > minZ;
     }
 
 

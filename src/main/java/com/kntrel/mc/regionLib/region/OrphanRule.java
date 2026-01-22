@@ -2,7 +2,7 @@ package com.kntrel.mc.regionLib.region;
 
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.util.PointGetter;
-import com.kntrel.mc.regionLib.util.TriPredicate;
+import com.kntrel.util.TriPredicate;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import org.apache.logging.log4j.util.TriConsumer;
 import org.bukkit.event.Event;
