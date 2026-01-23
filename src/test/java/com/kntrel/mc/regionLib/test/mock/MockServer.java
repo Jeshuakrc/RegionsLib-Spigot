@@ -5,6 +5,8 @@ import org.bukkit.World;
 import org.bukkit.event.Event;
 import org.bukkit.plugin.PluginManager;
 
+import java.util.List;
+
 import static org.mockito.Mockito.*;
 
 public final class MockServer {
@@ -24,6 +26,7 @@ public final class MockServer {
         when(server.getPluginManager()).thenReturn(pluginManager);
         World mockWorld = MockWorld.mockWorld();
         when(server.getWorld(anyString())).thenReturn(mockWorld);
+        when(server.getWorlds()).thenReturn(List.of(mockWorld));
 
         MOCK_SERVER = server;
         return MOCK_SERVER;

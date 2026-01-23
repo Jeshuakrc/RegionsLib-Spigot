@@ -20,6 +20,10 @@ import static org.mockito.Mockito.*;
 
 public class HotRegionRepositoryTest {
 
+    //CONSTANTS
+    private static final HotRegionRepository.GridSize GRID_SIZE = HotRegionRepository.GridSize.SIZE_32;
+
+
     //ASSETS
     private RegionContext regionContext;
     private World world;
@@ -30,9 +34,9 @@ public class HotRegionRepositoryTest {
     //SETUP
     @BeforeEach void setup() {
         this.regionContext = MockRegionContext.mockContext();
-        this.world = MockWorld.mockWorld();
         this.delegate = spy(this.regionContext.getRegionRepository());
-        this.repository = new HotRegionRepository(delegate, HotRegionRepository.GridSize.SIZE_32);
+        this.repository = new HotRegionRepository(delegate, GRID_SIZE);
+        this.world = this.regionContext.getServer().getWorlds().getFirst();
     }
 
 
@@ -193,6 +197,64 @@ public class HotRegionRepositoryTest {
         unloadChunk(6, 6);
         assertTrue(this.repository.getWarmRegions().isEmpty());
         assertTrue(this.repository.getAll().isEmpty());
+    }
+    @Test void testWarmAndHotRegionsAcrossMultipleCells2() {
+        int cellSizeChunks = 1 << (GRID_SIZE.shiftBy() - Constants.CHUNK_SHIFT);
+        int chunksInCell = cellSizeChunks * cellSizeChunks;
+        for (int x = 0; x < cellSizeChunks * 2; x++) {
+            for (int z = 0; z < cellSizeChunks * 2; z++) {
+                Region region = regionInChunks(x, z, x, z, this.regionContext, this.world, "Region " + x + "," + z);
+                this.repository.save(region);
+            }
+        }
+
+        assertTrue(this.repository.getWarmRegions().isEmpty());
+
+        loadChunk(0, 0);
+        assertEquals(chunksInCell, this.repository.getWarmRegions().size());
+        assertEquals(1, this.repository.getAll().size());
+        assertRegionNames(this.repository.getAll(), "Region 0,0");
+
+        loadChunk(1, 0);
+        assertEquals(cellSizeChunks * cellSizeChunks, this.repository.getWarmRegions().size());
+        assertEquals(2, this.repository.getAll().size());
+        assertRegionNames(this.repository.getAll(), "Region 0,0", "Region 1,0");
+
+        loadChunk(cellSizeChunks, 0);
+        assertEquals(chunksInCell * 2, this.repository.getWarmRegions().size());
+        assertEquals(3, this.repository.getAll().size());
+        assertRegionNames(this.repository.getAll(), "Region 0,0", "Region 1,0", "Region " + cellSizeChunks + ",0");
+
+        unloadChunk(1, 0);
+        assertEquals(chunksInCell * 2, this.repository.getWarmRegions().size());
+        assertEquals(2, this.repository.getAll().size());
+        assertRegionNames(this.repository.getAll(), "Region 0,0", "Region " + cellSizeChunks + ",0");
+
+        loadChunk(0, cellSizeChunks);
+        assertEquals(chunksInCell * 3, this.repository.getWarmRegions().size());
+        assertEquals(3, this.repository.getAll().size());
+        assertRegionNames(this.repository.getAll(), "Region 0,0", "Region " + cellSizeChunks + ",0", "Region 0," + cellSizeChunks);
+
+        loadChunk(cellSizeChunks, cellSizeChunks);
+        assertEquals(chunksInCell * 4, this.repository.getWarmRegions().size());
+        assertEquals(4, this.repository.getAll().size());
+        assertRegionNames(this.repository.getAll(), "Region 0,0", "Region " + cellSizeChunks + ",0", "Region 0," + cellSizeChunks, "Region " + cellSizeChunks + "," + cellSizeChunks);
+
+        List<Region> queried = this.repository.where().at(0.5, 1, 0.5, this.world).get();
+        assertEquals(1, queried.size());
+        assertRegionNames(queried, "Region 0,0");
+
+        unloadChunk(0, 0);
+        assertEquals(chunksInCell * 3, this.repository.getWarmRegions().size());
+        assertEquals(3, this.repository.getAll().size());
+        assertRegionNames(this.repository.getAll(), "Region " + cellSizeChunks + ",0", "Region 0," + cellSizeChunks, "Region " + cellSizeChunks + "," + cellSizeChunks);
+
+        queried = this.repository.where().at(0.5, 1, 0.5, this.world).get();
+        assertTrue(queried.isEmpty());
+
+        queried = this.repository.where().at((cellSizeChunks << Constants.CHUNK_SHIFT) + 0.5, 1, 0.5, this.world).get();
+        assertEquals(1, queried.size());
+        assertRegionNames(queried, "Region " + cellSizeChunks + ",0");
     }
 
 
