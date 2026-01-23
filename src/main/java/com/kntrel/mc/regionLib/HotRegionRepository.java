@@ -148,8 +148,8 @@ class HotRegionRepository implements RegionRepository, Listener {
     }
 
 
-    @Override
-    public List<Region> get(Query query) {
+    //IMPLEMENTATION
+    @Override public List<Region> get(Query query) {
         if (query.includesDestroyed()) {
             return this.delegate_.get(query);
         }
@@ -174,9 +174,7 @@ class HotRegionRepository implements RegionRepository, Listener {
 
         return out.toList();
     }
-
-    @Override
-    public void save(Region... regions) {
+    @Override public void save(Region... regions) {
         List<Region> toInsert = new ArrayList<>(regions.length);
         for (Region r : regions) {
             if (r.getId() == null) {
@@ -209,18 +207,14 @@ class HotRegionRepository implements RegionRepository, Listener {
             this.insert(r);
         }
     }
-
-    @EventHandler
-    void onChunkLoad(ChunkLoadEvent event) {
+    @EventHandler public void handleChunkLoad(ChunkLoadEvent event) {
         Chunk chunk = event.getChunk();
         this.regionsInChunk(chunk)
                 .map(Region::getId)
                 .forEach(this::incrementHot);
         this.chunksInCellCount_.increment(this.cellOfChunk(chunk));
     }
-
-    @EventHandler
-    void onChunkUnload(ChunkUnloadEvent event) {
+    @EventHandler public void handleChunkUnload(ChunkUnloadEvent event) {
         Chunk chunk = event.getChunk();
         GridCell cell = this.cellOfChunk(chunk);
         if (isCellLoaded(cell)) {
@@ -230,6 +224,12 @@ class HotRegionRepository implements RegionRepository, Listener {
         }
 
         if (this.chunksInCellCount_.decrementAndCheckZero(cell)) { this.unloadCell(cell); }
+    }
+
+
+    //GETTERS
+    public List<Region> getWarmRegions() {
+        return List.copyOf(this.regionMap_.values());
     }
 
 

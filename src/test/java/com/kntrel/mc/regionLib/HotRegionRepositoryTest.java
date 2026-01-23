@@ -122,11 +122,11 @@ public class HotRegionRepositoryTest {
 
     //HELPERS
     private void loadChunk(int x, int z) {
-        this.repository.onChunkLoad(MockChunk.loadEvent(this.world, x, z));
+        this.repository.handleChunkLoad(MockChunk.loadEvent(this.world, x, z));
     }
     private void unloadChunk(int x, int z) {
         Chunk chunk = this.world.getChunkAt(x, z);
-        this.repository.onChunkUnload(MockChunk.unloadEvent(chunk));
+        this.repository.handleChunkUnload(MockChunk.unloadEvent(chunk));
     }
     private static void assertRegionNames(List<Region> regions, String... expectedNames) {
         List<String> actualNames = regions.stream()
