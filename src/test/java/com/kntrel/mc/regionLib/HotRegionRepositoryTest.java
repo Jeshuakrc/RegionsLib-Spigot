@@ -116,7 +116,84 @@ public class HotRegionRepositoryTest {
         this.repository.save(region);
         assertTrue(this.repository.getAll().isEmpty());
     }
+    @Test void testWarmRegionsIncludeColdRegionsInLoadedCell() {
+        Region hotRegion = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "Hot");
+        Region coldRegion = regionInChunks(1, 0, 1, 0, this.regionContext, this.world, "Cold");
+        this.repository.save(hotRegion, coldRegion);
 
+        loadChunk(0, 0);
+        assertRegionNames(this.repository.getWarmRegions(), "Cold", "Hot");
+        assertRegionNames(this.repository.getAll(), "Hot");
+    }
+    @Test void testWarmRegionUnloadAfterLastChunkLeavesCell() {
+        Region region = regionInChunks(0, 0, 1, 1, this.regionContext, this.world, "Warm Region");
+        this.repository.save(region);
+
+        loadChunk(0, 0);
+        assertRegionNames(this.repository.getWarmRegions(), "Warm Region");
+
+        loadChunk(1, 1);
+        assertRegionNames(this.repository.getWarmRegions(), "Warm Region");
+
+        unloadChunk(0, 0);
+        assertRegionNames(this.repository.getWarmRegions(), "Warm Region");
+
+        unloadChunk(1, 1);
+        assertTrue(this.repository.getWarmRegions().isEmpty());
+    }
+    @Test void testWarmRegionsUpdateOnResizeIntoLoadedCell() {
+        Region region = regionInChunks(2, 2, 2, 2, this.regionContext, this.world, "Warm Resize In");
+        this.repository.save(region);
+
+        loadChunk(0, 0);
+        assertTrue(this.repository.getWarmRegions().isEmpty());
+
+        resizeRegionToChunks(region, 0, 0, 2, 2);
+        this.repository.save(region);
+        assertRegionNames(this.repository.getWarmRegions(), "Warm Resize In");
+    }
+    @Test void testWarmRegionsUpdateOnResizeOutOfLoadedCell() {
+        Region region = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "Warm Resize Out");
+        this.repository.save(region);
+
+        loadChunk(0, 0);
+        assertRegionNames(this.repository.getWarmRegions(), "Warm Resize Out");
+
+        resizeRegionToChunks(region, 3, 3, 4, 5);
+        this.repository.save(region);
+        assertTrue(this.repository.getWarmRegions().isEmpty());
+    }
+    @Test void testWarmAndHotRegionsAcrossMultipleCells() {
+        Region regionA = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "Region A");
+        Region regionB = regionInChunks(1, 0, 1, 0, this.regionContext, this.world, "Region B");
+        Region regionC = regionInChunks(3, 3, 3, 3, this.regionContext, this.world, "Region C");
+        Region regionD = regionInChunks(6, 6, 7, 7, this.regionContext, this.world, "Region D");
+        this.repository.save(regionA, regionB, regionC, regionD);
+
+        loadChunk(0, 0);
+        assertRegionNames(this.repository.getWarmRegions(), "Region A", "Region B");
+        assertRegionNames(this.repository.getAll(), "Region A");
+
+        loadChunk(1, 0);
+        assertRegionNames(this.repository.getWarmRegions(), "Region A", "Region B");
+        assertRegionNames(this.repository.getAll(), "Region A", "Region B");
+
+        loadChunk(6, 6);
+        assertRegionNames(this.repository.getWarmRegions(), "Region A", "Region B", "Region D");
+        assertRegionNames(this.repository.getAll(), "Region A", "Region B", "Region D");
+
+        unloadChunk(0, 0);
+        assertRegionNames(this.repository.getWarmRegions(), "Region A", "Region B", "Region D");
+        assertRegionNames(this.repository.getAll(), "Region B", "Region D");
+
+        unloadChunk(1, 0);
+        assertRegionNames(this.repository.getWarmRegions(), "Region D");
+        assertRegionNames(this.repository.getAll(), "Region D");
+
+        unloadChunk(6, 6);
+        assertTrue(this.repository.getWarmRegions().isEmpty());
+        assertTrue(this.repository.getAll().isEmpty());
+    }
 
 
 
