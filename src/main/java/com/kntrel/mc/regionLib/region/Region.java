@@ -240,8 +240,8 @@ public class Region implements Comparable<Region> {
     public boolean touchesChunk(int x, int z) {
         final int minX = x << Constants.CHUNK_SHIFT, minZ = z << Constants.CHUNK_SHIFT;
         return     this.getMinX() < minX + Constants.CHUNK_SIZE
-                && this.getMaxX() > minZ + Constants.CHUNK_SIZE
-                && this.getMinZ() < minX
+                && this.getMaxX() > minX
+                && this.getMinZ() < minZ + Constants.CHUNK_SIZE
                 && this.getMaxZ() > minZ;
     }
 
