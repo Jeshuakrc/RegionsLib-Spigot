@@ -471,4 +471,7 @@ public class DataBaseTest {
             throw new RuntimeException(e);
         }
     }
+    public static Object memoryDatabaseObject() {
+        return memoryDatabase();
+    }
 }
