@@ -381,8 +381,6 @@ class HotRegionRepository implements RegionRepository, Listener {
     private void insert(Region region) {
         Bounds bounds = new Bounds(region);
         World world = region.getWorld();
-
-        this.boundsCache_.put(region.getId(), bounds);
         for (GridCell cell : cellsIn(bounds, world)) {
             this.linkToCell(cell, region);
         }

@@ -21,8 +21,10 @@ import java.util.Collection;
 public class MockChunk implements Chunk {
 
     public static ChunkLoadEvent loadEvent(World world, int chunkX, int chunkZ) {
-        MockChunk chunk = new MockChunk(chunkX, chunkZ, world);
-        chunk.setLoaded();
+        Chunk chunk = world.getChunkAt(chunkX, chunkZ);
+        if (chunk instanceof MockChunk mockChunk) {
+            mockChunk.setLoaded();
+        }
         return new ChunkLoadEvent(chunk, false);
     }
     public static ChunkUnloadEvent unloadEvent(Chunk chunk) {
@@ -96,24 +98,23 @@ public class MockChunk implements Chunk {
         return false;
     }
     @Override public boolean isLoaded() {
-        unimplemented();
-        return false;
+        return this.loaded_;
     }
     @Override public boolean load(boolean b) {
-        unimplemented();
-        return false;
+        this.loaded_ = true;
+        return true;
     }
     @Override public boolean load() {
-        unimplemented();
-        return false;
+        this.loaded_ = true;
+        return true;
     }
     @Override public boolean unload(boolean b) {
-        unimplemented();
-        return false;
+        this.loaded_ = false;
+        return true;
     }
     @Override public boolean unload() {
-        unimplemented();
-        return false;
+        this.loaded_ = false;
+        return true;
     }
     @Override public boolean isSlimeChunk() {
         unimplemented();

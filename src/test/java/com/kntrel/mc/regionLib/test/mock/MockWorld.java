@@ -3,6 +3,8 @@ package com.kntrel.mc.regionLib.test.mock;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;
@@ -16,15 +18,15 @@ public final class MockWorld {
     public static World mockWorld() {
 
         World mock = mock(World.class);
+        Map<Long, MockChunk> chunks = new HashMap<>();
         when(mock.getName()).thenReturn("world");
         when(mock.getUID()).thenReturn(WORLD_UUID);
         when(mock.getChunkAt(anyInt(), anyInt()))
                 .thenAnswer(invocation -> {
                     int x = invocation.getArgument(0);
                     int z = invocation.getArgument(1);
-                    MockChunk chunk = new MockChunk(x, z, mock);
-                    chunk.setLoaded();
-                    return chunk;
+                    long key = (((long) x) << 32) ^ (z & 0xffffffffL);
+                    return chunks.computeIfAbsent(key, k -> new MockChunk(x, z, mock));
                 });
         when(mock.unloadChunk(any(Chunk.class))).thenAnswer(invocation -> {
             Chunk chunk = invocation.getArgument(0);
@@ -38,11 +40,9 @@ public final class MockWorld {
                 .thenAnswer(invocation -> {
                     int x = invocation.getArgument(0);
                     int z = invocation.getArgument(1);
-                    Chunk chunk = mock.getChunkAt(x, z);
-                    if (chunk instanceof MockChunk c) {
-                        return c.isLoaded();
-                    }
-                    return false;
+                    long key = (((long) x) << 32) ^ (z & 0xffffffffL);
+                    MockChunk chunk = chunks.get(key);
+                    return chunk != null && chunk.isLoaded();
                 });
 
         return mock;
