@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -38,8 +37,7 @@ public class HotRegionRepositoryTest {
 
 
     //TESTS
-    @Test
-    void testReturnsOnlyHotRegionsAfterLoadAndUnload() {
+    @Test void testReturnsOnlyHotRegionsAfterLoadAndUnload() {
         Region regionA = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "Region A");
         Region regionB = regionInChunks(4, 4, 4, 4, this.regionContext, this.world, "Region B");
 
@@ -59,9 +57,7 @@ public class HotRegionRepositoryTest {
         unloadChunk(0, 0);
         assertRegionNames(this.repository.getAll(), "Region B");
     }
-
-    @Test
-    void testCellLoadAndUnloadAcrossChunks() {
+    @Test void testCellLoadAndUnloadAcrossChunks() {
         Region region = regionInChunks(0, 0, 1, 1, this.regionContext, this.world, "Cell Region");
         this.repository.save(region);
 
@@ -77,9 +73,7 @@ public class HotRegionRepositoryTest {
         unloadChunk(1, 1);
         assertTrue(this.repository.getAll().isEmpty());
     }
-
-    @Test
-    void testRegionEvictedOnDestroy() {
+    @Test void testRegionEvictedOnDestroy() {
         Region region = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "Evict");
         this.repository.save(region);
 
@@ -89,9 +83,7 @@ public class HotRegionRepositoryTest {
         this.repository.delete(region);
         assertTrue(this.repository.getAll().isEmpty());
     }
-
-    @Test
-    void testColdRegionsInLoadedCellRemainHiddenUntilChunkLoads() {
+    @Test void testColdRegionsInLoadedCellRemainHiddenUntilChunkLoads() {
         Region hotRegion = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "Hot");
         Region coldRegion = regionInChunks(1, 0, 1, 0, this.regionContext, this.world, "Cold");
         this.repository.save(hotRegion, coldRegion);
@@ -102,6 +94,28 @@ public class HotRegionRepositoryTest {
         loadChunk(1, 0);
         assertRegionNames(this.repository.getAll(), "Cold", "Hot");
     }
+    @Test void testRegionResizeMakesHotWhenTouchingLoadedChunk() {
+        Region region = regionInChunks(2, 2, 2, 2, this.regionContext, this.world, "Resize Hot");
+        this.repository.save(region);
+
+        loadChunk(0, 0);
+        assertTrue(this.repository.getAll().isEmpty());
+
+        resizeRegionToChunks(region, 0, 0, 2, 2);
+        this.repository.save(region);
+        assertRegionNames(this.repository.getAll(), "Resize Hot");
+    }
+    @Test void testRegionResizeCoolsWhenLeavingLoadedChunk() {
+        Region region = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "Resize Cold");
+        this.repository.save(region);
+
+        loadChunk(0, 0);
+        assertRegionNames(this.repository.getAll(), "Resize Cold");
+
+        resizeRegionToChunks(region, 3, 3, 4, 5);
+        this.repository.save(region);
+        assertTrue(this.repository.getAll().isEmpty());
+    }
 
 
 
@@ -110,26 +124,25 @@ public class HotRegionRepositoryTest {
     private void loadChunk(int x, int z) {
         this.repository.onChunkLoad(MockChunk.loadEvent(this.world, x, z));
     }
-
     private void unloadChunk(int x, int z) {
         Chunk chunk = this.world.getChunkAt(x, z);
         this.repository.onChunkUnload(MockChunk.unloadEvent(chunk));
     }
-
     private static void assertRegionNames(List<Region> regions, String... expectedNames) {
         List<String> actualNames = regions.stream()
                 .map(Region::getName)
                 .sorted()
                 .toList();
-        List<String> expected = Stream.of(expectedNames)
+        List<String> expected = List.of(expectedNames).stream()
                 .sorted(Comparator.naturalOrder())
                 .collect(Collectors.toList());
         assertEquals(expected, actualNames);
     }
-
-    private static Region regionInChunks(int x1, int z1, int x2, int z2, RegionContext ctx, World world, String name) {
-
-        BoundingBox bb = new BoundingBox(
+    private static void resizeRegionToChunks(Region region, int x1, int z1, int x2, int z2) {
+        region.resize(boundingBoxForChunks(x1, z1, x2, z2));
+    }
+    private static BoundingBox boundingBoxForChunks(int x1, int z1, int x2, int z2) {
+        return new BoundingBox(
                 x1 << Constants.CHUNK_SHIFT,
                 0,
                 z1 << Constants.CHUNK_SHIFT,
@@ -137,9 +150,11 @@ public class HotRegionRepositoryTest {
                 256,
                 (z2 + 1) << Constants.CHUNK_SHIFT
         );
+    }
+    private static Region regionInChunks(int x1, int z1, int x2, int z2, RegionContext ctx, World world, String name) {
         return new Region(
                 ctx,
-                bb,
+                boundingBoxForChunks(x1, z1, x2, z2),
                 world,
                 name,
                 ctx.getHierarchyRepository().getAll().getFirst()
