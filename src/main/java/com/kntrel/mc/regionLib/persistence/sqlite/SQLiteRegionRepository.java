@@ -10,7 +10,7 @@ import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.repository.Query;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.util.cache.ConcurrentRLUCache;
-import org.bukkit.Server;
+import com.kntrel.util.tuple.Pair;
 import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 public class SQLiteRegionRepository implements RegionRepository {
 
     // ASSETS
+    private static final int SQLITE_STMT_MAX_LENGTH = 1_000_000;
+    private static final int SQLITE_QUERY_MAX_DEPTH = 1000;
     private static final Gson GSON = new Gson();
     private record Patch<T>(List<T> inserts, List<T> updates, List<T> deletes) {
 
@@ -46,6 +48,7 @@ public class SQLiteRegionRepository implements RegionRepository {
             return this.inserts.isEmpty() && this.updates.isEmpty() && this.deletes.isEmpty();
         }
     }
+    private record IdGrouping(List<Pair<Long, Long>> ranges, List<Long> singles) {}
 
 
     // FIELDS
@@ -115,7 +118,7 @@ public class SQLiteRegionRepository implements RegionRepository {
 
 
     //PRIVATE
-    private <T> List<T> selectRelational(Collection<DTO.Region> regions, Class<T> dtoClass) throws SQLException {
+    private <T> List<T> selectRelational(Collection<DTO.Region> regions, Class<T> dtoClass) {
         if (regions.isEmpty()) { return List.of(); }
 
         String tableName = this.relationalTableCache_.computeIfAbsent(dtoClass, cls -> {
@@ -123,17 +126,28 @@ public class SQLiteRegionRepository implements RegionRepository {
             return (tableAnn != null) ? tableAnn.value() : cls.getSimpleName().toLowerCase();
         });
 
-        String sql = "SELECT "
-                   + tableName
-                   + ".* FROM "
-                   + tableName
-                   + " WHERE "
-                   + tableName
-                   + ".region_id IN ("
-                   + String.join(", ", regions.stream().map(DTO.Region::id).map(String::valueOf).toList())
-                   + ");";
+        List<String> wheres = buildRelationalWheres(
+                tableName,
+                regions.stream().map(DTO.Region::id).collect(Collectors.toSet())
+        );
 
-        return this.dataBase_.query(sql, dtoClass);
+        List<T> out = new ArrayList<>();
+        for (String where : wheres) {
+            String sql = "SELECT "
+                       + tableName
+                       + ".* FROM "
+                       + tableName
+                       + " WHERE "
+                       + where
+                       + ";";
+            try {
+                List<T> partial = this.dataBase_.query(sql, dtoClass);
+                out.addAll(partial);
+            } catch (SQLException e) {
+                throw new RegionSQLFetchException(sql, e);
+            }
+        }
+        return out;
     }
     private Region buildRegion(RegionSnapshot snapshot) {
         World world = this.context_.getServer().getWorld(snapshot.worldName());
@@ -193,15 +207,15 @@ public class SQLiteRegionRepository implements RegionRepository {
     private List<RegionSnapshot> getInner(Query query) {
         String s1q = this.queryParser_.parse(query);
 
-        List<DTO.Region> regs; List<DTO.Permission> perms; List<DTO.Rule> rules; List<DTO.Data> data;
+        List<DTO.Region> regs;
         try {
             regs = this.dataBase_.query(s1q, DTO.Region.class);
-            perms = this.selectRelational(regs, DTO.Permission.class);
-            rules = this.selectRelational(regs, DTO.Rule.class);
-            data = this.selectRelational(regs, DTO.Data.class);
         } catch (SQLException e) {
             throw new RegionSQLFetchException(s1q, e);
         }
+        List<DTO.Permission> perms = this.selectRelational(regs, DTO.Permission.class);
+        List<DTO.Rule> rules = this.selectRelational(regs, DTO.Rule.class);
+        List<DTO.Data> data = this.selectRelational(regs, DTO.Data.class);
 
         Map<Long, List<DTO.Permission>> permMap = perms.stream().collect(Collectors.groupingBy(DTO.Permission::regionId));
         Map<Long, List<DTO.Rule>> ruleMap = rules.stream().collect(Collectors.groupingBy(DTO.Rule::regionId));
@@ -323,5 +337,124 @@ public class SQLiteRegionRepository implements RegionRepository {
         deletes.addAll(oldMap.values());
 
         return out;
+    }
+    private static IdGrouping groupIds(Collection<Long> ids) {
+        List<Long> sorted = ids.stream().sorted().toList();
+        List<Pair<Long, Long>> ranges = new ArrayList<>();
+        List<Long> singles = new ArrayList<>();
+
+        if (sorted.isEmpty()) {
+            return new IdGrouping(ranges, singles);
+        }
+
+        Iterator<Long> i = sorted.iterator();
+        long rangeStart = i.next();
+        long previous = rangeStart;
+
+        while (i.hasNext()) {
+            long current = i.next();
+            if (current != previous + 1) {
+                if (rangeStart == previous) {
+                    singles.add(rangeStart);
+                } else {
+                    ranges.add(Pair.of(rangeStart, previous));
+                }
+                rangeStart = current;
+            }
+            previous = current;
+        }
+
+        if (rangeStart == previous) {
+            singles.add(rangeStart);
+        } else {
+            ranges.add(Pair.of(rangeStart, previous));
+        }
+
+        return new IdGrouping(ranges, singles);
+    }
+    private static List<String> buildRelationalWheres(String tableName, Collection<Long> ids) {
+        int threshold = SQLITE_STMT_MAX_LENGTH - 100; // buffer for the rest of the statement
+
+        IdGrouping grouping = groupIds(ids);
+        List<String> out = new ArrayList<>();
+        TrackedStringJoiner joiner = new TrackedStringJoiner(") OR (", "(", ")");
+
+        for (Pair<Long, Long> range : grouping.ranges()) {
+            String clause = tableName + ".region_id BETWEEN " + range.first() + " AND " + range.second();
+            int preLen = joiner.predictedLength(clause);
+            if (preLen >= threshold || joiner.count() >= SQLITE_QUERY_MAX_DEPTH) {
+                out.add(joiner.toString());
+                joiner.clear();
+            }
+            joiner.add(clause);
+        }
+
+        TrackedStringJoiner inJoiner = new TrackedStringJoiner(", ", tableName + ".region_id IN (", ")");
+
+        for (Long single : grouping.singles()) {
+            String id = String.valueOf(single);
+            int preInLen = inJoiner.predictedLength(id);
+            int preLen = joiner.predictedLength(preInLen);
+            if (preLen >= threshold || joiner.count() >= SQLITE_QUERY_MAX_DEPTH) {
+                if (inJoiner.count() > 0) {
+                    joiner.add(inJoiner.toString());
+                    inJoiner.clear();
+                }
+                out.add(joiner.toString());
+                joiner.clear();
+            }
+            inJoiner.add(id);
+        }
+
+        if (inJoiner.count() > 0) {
+            joiner.add(inJoiner.toString());
+        }
+
+        if (joiner.count() > 0) {
+            out.add(joiner.toString());
+        }
+
+        return out;
+    }
+    private static class TrackedStringJoiner {
+
+        private final String delimiter_, prefix_, suffix_;
+        private StringJoiner joiner_;
+        private int count_;
+
+        TrackedStringJoiner(String delimiter, String prefix, String suffix) {
+            this.joiner_ = new StringJoiner(delimiter, prefix, suffix);
+            this.delimiter_ = delimiter;
+            this.prefix_ = prefix;
+            this.suffix_ = suffix;
+            this.count_ = 0;
+        }
+        TrackedStringJoiner(String delimiter) {
+            this(delimiter, "", "");
+        }
+
+        void add(String element) {
+            this.joiner_.add(element);
+            this.count_++;
+        }
+        int count() {
+            return this.count_;
+        }
+        void clear() {
+            this.joiner_ = new StringJoiner(this.delimiter_, this.prefix_, this.suffix_);
+            this.count_ = 0;
+        }
+        int predictedLength(int elementLength) {
+            if (this.count_ < 1) {
+                return this.joiner_.length() + elementLength;
+            }
+            return this.joiner_.length() + this.delimiter_.length() + elementLength;
+        }
+        int predictedLength(String element) {
+            return predictedLength(element.length());
+        }
+        @Override public String toString() {
+            return this.joiner_.toString();
+        }
     }
 }

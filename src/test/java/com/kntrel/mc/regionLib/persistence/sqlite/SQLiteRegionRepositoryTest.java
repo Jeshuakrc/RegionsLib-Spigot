@@ -11,6 +11,7 @@ import com.kntrel.mc.regionLib.region.dataContainer.RegionData;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
+import com.kntrel.mc.regionLib.region.repository.Condition;
 import com.kntrel.mc.regionLib.test.Regions;
 import com.kntrel.mc.regionLib.test.mock.MockHierarchyRepository;
 import com.kntrel.mc.regionLib.test.mock.MockServer;
@@ -21,10 +22,8 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -481,5 +480,63 @@ public class SQLiteRegionRepositoryTest {
         assertDoesNotThrow(() ->
                 verify(this.dataBase, atLeastOnce()).query(anyString(), any(), anyInt())
         );
+    }
+
+    @Test
+    void testHighVolumeStressQuery() {
+        Hierarchy hierarchy = this.hierarchyRepository.getAll().getFirst();
+        List<Region> regions = new ArrayList<>();
+        for (int i = 0; i < 400_000; i++) {
+            Region reg = Regions.newRegion(this.regionContext, hierarchy, "reg_" + i);
+            if (i % 2 == 0) { reg.enabled(false); }
+            regions.add(reg);
+        }
+
+        assertDoesNotThrow(() -> this.regionRepository.save(regions));
+        List<Region> fetched = assertDoesNotThrow(() -> this.regionRepository.where().orderBy(RegionField.ID).get());
+        assertEquals(regions.size(), fetched.size());
+
+        Collections.sort(regions);
+        Iterator<Region> ri = regions.iterator(), fi = fetched.iterator();
+        while (ri.hasNext()) {
+            Region rExpected = ri.next();
+            Region rFetched = fi.next();
+            assertEquals(rExpected.getId(), rFetched.getId());
+            assertEquals(rExpected.getName(), rFetched.getName());
+            assertEquals(rExpected.isEnabled(), rFetched.isEnabled());
+        }
+
+        fetched = assertDoesNotThrow(() -> this.regionRepository.where().isEnabled().orderBy(RegionField.ID).get());
+        ri = regions.iterator(); fi = fetched.iterator();
+        while (ri.hasNext()) {
+            Region rExpected = ri.next();
+            if (!rExpected.isEnabled()) { continue; }
+            Region rFetched = fi.next();
+            assertEquals(rExpected.getId(), rFetched.getId());
+            assertEquals(rExpected.getName(), rFetched.getName());
+            assertEquals(rExpected.isEnabled(), rFetched.isEnabled());
+        }
+
+        fetched = assertDoesNotThrow(() -> this.regionRepository
+                .where(Condition.OR(
+                        Condition.between(RegionField.ID, 101L, 2000L),
+                        Condition.between(RegionField.ID, 100_001L, 200_000L),
+                        Condition.isTrue(RegionField.ENABLED)
+                ))
+                .orderBy(RegionField.ID)
+                .get()
+        );
+        ri = regions.iterator(); fi = fetched.iterator();
+        while (ri.hasNext()) {
+            Region rExpected = ri.next();
+            boolean inRange = (rExpected.getId() >= 101L && rExpected.getId() <= 2000L)
+                           || (rExpected.getId() >= 100_001L && rExpected.getId() <= 200_000L)
+                           || rExpected.isEnabled();
+            if (!inRange) { continue; }
+            Region rFetched = fi.next();
+            assertEquals(rExpected.getId(), rFetched.getId());
+            assertEquals(rExpected.getName(), rFetched.getName());
+            assertEquals(rExpected.isEnabled(), rFetched.isEnabled());
+        }
     }
 }
