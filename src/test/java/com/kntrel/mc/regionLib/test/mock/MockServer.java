@@ -13,14 +13,9 @@ public final class MockServer {
 
     private MockServer() {}
 
-    private static Server MOCK_SERVER = null;
 
 
     public static Server mockServer() {
-        if (MOCK_SERVER != null) {
-            return MOCK_SERVER;
-        }
-
         Server server = mock(Server.class);
         PluginManager pluginManager = mock(PluginManager.class);
         when(server.getPluginManager()).thenReturn(pluginManager);
@@ -28,8 +23,7 @@ public final class MockServer {
         when(server.getWorld(anyString())).thenReturn(mockWorld);
         when(server.getWorlds()).thenReturn(List.of(mockWorld));
 
-        MOCK_SERVER = server;
-        return MOCK_SERVER;
+        return server;
     }
 
 
