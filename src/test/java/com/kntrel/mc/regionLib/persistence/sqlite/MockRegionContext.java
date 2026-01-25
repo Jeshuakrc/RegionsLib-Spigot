@@ -5,6 +5,7 @@ import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.test.mock.MockHierarchyRepository;
 import com.kntrel.mc.regionLib.test.mock.MockServer;
+import com.kntrel.mc.regionLib.util.Grid;
 import com.kntrel.util.cache.ConcurrentRLUCache;
 import org.bukkit.Server;
 import org.bukkit.plugin.Plugin;
@@ -36,7 +37,7 @@ public class MockRegionContext {
         Plugin plugin = mock(Plugin.class);
         when(plugin.getServer()).thenReturn(server);
         return new RegionContext(
-                new RegionContext.Config(3, 32, Permission.OverlapMode.NEWEST, 5),
+                new RegionContext.Config(3, 32, Permission.OverlapMode.NEWEST, 5, Grid.CellSize.SIZE_32),
                 plugin,
                 ctx -> {
                     QueryParser queryParser = new QueryParser(ctx);

@@ -1,11 +1,11 @@
-package com.kntrel.mc.regionLib;
+package com.kntrel.mc.regionLib.region;
 
-import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.RegionField;
+import com.kntrel.mc.regionLib.Constants;
 import com.kntrel.mc.regionLib.region.repository.Condition;
 import com.kntrel.mc.regionLib.region.repository.Query;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.util.Area;
+import com.kntrel.mc.regionLib.util.Grid;
 import com.kntrel.util.HashCounter;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -14,129 +14,33 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 class HotRegionRepository implements RegionRepository, Listener {
 
-    //SUBTYPES
-    public enum GridSize {
-        //CONSTANTS
-        SIZE_16(4),
-        SIZE_32(5),
-        SIZE_64(6),
-        SIZE_128(7),
-        SIZE_256(8);
-
-        //FINDERS
-        public static GridSize fromSize(int size) {
-            for (GridSize gridSize : values()) {
-                if (gridSize.getSize() == size) {
-                    return gridSize;
-                }
-            }
-            throw new IllegalArgumentException("No GridSize with size " + size);
-        }
-        public static GridSize fromShift(int shift) {
-            for (GridSize gridSize : values()) {
-                if (gridSize.shiftBy() == shift) {
-                    return gridSize;
-                }
-            }
-            throw new IllegalArgumentException("No GridSize with shift " + shift);
-        }
-
-        //FIELDS
-        private final int shift_;
-
-        //CONSTRUCTORS
-        GridSize(int shift) { this.shift_ = shift; }
-
-        //GETTERS
-        public int shiftBy() { return this.shift_; }
-        public int getSize() { return 1 << this.shift_; }
-    }
     private record Bounds(double minX, double minZ, double maxX, double maxZ) {
         Bounds(Region region) {
             this(region.getMinX(), region.getMinZ(), region.getMaxX(), region.getMaxZ());
-        }
-    }
-    private record GridCell(int x, int z, World world) {
-        @Override public boolean equals(Object o) {
-            if (o == null) { return false; }
-            if (o == this) { return true; }
-            if (!(o instanceof GridCell other)) { return false; }
-            return this.x == other.x && this.z == other.z && this.world.getUID().equals(other.world.getUID());
-        }
-        @Override public int hashCode() {
-            return Objects.hash(this.x, this.z, this.world.getUID());
-        }
-    }
-    private static class Grid implements Iterable<GridCell> {
-
-        private final int minX_, minZ_, length_, size_;
-        private final World world_;
-
-        Grid(int minX, int minZ, int maxX, int maxZ, World world) {
-            this.minX_ = minX;
-            this.minZ_ = minZ;
-            this.length_ = maxX - minX + 1;
-            this.size_ = this.length_ * (maxZ - minZ + 1);
-            this.world_ = world;
-        }
-
-        @NotNull @Override
-        public Iterator<GridCell> iterator() {
-            return new GridIterator();
-        }
-        public Stream<GridCell> cellStream() {
-            return StreamSupport.stream(this.spliterator(), false);
-        }
-        public Set<GridCell> cellSet() {
-            return this.cellStream().collect(Collectors.toSet());
-        }
-        public boolean contains(GridCell cell) {
-            return cell.x() >= this.minX_ && cell.x() < this.minX_ + this.length_
-                && cell.z() >= this.minZ_ && cell.z() < this.minZ_ + this.size_ / this.length_;
-        }
-
-        private class GridIterator implements Iterator<GridCell> {
-            private int pos_ = 0;
-
-            @Override
-            public boolean hasNext() {
-                return this.pos_ < Grid.this.size_;
-            }
-
-            @Override
-            public GridCell next() {
-                int x = this.pos_ / Grid.this.length_,
-                    z = this.pos_ % Grid.this.length_;
-                this.pos_++;
-                return new GridCell(Grid.this.minX_ + x, Grid.this.minZ_ + z, Grid.this.world_);
-            }
         }
     }
 
 
     //FIELDS
     private final RegionRepository delegate_;
-    private final GridSize gridSize_;
+    private final Grid.CellSize gridSize_;
     private final Map<Long, Region> regionMap_;
-    private final Map<GridCell, Set<Long>> cellRegionMap_;
+    private final Map<Grid.Cell, Set<Long>> cellRegionMap_;
     private final Map<Long, Bounds> boundsCache_;
-    private final HashCounter<GridCell> chunksInCellCount_;
+    private final HashCounter<Grid.Cell> chunksInCellCount_;
     private final HashCounter<Long> chunksInRegionCount_;
     private final HashCounter<Long> cellsInRegionCount_;
 
 
 
     //CONSTRUCTOR
-    public HotRegionRepository(RegionRepository delegate, GridSize gridSize) {
+    public HotRegionRepository(RegionRepository delegate, Grid.CellSize gridSize) {
         this.delegate_ = delegate;
         this.gridSize_ = gridSize;
         this.regionMap_ = new HashMap<>();
@@ -216,7 +120,7 @@ class HotRegionRepository implements RegionRepository, Listener {
     }
     @EventHandler public void handleChunkUnload(ChunkUnloadEvent event) {
         Chunk chunk = event.getChunk();
-        GridCell cell = this.cellOfChunk(chunk);
+        Grid.Cell cell = this.cellOfChunk(chunk);
         if (isCellLoaded(cell)) {
             this.regionsInChunk(chunk)
                     .map(Region::getId)
@@ -234,7 +138,7 @@ class HotRegionRepository implements RegionRepository, Listener {
 
 
     //PRIVATE
-    private void linkToCell(GridCell cell, Region region) {
+    private void linkToCell(Grid.Cell cell, Region region) {
         Set<Long> ids = this.cellRegionMap_.get(cell);
         if (ids == null) { return; }                    // not loaded
 
@@ -245,7 +149,7 @@ class HotRegionRepository implements RegionRepository, Listener {
         this.regionMap_.put(id, region);
         this.boundsCache_.computeIfAbsent(id, k -> new Bounds(region));
     }
-    private void unlinkFromCell(GridCell cell, long id) {
+    private void unlinkFromCell(Grid.Cell cell, long id) {
         Set<Long> ids = this.cellRegionMap_.get(cell);
         if (ids == null) { return; }                                        // not loaded
 
@@ -267,15 +171,15 @@ class HotRegionRepository implements RegionRepository, Listener {
     private int cellToChunkShift() {
         return this.gridSize_.shiftBy() - Constants.CHUNK_SHIFT;
     }
-    private GridCell cellOfChunk(Chunk chunk) {
-        return new GridCell(
+    private Grid.Cell cellOfChunk(Chunk chunk) {
+        return new Grid.Cell(
                 chunk.getX() >> cellToChunkShift(),
                 chunk.getZ() >> cellToChunkShift(),
                 chunk.getWorld()
         );
     }
 
-    private void loadCell(GridCell cell) {
+    private void loadCell(Grid.Cell cell) {
         if (this.cellRegionMap_.containsKey(cell)) { return; }  // already loaded
         this.cellRegionMap_.put(cell, new HashSet<>());         // loading
 
@@ -294,7 +198,7 @@ class HotRegionRepository implements RegionRepository, Listener {
 
         regions.forEach(r -> this.linkToCell(cell, r));         // linking
     }
-    private void unloadCell(GridCell cell) {
+    private void unloadCell(Grid.Cell cell) {
         Set<Long> ids = this.cellRegionMap_.get(cell);
         if (ids == null) { return; }                            // already unloaded
 
@@ -305,7 +209,7 @@ class HotRegionRepository implements RegionRepository, Listener {
 
         this.cellRegionMap_.remove(cell);                       // unloading
     }
-    private boolean isCellLoaded(GridCell cell) {
+    private boolean isCellLoaded(Grid.Cell cell) {
         return this.cellRegionMap_.containsKey(cell);
     }
     private Optional<Region> regionOfId(long id) {
@@ -313,7 +217,7 @@ class HotRegionRepository implements RegionRepository, Listener {
         if (reg != null) { return Optional.of(reg); }
         return this.delegate_.get(id);
     }
-    private Stream<Region> regionsInCell(GridCell cell) {
+    private Stream<Region> regionsInCell(Grid.Cell cell) {
         Set<Long> regs = this.cellRegionMap_.get(cell);
         if (regs == null) { return Stream.empty(); }
         return regs.stream()
@@ -322,16 +226,16 @@ class HotRegionRepository implements RegionRepository, Listener {
                 .map(Optional::get);
     }
     private Stream<Region> regionsInChunk(Chunk chunk) {
-        GridCell cell = this.cellOfChunk(chunk);
+        Grid.Cell cell = this.cellOfChunk(chunk);
         if (!this.isCellLoaded(cell)) { this.loadCell(cell); }
         Condition inChunk = Condition.inChunk(chunk);
         return this.regionsInCell(cell).filter(inChunk);
     }
-    private GridCell cellAt(double x, double z, World world) {
+    private Grid.Cell cellAt(double x, double z, World world) {
         int size = this.gridSize_.getSize();
         int cellX = Math.floorDiv((int) Math.floor(x), size);
         int cellZ = Math.floorDiv((int) Math.floor(z), size);
-        return new GridCell(cellX, cellZ, world);
+        return new Grid.Cell(cellX, cellZ, world);
     }
     private Grid cellsIn(double minX, double minZ, double maxX, double maxZ, World world) {
         return sizedGridIn(minX, minZ, maxX, maxZ, this.gridSize_.getSize(), world);
@@ -368,7 +272,7 @@ class HotRegionRepository implements RegionRepository, Listener {
                         .forEach(c -> out.addAll(this.regionsInCell(c).toList()));
             }
             case Condition.InChunk ic -> {
-                GridCell cell = new GridCell(
+                Grid.Cell cell = new Grid.Cell(
                         ic.x() >> cellToChunkShift(),
                         ic.z() >> cellToChunkShift(),
                         ic.world()
@@ -381,7 +285,7 @@ class HotRegionRepository implements RegionRepository, Listener {
     private void insert(Region region) {
         Bounds bounds = new Bounds(region);
         World world = region.getWorld();
-        for (GridCell cell : cellsIn(bounds, world)) {
+        for (Grid.Cell cell : cellsIn(bounds, world)) {
             this.linkToCell(cell, region);
         }
         int chunks = (int) chunksIn(bounds, region.getWorld()).cellStream()
@@ -395,7 +299,7 @@ class HotRegionRepository implements RegionRepository, Listener {
         if (bounds == null) { bounds = delegate_.get(id).map(Bounds::new).orElse(new Bounds(region)); }
 
         World world = region.getWorld();
-        for (GridCell cell : cellsIn(bounds, world)) {
+        for (Grid.Cell cell : cellsIn(bounds, world)) {
             this.unlinkFromCell(cell, id);
         }
         this.regionMap_.remove(id);
@@ -408,7 +312,7 @@ class HotRegionRepository implements RegionRepository, Listener {
         Bounds current = new Bounds(region);
         this.boundsCache_.put(region.getId(), current);
 
-        Set<GridCell> oldCells = cellsIn(old, world).cellSet();
+        Set<Grid.Cell> oldCells = cellsIn(old, world).cellSet();
         cellsIn(current, world).cellStream()
                 .filter(c -> !oldCells.remove(c) && isCellLoaded(c))
                 .forEach(c -> this.linkToCell(c, region));
@@ -417,7 +321,7 @@ class HotRegionRepository implements RegionRepository, Listener {
                 .filter(this::isCellLoaded)
                 .forEach(c -> this.unlinkFromCell(c, region.getId()));
 
-        Set<GridCell> oldChunks = chunksIn(old, world).cellSet();
+        Set<Grid.Cell> oldChunks = chunksIn(old, world).cellSet();
         int newChunksCount = chunksIn(current, world).cellStream()
                 .filter(c -> !oldChunks.remove(c) && isChunkLoaded(c))
                 .reduce(0, (i, c) -> ++i, Integer::sum);
@@ -443,7 +347,7 @@ class HotRegionRepository implements RegionRepository, Listener {
     private static Grid chunksIn(Bounds bounds, World world) {
         return chunksIn(bounds.minX(), bounds.minZ(), bounds.maxX(), bounds.maxZ(), world);
     }
-    private static boolean isChunkLoaded(GridCell chunk) {
+    private static boolean isChunkLoaded(Grid.Cell chunk) {
         return chunk.world().isChunkLoaded(chunk.x(), chunk.z());
     }
 }

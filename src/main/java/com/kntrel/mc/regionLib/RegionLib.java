@@ -13,6 +13,7 @@ import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.RuleValue;
+import com.kntrel.mc.regionLib.util.Grid;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -52,7 +53,7 @@ public final class RegionLib extends JavaPlugin {
 
 
     // -------------------- SHADED MODE API ------------------------------- //
-    private static final RegionContext.Config DEFAULT_CONFIG = new RegionContext.Config(4, 32, Permission.OverlapMode.OLDEST, 10);
+    private static final RegionContext.Config DEFAULT_CONFIG = new RegionContext.Config(4, 32, Permission.OverlapMode.OLDEST, 10, Grid.CellSize.SIZE_32);
     private static Plugin OWNER_PLUGIN = null;
 
     private static void ensureEnabled() {

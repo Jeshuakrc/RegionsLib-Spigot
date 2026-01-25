@@ -1,10 +1,10 @@
-package com.kntrel.mc.regionLib;
+package com.kntrel.mc.regionLib.region;
 
+import com.kntrel.mc.regionLib.Constants;
 import com.kntrel.mc.regionLib.persistence.sqlite.MockRegionContext;
-import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.RegionContext;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.test.mock.MockChunk;
+import com.kntrel.mc.regionLib.util.Grid;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.util.BoundingBox;
@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 public class HotRegionRepositoryTest {
 
     //CONSTANTS
-    private static final HotRegionRepository.GridSize GRID_SIZE = HotRegionRepository.GridSize.SIZE_32;
+    private static final Grid.CellSize GRID_SIZE = Grid.CellSize.SIZE_32;
 
 
     //ASSETS

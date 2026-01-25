@@ -15,6 +15,7 @@ import com.kntrel.mc.regionLib.region.repository.Condition;
 import com.kntrel.mc.regionLib.test.Regions;
 import com.kntrel.mc.regionLib.test.mock.MockHierarchyRepository;
 import com.kntrel.mc.regionLib.test.mock.MockServer;
+import com.kntrel.mc.regionLib.util.Grid;
 import com.kntrel.util.cache.ConcurrentRLUCache;
 import org.bukkit.Server;
 import org.bukkit.plugin.Plugin;
@@ -64,7 +65,7 @@ public class SQLiteRegionRepositoryTest {
         Plugin plugin = mock(Plugin.class);
         when(plugin.getServer()).thenReturn(this.server);
         this.regionContext = new RegionContext(
-                new RegionContext.Config(3, 32, Permission.OverlapMode.NEWEST, 5),
+                new RegionContext.Config(3, 32, Permission.OverlapMode.NEWEST, 5, Grid.CellSize.SIZE_32),
                 plugin,
                 ctx -> {
                     this.queryParser = new QueryParser(ctx);

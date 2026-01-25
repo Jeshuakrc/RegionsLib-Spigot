@@ -10,6 +10,7 @@ import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.region.repository.Query;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
+import com.kntrel.mc.regionLib.util.Grid;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -25,12 +26,14 @@ public class RegionContext implements RegionRepository {
         public final int maxNameLength;
         public final Permission.OverlapMode permissionsOverlapMode;
         public final int regionDisplayDurationSeconds;
+        private final Grid.CellSize cellSize;
 
-        public Config(int minNameLength, int maxNameLength, Permission.OverlapMode permissionsOverlapMode, int regionDisplayDurationSeconds) {
+        public Config(int minNameLength, int maxNameLength, Permission.OverlapMode permissionsOverlapMode, int regionDisplayDurationSeconds, Grid.CellSize cellSize) {
             this.minNameLength = minNameLength;
             this.maxNameLength = maxNameLength;
             this.permissionsOverlapMode = permissionsOverlapMode;
             this.regionDisplayDurationSeconds = regionDisplayDurationSeconds;
+            this.cellSize = cellSize;
         }
 
     }
@@ -41,6 +44,7 @@ public class RegionContext implements RegionRepository {
     private final Config config_;
     private final Plugin plugin_;
     private final RegionRepository regionRepository_;
+    private final HotRegionRepository hotRegionRepository_;
     private final HierarchyRepository hierarchyRepository_;
     private final AbilityRegistry abilityRegistry_;
     private final RuleRegistry ruleRegistry_;
@@ -57,6 +61,7 @@ public class RegionContext implements RegionRepository {
         this.abilityRegistry_ = new AbilityRegistry(this);
         this.ruleRegistry_ = new RuleRegistry(this);
         this.displayController_ = new DisplayController(this, new BlockDisplayAreaDisplayer(this), this.config_.regionDisplayDurationSeconds);
+        this.hotRegionRepository_ = new HotRegionRepository(this.regionRepository_, this.config_.cellSize);
     }
     public RegionContext(Config config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
         this(plugin.getName(), config, plugin, regionRepFactory, hierarchyRepFactory);
@@ -90,6 +95,9 @@ public class RegionContext implements RegionRepository {
     }
     public RuleRegistry getRuleRegistry() {
         return this.ruleRegistry_;
+    }
+    public RegionRepository getHotRegionRepository() {
+        return this.hotRegionRepository_;
     }
     public HierarchyRepository getHierarchyRepository() {
         return this.hierarchyRepository_;
