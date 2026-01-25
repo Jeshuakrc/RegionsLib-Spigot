@@ -90,6 +90,17 @@ public class Grid implements Iterable<Grid.Cell> {
         //GETTERS
         public int shiftBy() { return this.shift_; }
         public int getSize() { return 1 << this.shift_; }
+
+        //IMPLEMENTATION
+        @Override public int hashCode() {
+            return Integer.hashCode(this.shift_);
+        }
+        @Override public boolean equals(Object o) {
+            if (o == null) { return false; }
+            if (o == this) { return true; }
+            if (!(o instanceof CellSize other)) { return false; }
+            return this.shift_ == other.shift_;
+        }
     }
 
     public record Cell(int x, int z, World world) {
