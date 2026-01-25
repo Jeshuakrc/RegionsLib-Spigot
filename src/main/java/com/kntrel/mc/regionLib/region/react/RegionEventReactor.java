@@ -2,12 +2,14 @@ package com.kntrel.mc.regionLib.region.react;
 
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.repository.RegionReadRepository;
 import com.kntrel.mc.regionLib.util.Area;
 import com.kntrel.mc.regionLib.util.AreaGetter;
 import com.kntrel.mc.regionLib.util.PointGetter;
 import org.bukkit.Location;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
+import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -80,9 +82,10 @@ public abstract class RegionEventReactor implements Comparable<RegionEventReacto
         Area a = (areaGetter_ != null) ? areaGetter_.apply(event) : null;
         if (l == null && a == null) return Collections.emptyList();
 
-        return isPointBased() ? context.getAt(l) : context.getIn(a);
+        RegionReadRepository repo = context.getRegionRepository();
+        return isPointBased() ? repo.getAt(l) : repo.getIn(a);
     }
-    @Override public int compareTo(RegionEventReactor o) {
+    @Override public int compareTo(@NotNull RegionEventReactor o) {
         return Comparator.comparingInt(RegionEventReactor::getBukkitPrioritySlot)
                 .thenComparingInt(RegionEventReactor::getPriority)
                 .thenComparing(RegionEventReactor::getName)

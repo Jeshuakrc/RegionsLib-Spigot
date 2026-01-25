@@ -37,10 +37,10 @@ public class RegionCommand {
                     boundingBox,
                     world,
                     rk.name(),
-                    hierarchy,
-                    (sender instanceof Entity e) ? e : null
+                    hierarchy
             );
-            region.save();
+            if (sender instanceof Entity e) { region.save(e); }
+            else { region.save(); }
         } catch (IllegalArgumentException e) {
             ft.fail(e.getMessage());
         }
@@ -59,7 +59,7 @@ public class RegionCommand {
         if (regions.isEmpty()) { return ""; }
 
         final Entity destroyer = (sender instanceof Entity) ? (Entity) sender : null;
-        regions.forEach(r -> { r.destroy(destroyer); r.save(); });
+        regions.forEach(r -> { r.destroy(); r.save(destroyer); });
 
         StringBuilder msg = new StringBuilder();
         if (regions.size() < 2) {

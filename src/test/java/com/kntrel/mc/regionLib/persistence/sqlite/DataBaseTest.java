@@ -2,7 +2,6 @@ package com.kntrel.mc.regionLib.persistence.sqlite;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;

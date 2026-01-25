@@ -3,6 +3,7 @@ package com.kntrel.mc.regionLib.region;
 import com.kntrel.mc.regionLib.Constants;
 import com.kntrel.mc.regionLib.region.repository.Condition;
 import com.kntrel.mc.regionLib.region.repository.Query;
+import com.kntrel.mc.regionLib.region.repository.RegionReadRepository;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.util.Area;
 import com.kntrel.mc.regionLib.util.Grid;
@@ -18,7 +19,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.stream.Stream;
 
-class HotRegionRepository implements RegionRepository, Listener {
+class HotRegionRepository implements RegionReadRepository, Listener {
 
     private record Bounds(double minX, double minZ, double maxX, double maxZ) {
         Bounds(Region region) {
@@ -78,7 +79,7 @@ class HotRegionRepository implements RegionRepository, Listener {
 
         return out.toList();
     }
-    @Override public void save(Region... regions) {
+    void save(Region... regions) {
         List<Region> toInsert = new ArrayList<>(regions.length);
         for (Region r : regions) {
             if (r.getId() == null) {

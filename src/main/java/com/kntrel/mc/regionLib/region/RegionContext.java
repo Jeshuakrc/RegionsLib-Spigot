@@ -7,18 +7,23 @@ import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
 import com.kntrel.mc.regionLib.region.display.BlockDisplayAreaDisplayer;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
+import com.kntrel.mc.regionLib.region.repository.AttributedRegionRepository;
 import com.kntrel.mc.regionLib.region.repository.Query;
+import com.kntrel.mc.regionLib.region.repository.RegionReadRepository;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
 import com.kntrel.mc.regionLib.util.Grid;
 import org.bukkit.Server;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.plugin.Plugin;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 import java.util.function.Function;
 
-public class RegionContext implements RegionRepository {
+public class RegionContext implements AttributedRegionRepository {
 
     //SUBTYPES
     public static class Config {
@@ -37,14 +42,21 @@ public class RegionContext implements RegionRepository {
         }
 
     }
+    private static class HotRegionRepositoryWrapper implements RegionRepository {
+        private final HotRegionRepository inner_;
+        HotRegionRepositoryWrapper(HotRegionRepository inner) { this.inner_ = inner; }
+        @Override public List<Region> get(Query query) { return this.inner_.get(query); }
+        @Override public void save(Region... regions) { this.inner_.save(regions); }
+    }
 
 
     //FIELDS
     private final String namespace_;
     private final Config config_;
     private final Plugin plugin_;
-    private final RegionRepository regionRepository_;
+    private final RegionRepository delegateRegionRepository_;
     private final HotRegionRepository hotRegionRepository_;
+    private final MainRegionRepository regionRepository_;
     private final HierarchyRepository hierarchyRepository_;
     private final AbilityRegistry abilityRegistry_;
     private final RuleRegistry ruleRegistry_;
@@ -56,12 +68,14 @@ public class RegionContext implements RegionRepository {
         this.namespace_ = namespace;
         this.config_ = config;
         this.plugin_ = plugin;
-        this.regionRepository_ = regionRepFactory.apply(this);
         this.hierarchyRepository_ = hierarchyRepFactory.apply(this);
         this.abilityRegistry_ = new AbilityRegistry(this);
         this.ruleRegistry_ = new RuleRegistry(this);
         this.displayController_ = new DisplayController(this, new BlockDisplayAreaDisplayer(this), this.config_.regionDisplayDurationSeconds);
-        this.hotRegionRepository_ = new HotRegionRepository(this.regionRepository_, this.config_.cellSize);
+
+        this.delegateRegionRepository_ = regionRepFactory.apply(this);
+        this.hotRegionRepository_ = new HotRegionRepository(this.delegateRegionRepository_, this.config_.cellSize);
+        this.regionRepository_ = new MainRegionRepository(new HotRegionRepositoryWrapper(this.hotRegionRepository_), this.delegateRegionRepository_, this.plugin_.getServer().getPluginManager());
     }
     public RegionContext(Config config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
         this(plugin.getName(), config, plugin, regionRepFactory, hierarchyRepFactory);
@@ -82,7 +96,7 @@ public class RegionContext implements RegionRepository {
         return this.config_;
     }
     public RegionRepository getRegionRepository() {
-        return this.regionRepository_;
+        return this.delegateRegionRepository_;
     }
     public Plugin getPlugin() {
         return this.plugin_;
@@ -96,7 +110,7 @@ public class RegionContext implements RegionRepository {
     public RuleRegistry getRuleRegistry() {
         return this.ruleRegistry_;
     }
-    public RegionRepository getHotRegionRepository() {
+    public RegionReadRepository getHotRegionRepository() {
         return this.hotRegionRepository_;
     }
     public HierarchyRepository getHierarchyRepository() {
@@ -135,7 +149,7 @@ public class RegionContext implements RegionRepository {
     @Override public List<Region> get(Query query) {
         return this.regionRepository_.get(query);
     }
-    @Override public void save(Region... regions) {
-        this.regionRepository_.save(regions);
+    @Override public void save(@Nullable Entity doer, Region... regions) {
+        this.regionRepository_.save(doer, regions);
     }
 }

@@ -1,11 +1,6 @@
 package com.kntrel.mc.regionLib.region;
 
 import com.kntrel.mc.regionLib.Constants;
-import com.kntrel.mc.regionLib.RegionLib;
-import com.kntrel.mc.regionLib.event.PlayerEnterRegionEvent;
-import com.kntrel.mc.regionLib.event.PlayerLeaveRegionEvent;
-import com.kntrel.mc.regionLib.event.RegionCreateEvent;
-import com.kntrel.mc.regionLib.event.RegionDestroyEvent;
 import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
@@ -33,7 +28,7 @@ public class Region implements Comparable<Region> {
     //FIELDS
     private Long id_;
     private final RegionContext ctx_;
-    private World world_ = null;
+    private final World world_;
     private final ArrayList<Permission> permissions_ = new ArrayList<>();
     private String name_;
     private boolean enabled_ = true;
@@ -41,35 +36,20 @@ public class Region implements Comparable<Region> {
     private RegionDataContainer dataContainer_ = new RegionDataContainer();
     private BoundingBox boundingBox_;
     private Hierarchy hierarchy_;
-    private final LinkedList<Player> insidePlayers_ = new LinkedList<>();
     private final Map<String, ValueHolder<?>> rulesValues_ = new HashMap<>();
 
 
     //CONSTRUCTORS
-    public Region(RegionContext context, BoundingBox initialBox, World world, String name, Hierarchy hierarchy, @Nullable Entity creator) {
+    public Region(RegionContext context, BoundingBox initialBox, World world, String name, Hierarchy hierarchy) {
         this.ctx_ = context;
-        this.setWorld(world);
+        this.world_ = world;
         this.resize(initialBox);
         this.setName(name);
         this.setHierarchy(hierarchy);
-
-        if (creator instanceof Player player) {
-            this.addPermission(player,1);
-        }
-
-        RegionCreateEvent event = new RegionCreateEvent(this, creator);
-        this.ctx_.callEvent(event);
-        if (event.isCancelled()) { this.destroy(); }
-    }
-    public Region(RegionContext context, BoundingBox initialBox, World world, String name, Hierarchy hierarchy) {
-        this(context, initialBox, world, name, hierarchy, null);
     }
 
 
     //SETTERS
-    public void setWorld(World world) {
-        world_ = world;
-    }
     public void setPermissions(Permission[] permissions) {
         this.permissions_.clear();
         Arrays.stream(permissions).forEach(this::addPermission);
@@ -93,7 +73,6 @@ public class Region implements Comparable<Region> {
     }
     public void enable() {
         this.enabled_ = true;
-        this.setInsidePlayers_(this.getWorld().getPlayers().stream().filter(p -> this.contains(p.getLocation())).toList());
     }
     public void disable() {
         this.enabled_ = false;
@@ -395,22 +374,17 @@ public class Region implements Comparable<Region> {
 
 
     //LIFECYCLE
-    public void save() {
-        this.getContext().save(this);
+    public void save(@Nullable Entity doer) {
+        this.getContext().save(doer, this);
     }
-    public void destroy(@Nullable Entity destructor){
-        RegionDestroyEvent event = new RegionDestroyEvent(this, destructor);
-        this.ctx_.callEvent(event);
-        if (event.isCancelled()) { return; }
-
-        this.insidePlayers_.clear();
-        this.isDestroyed_ = true;
+    public void save() {
+        this.save(null);
     }
     public void destroy() {
         this.permissions_.clear();
         this.rulesValues_.clear();
         this.dataContainer_.clear();
-        this.destroy(null);
+        this.isDestroyed_ = true;
     }
 
     //FIELDS
@@ -430,24 +404,5 @@ public class Region implements Comparable<Region> {
     }
     @Override public int compareTo(@NotNull Region otherRegion) {
         return Long.compare(this.getId(), otherRegion.getId());
-    }
-
-    //PRIVATE METHODS
-    private void setInsidePlayers_(List<? extends Player> players) {
-        Iterator<? extends Player> i = this.insidePlayers_.iterator();
-        players = new LinkedList<>(players);
-        Player p;
-        while (i.hasNext()) {
-            p = i.next();
-            if (players.remove(p)) {
-                continue;
-            }
-            i.remove();
-            this.ctx_.getServer().getPluginManager().callEvent(new PlayerLeaveRegionEvent(p, this));
-        }
-        players.forEach(pl -> {
-            this.insidePlayers_.add(pl);
-            this.ctx_.getServer().getPluginManager().callEvent(new PlayerEnterRegionEvent(pl, this));
-        });
     }
 }

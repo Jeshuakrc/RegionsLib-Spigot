@@ -8,7 +8,7 @@ import org.bukkit.event.HandlerList;
 
 import org.jetbrains.annotations.NotNull;
 
-public class RegionDestroyEvent extends Event implements Cancellable {
+public class RegionDestroyEvent extends RegionEvent implements Cancellable {
     //EVENT-REQUIRED ================================================
     private static final HandlerList HANDLERS = new HandlerList();
     public static HandlerList getHandlerList() {
@@ -23,12 +23,11 @@ public class RegionDestroyEvent extends Event implements Cancellable {
 
     //FIELDS
     private boolean canceled_ = false;
-    private final Region region_;
     private final Entity destructor_;
 
     //CONSTRUCTOR
     public RegionDestroyEvent(Region region, Entity destructor) {
-        this.region_ = region;
+        super(region);
         this.destructor_ = destructor;
     }
 
@@ -39,9 +38,6 @@ public class RegionDestroyEvent extends Event implements Cancellable {
     }
     public Entity getDestructor() {
         return this.destructor_;
-    }
-    public Region getRegion() {
-        return this.region_;
     }
 
     //SETTERS

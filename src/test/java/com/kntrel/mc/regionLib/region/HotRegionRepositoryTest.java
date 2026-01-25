@@ -83,7 +83,8 @@ public class HotRegionRepositoryTest {
         loadChunk(0, 0);
         assertRegionNames(this.repository.getAll(), "Evict");
 
-        this.repository.delete(region);
+        region.destroy();
+        this.repository.save(region);
         assertTrue(this.repository.getAll().isEmpty());
     }
     @Test void testColdRegionsInLoadedCellRemainHiddenUntilChunkLoads() {

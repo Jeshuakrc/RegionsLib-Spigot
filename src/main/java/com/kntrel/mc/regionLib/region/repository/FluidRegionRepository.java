@@ -23,7 +23,7 @@ public final class FluidRegionRepository {
 
     public static class QueryBuilder implements Finisher, Limiter {
         //FIELDS
-        private final RegionRepository repo_;
+        private final RegionReadRepository repo_;
         private Condition.Or root_;
         private List<Condition> current_;
         private RegionField<? extends Comparable<?>> orderBy_;
@@ -33,7 +33,7 @@ public final class FluidRegionRepository {
 
 
         //CONSTRUCTOR
-        public QueryBuilder(RegionRepository repo) {
+        public QueryBuilder(RegionReadRepository repo) {
             this.repo_ = repo;
             this.current_ = new ArrayList<>();
             this.root_ = null;
