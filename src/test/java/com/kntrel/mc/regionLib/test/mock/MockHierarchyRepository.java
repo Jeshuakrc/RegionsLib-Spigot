@@ -46,7 +46,7 @@ public class MockHierarchyRepository implements HierarchyRepository {
     @Override public List<Hierarchy> getAll() {
         return this.hierarchies_;
     }
-    @Override public Optional<Hierarchy> get(Long id) {
+    @Override public Optional<Hierarchy> get(long id) {
         return this.hierarchies_.stream()
                 .filter(hierarchy -> hierarchy.getId().equals(id))
                 .findFirst();

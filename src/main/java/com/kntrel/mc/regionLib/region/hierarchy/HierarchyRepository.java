@@ -6,8 +6,9 @@ import java.util.Optional;
 public interface HierarchyRepository {
 
     List<Hierarchy> getAll();
-    Optional<Hierarchy> get(Long id);
+    Optional<Hierarchy> get(long id);
     List<Hierarchy> getByName(String name);
+
 
 
     void save(Hierarchy hierarchy);

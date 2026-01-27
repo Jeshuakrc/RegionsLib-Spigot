@@ -49,7 +49,7 @@ public class JsonHierarchyRepository implements HierarchyRepository {
         return List.copyOf(this.hierarchies.values());
     }
     @Override
-    public Optional<Hierarchy> get(Long id) {
+    public Optional<Hierarchy> get(long id) {
         return Optional.ofNullable(this.hierarchies.get(id));
     }
 
