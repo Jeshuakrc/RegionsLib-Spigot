@@ -7,6 +7,7 @@ import com.kntrel.mc.regionLib.region.ability.AbilityBuilder;
 import com.kntrel.mc.regionLib.region.ability.AbilityRegistry;
 import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
 import com.kntrel.mc.regionLib.region.display.BlockDisplayAreaDisplayer;
+import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.region.repository.AttributedRegionRepository;
 import com.kntrel.mc.regionLib.region.repository.Query;
@@ -14,10 +15,12 @@ import com.kntrel.mc.regionLib.region.repository.RegionReadRepository;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
 import org.bukkit.Server;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -130,6 +133,13 @@ public class RegionContext implements AttributedRegionRepository {
     }
     public void stopDisplayRegion(Region region) {
         this.displayController_.stopDisplay(region);
+    }
+    public Region create(BoundingBox initialBox, World world, String name, Hierarchy hierarchy) {
+        Hierarchy existent = this.hierarchyRepository_.get(hierarchy.getId()).orElse(null);
+        if (existent == null) {
+            throw new IllegalArgumentException("Hierarchy '" + hierarchy.getName() + "', id: " + hierarchy.getId() + ", is nonexistent in this region context");
+        }
+        return new Region(this, initialBox, world, name, existent);
     }
 
 
