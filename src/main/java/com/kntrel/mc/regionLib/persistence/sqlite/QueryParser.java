@@ -1,6 +1,6 @@
 package com.kntrel.mc.regionLib.persistence.sqlite;
 
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.repository.Condition;
@@ -208,7 +208,7 @@ class QueryParser {
 
         return switch (value) {
             case Boolean boolValue -> fieldName + " " + (boolValue ? "!=" : "=") + " 0";
-            case World world -> fieldName + " = '" + escapeSqlString(world.getName()) + "'";
+            case World world -> fieldName + " = '" + escapeSqlString(world.getUID().toString()) + "'";
             case String strValue -> fieldName + " = '" + escapeSqlString(strValue) + "'";
             case Number numValue -> fieldName + " = " + numValue;
             default -> "";

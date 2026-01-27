@@ -1,6 +1,6 @@
 package com.kntrel.mc.regionLib.region.ability;
 
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.react.ReflectiveEventReactorRegistry;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;

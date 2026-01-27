@@ -1,8 +1,8 @@
-package com.kntrel.mc.regionLib.persistence.sqlite;
+package com.kntrel.mc.regionLib.cache;
 
+import com.kntrel.mc.regionLib.test.mock.MockWorld;
 import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -10,6 +10,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class RegionSnapshotTest {
+
+    //CONSTANTS
+    private static UUID DUMMY_UUID = MockWorld.mockWorld().getUID();
+
 
     @Test
     void testFingerPrints() {
@@ -57,27 +61,24 @@ public class RegionSnapshotTest {
         }
 
         copies = copies.stream().map(src -> new RegionSnapshot(
-                new DTO.Region(
-                        src.region().id() + 10000,
-                        src.region().name() + "_modified",
-                        src.region().world(),
-                        src.region().enabled(),
-                        src.region().hierarchy(),
-                        src.region().minX(),
-                        src.region().minY(),
-                        src.region().minZ(),
-                        src.region().maxX(),
-                        src.region().maxY(),
-                        src.region().maxZ(),
-                        src.region().destroyed()
-                ),
-                Arrays.copyOf(src.permissions(), src.permissions().length),
-                Arrays.copyOf(src.rules(), src.rules().length),
-                Arrays.stream(src.data()).map(d -> new DTO.Data(
-                        d.regionId(),
-                        d.key() + "_modified",
-                        d.value() + "_modified"
-                )).toArray(DTO.Data[]::new)
+                src.id() + 10000,
+                src.name() + "_modified",
+                src.world(),
+                src.enabled(),
+                src.hierarchy(),
+                src.minX(),
+                src.minY(),
+                src.minZ(),
+                src.maxX(),
+                src.maxY(),
+                src.maxZ(),
+                src.destroyed(),
+                src.permissions(),
+                src.rules(),
+                src.data().stream().map(d -> new RegionSnapshot.Entry(
+                            d.key() + "_modified",
+                            d.value() + "_modified"
+                    )).toList()
         )).toList();
 
         for (int i = 0; i < len; i++) {
@@ -94,9 +95,31 @@ public class RegionSnapshotTest {
 
 
     //HELPERS
-    static List<RegionSnapshot> snapshots(int count) {
+    public static List<RegionSnapshot> snapshots(int count) {
         List<RegionSnapshot> regionSnapshots = new ArrayList<>();
         for (int i = 0; i < count; i++) {
+
+            List<RegionSnapshot.Permission> permissions = new ArrayList<>();
+            for (int j = 0; j < 3; j++) {
+                permissions.add(new RegionSnapshot.Permission(
+                        UUID.randomUUID(),
+                        ThreadLocalRandom.current().nextInt(0, 10)
+                ));
+            }
+            List<RegionSnapshot.Entry> rules = new ArrayList<>();
+            for (int j = 0; j < 3; j++) {
+                rules.add(new RegionSnapshot.Entry(
+                        "rule_key_" + j,
+                        "rule_value_" + j
+                ));
+            }
+            List<RegionSnapshot.Entry> data = new ArrayList<>();
+            for (int j = 0; j < 3; j++) {
+                data.add(new RegionSnapshot.Entry(
+                        "data_key_" + j,
+                        "data_value_" + j
+                ));
+            }
 
             double x1 = ThreadLocalRandom.current().nextDouble(-400, 400),
                     y1 = ThreadLocalRandom.current().nextDouble(-64, 320),
@@ -105,10 +128,10 @@ public class RegionSnapshotTest {
                     y2 = ThreadLocalRandom.current().nextDouble(-64, 320),
                     z2 =  ThreadLocalRandom.current().nextDouble(-400, 400);
 
-            DTO.Region region = new DTO.Region(
+            RegionSnapshot snap = new RegionSnapshot(
                     i,
                     "Region" + i,
-                    "world",
+                    DUMMY_UUID,
                     true,
                     0,
                     Math.min(x1, x2),
@@ -117,33 +140,12 @@ public class RegionSnapshotTest {
                     Math.max(x1, x2),
                     Math.max(y1, y2),
                     Math.max(z1, z2),
-                    false
+                    false,
+                    permissions,
+                    rules,
+                    data
             );
-            List<DTO.Permission> permissions = new ArrayList<>();
-            for (int j = 0; j < 3; j++) {
-                permissions.add(new DTO.Permission(
-                        i,
-                        UUID.randomUUID().toString(),
-                        ThreadLocalRandom.current().nextInt(0, 10)
-                ));
-            }
-            List<DTO.Rule> rules = new ArrayList<>();
-            for (int j = 0; j < 3; j++) {
-                rules.add(new DTO.Rule(
-                        i,
-                        "rule_key_" + j,
-                        "rule_value_" + j
-                ));
-            }
-            List<DTO.Data> data = new ArrayList<>();
-            for (int j = 0; j < 3; j++) {
-                data.add(new DTO.Data(
-                        i,
-                        "data_key_" + j,
-                        "data_value_" + j
-                ));
-            }
-            regionSnapshots.add(new RegionSnapshot(region, permissions, rules, data));
+            regionSnapshots.add(snap);
         }
         return regionSnapshots;
     }

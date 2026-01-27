@@ -1,6 +1,7 @@
 package com.kntrel.mc.regionLib.region;
 
 import com.kntrel.mc.regionLib.RegionLib;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

@@ -1,9 +1,10 @@
-package com.kntrel.mc.regionLib.region;
+package com.kntrel.mc.regionLib.region.context;
 
+import com.kntrel.mc.regionLib.cache.RegionCache;
+import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.ability.AbilityBuilder;
 import com.kntrel.mc.regionLib.region.ability.AbilityRegistry;
-import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
 import com.kntrel.mc.regionLib.region.display.BlockDisplayAreaDisplayer;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
@@ -12,7 +13,6 @@ import com.kntrel.mc.regionLib.region.repository.Query;
 import com.kntrel.mc.regionLib.region.repository.RegionReadRepository;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
-import com.kntrel.mc.regionLib.util.Grid;
 import org.bukkit.Server;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -25,23 +25,6 @@ import java.util.function.Function;
 
 public class RegionContext implements AttributedRegionRepository {
 
-    //SUBTYPES
-    public static class Config {
-        public final int minNameLength;
-        public final int maxNameLength;
-        public final Permission.OverlapMode permissionsOverlapMode;
-        public final int regionDisplayDurationSeconds;
-        private final Grid.CellSize cellSize;
-
-        public Config(int minNameLength, int maxNameLength, Permission.OverlapMode permissionsOverlapMode, int regionDisplayDurationSeconds, Grid.CellSize cellSize) {
-            this.minNameLength = minNameLength;
-            this.maxNameLength = maxNameLength;
-            this.permissionsOverlapMode = permissionsOverlapMode;
-            this.regionDisplayDurationSeconds = regionDisplayDurationSeconds;
-            this.cellSize = cellSize;
-        }
-
-    }
     private static class HotRegionRepositoryWrapper implements RegionRepository {
         private final HotRegionRepository inner_;
         HotRegionRepositoryWrapper(HotRegionRepository inner) { this.inner_ = inner; }
@@ -52,7 +35,7 @@ public class RegionContext implements AttributedRegionRepository {
 
     //FIELDS
     private final String namespace_;
-    private final Config config_;
+    private final RegionContextConfig config_;
     private final Plugin plugin_;
     private final RegionRepository delegateRegionRepository_;
     private final HotRegionRepository hotRegionRepository_;
@@ -61,10 +44,11 @@ public class RegionContext implements AttributedRegionRepository {
     private final AbilityRegistry abilityRegistry_;
     private final RuleRegistry ruleRegistry_;
     private final DisplayController displayController_;
+    private final RegionCache cache_;
 
 
     //CONSTRUCTORS
-    public RegionContext(String namespace, Config config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
+    public RegionContext(String namespace, RegionContextConfig config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
         this.namespace_ = namespace;
         this.config_ = config;
         this.plugin_ = plugin;
@@ -72,18 +56,19 @@ public class RegionContext implements AttributedRegionRepository {
         this.abilityRegistry_ = new AbilityRegistry(this);
         this.ruleRegistry_ = new RuleRegistry(this);
         this.displayController_ = new DisplayController(this, new BlockDisplayAreaDisplayer(this), this.config_.regionDisplayDurationSeconds);
+        this.cache_ = new RegionCache(this.config_.cacheCapacity);
 
         this.delegateRegionRepository_ = regionRepFactory.apply(this);
-        this.hotRegionRepository_ = new HotRegionRepository(this.delegateRegionRepository_, this.config_.cellSize);
+        this.hotRegionRepository_ = new HotRegionRepository(this.cache_, this.delegateRegionRepository_, this.config_.cellSize);
         this.regionRepository_ = new MainRegionRepository(new HotRegionRepositoryWrapper(this.hotRegionRepository_), this.delegateRegionRepository_, this.plugin_.getServer().getPluginManager());
     }
-    public RegionContext(Config config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
+    public RegionContext(RegionContextConfig config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
         this(plugin.getName(), config, plugin, regionRepFactory, hierarchyRepFactory);
     }
-    public RegionContext(String namespace, Config config, Plugin plugin, RegionRepository regionRep, HierarchyRepository hierarchyRep) {
+    public RegionContext(String namespace, RegionContextConfig config, Plugin plugin, RegionRepository regionRep, HierarchyRepository hierarchyRep) {
         this(namespace, config, plugin, rc -> regionRep, rc -> hierarchyRep);
     }
-    public RegionContext(Config config, Plugin plugin, RegionRepository regionRep, HierarchyRepository hierarchyRep) {
+    public RegionContext(RegionContextConfig config, Plugin plugin, RegionRepository regionRep, HierarchyRepository hierarchyRep) {
         this(plugin.getName(), config, plugin, rc -> regionRep, rc -> hierarchyRep);
     }
 
@@ -92,7 +77,7 @@ public class RegionContext implements AttributedRegionRepository {
     public String getNamespace() {
         return this.namespace_;
     }
-    public Config getConfig() {
+    public RegionContextConfig getConfig() {
         return this.config_;
     }
     public RegionRepository getRegionRepository() {
@@ -115,6 +100,9 @@ public class RegionContext implements AttributedRegionRepository {
     }
     public HierarchyRepository getHierarchyRepository() {
         return this.hierarchyRepository_;
+    }
+    public RegionCache getCache() {
+        return this.cache_;
     }
 
 

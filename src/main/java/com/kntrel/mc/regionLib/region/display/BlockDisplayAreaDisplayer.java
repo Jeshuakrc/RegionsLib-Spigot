@@ -1,6 +1,6 @@
 package com.kntrel.mc.regionLib.region.display;
 
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.util.Area;
 import org.bukkit.Location;
 import org.bukkit.Material;

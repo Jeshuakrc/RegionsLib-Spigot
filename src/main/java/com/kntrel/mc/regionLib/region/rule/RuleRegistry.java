@@ -1,7 +1,7 @@
 package com.kntrel.mc.regionLib.region.rule;
 
 
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.react.ReflectiveEventReactorRegistry;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;

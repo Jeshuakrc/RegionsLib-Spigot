@@ -25,7 +25,7 @@ final class DTO {
             @Column("name") String name,
             @Column("world") String world,
             @Column("enabled") boolean enabled,
-            @Column("hierarchy") int hierarchy,
+            @Column("hierarchy") long hierarchy,
             @Column("min_x") double minX,
             @Column("min_y") double minY,
             @Column("min_z") double minZ,

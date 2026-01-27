@@ -5,7 +5,7 @@ import com.kntrel.mc.commvoker.assembler.Assembler;
 import com.kntrel.mc.commvoker.assembler.AssemblyException;
 import com.kntrel.mc.commvoker.assembler.TransformAssembler;
 import com.kntrel.mc.commvoker.provided.assemblers.StringAssembler;
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
 import com.mojang.brigadier.suggestion.Suggestions;

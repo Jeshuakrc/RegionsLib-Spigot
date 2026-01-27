@@ -8,8 +8,9 @@ import com.kntrel.mc.regionLib.command.assembler.*;
 import com.kntrel.mc.regionLib.persistence.sqlite.JsonHierarchyRepository;
 import com.kntrel.mc.regionLib.persistence.sqlite.SQLiteRegionRepository;
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.ability.Permission;
+import com.kntrel.mc.regionLib.region.context.RegionContextConfig;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.RuleValue;
@@ -53,7 +54,7 @@ public final class RegionLib extends JavaPlugin {
 
 
     // -------------------- SHADED MODE API ------------------------------- //
-    private static final RegionContext.Config DEFAULT_CONFIG = new RegionContext.Config(4, 32, Permission.OverlapMode.OLDEST, 10, Grid.CellSize.SIZE_32);
+    private static final RegionContextConfig DEFAULT_CONFIG = new RegionContextConfig(4, 32, Permission.OverlapMode.OLDEST, 10, Grid.CellSize.SIZE_32, 1024);
     private static Plugin OWNER_PLUGIN = null;
 
     private static void ensureEnabled() {
@@ -137,7 +138,7 @@ public final class RegionLib extends JavaPlugin {
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public static RegionContext createContext(Plugin plugin, String namespace, RegionContext.Config config, URI hierarchies, URI database) {
+    public static RegionContext createContext(Plugin plugin, String namespace, RegionContextConfig config, URI hierarchies, URI database) {
         ensureEnabled();
 
         File dbFile = new File(database);

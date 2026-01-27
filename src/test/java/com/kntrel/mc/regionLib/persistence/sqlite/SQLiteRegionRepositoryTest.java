@@ -5,13 +5,16 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.RegionField;
+import com.kntrel.mc.regionLib.region.context.RegionContextConfig;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionData;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.region.repository.Condition;
+import com.kntrel.mc.regionLib.region.repository.Query;
+import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.test.Regions;
 import com.kntrel.mc.regionLib.test.mock.MockHierarchyRepository;
 import com.kntrel.mc.regionLib.test.mock.MockServer;
@@ -65,11 +68,11 @@ public class SQLiteRegionRepositoryTest {
         Plugin plugin = mock(Plugin.class);
         when(plugin.getServer()).thenReturn(this.server);
         this.regionContext = new RegionContext(
-                new RegionContext.Config(3, 32, Permission.OverlapMode.NEWEST, 5, Grid.CellSize.SIZE_32),
+                RegionContextConfig.build().withCacheCapacity(10).end(),
                 plugin,
                 ctx -> {
                     this.queryParser = new QueryParser(ctx);
-                    return new SQLiteRegionRepository(ctx, this.dataBase, this.queryParser, this.executorService, () -> new ConcurrentRLUCache<>(10));
+                    return new SQLiteRegionRepository(ctx, this.dataBase, this.queryParser, this.executorService);
                 },
                 ctx -> this.hierarchyRepository
         );
@@ -433,7 +436,22 @@ public class SQLiteRegionRepositoryTest {
     }
 
     @Test
-    void testRLUCache() {
+    void testCachedSaves() {
+        RegionRepository repo = new RegionRepository() {
+            @Override
+            public void save(Region... regions) {
+                SQLiteRegionRepositoryTest.this.regionRepository.save(regions);
+                for (Region reg : regions) {
+                    SQLiteRegionRepositoryTest.this.regionContext.getCache().put(reg);
+                }
+            }
+
+            @Override
+            public List<Region> get(Query query) {
+                return SQLiteRegionRepositoryTest.this.regionRepository.get(query);
+            }
+        };
+
         //Injected an ConcurrentLRUCache with capacity = 10
 
         //Filling th cache up
@@ -451,33 +469,33 @@ public class SQLiteRegionRepositoryTest {
                 "region9",
                 "region10"
         ).stream().collect(Collectors.toMap(Region::getName, r -> r));
-        this.regionRepository.save(regs.values());
+        repo.save(regs.values());
 
         // Re-saving regions shouldn't cause database calls
-        this.regionRepository.save(regs.get("region8"));
-        this.regionRepository.save(regs.get("region3"));
-        this.regionRepository.save(regs.get("region1"));    // region1 was next to be evicted but this call resents its LRU value
+        repo.save(regs.get("region8"));
+        repo.save(regs.get("region3"));
+        repo.save(regs.get("region1"));    // region1 was next to be evicted but this call resents its LRU value
         assertDoesNotThrow(() ->
             verify(this.dataBase, never()).query(anyString(), any(), anyInt())
         );
 
         // Adding a new region should evict the least recently used region (region2)
         Region newReg = Regions.newRegion(this.regionContext, this.hierarchyRepository.getAll().getFirst(), "Region11");
-        this.regionRepository.save(newReg);
+        repo.save(newReg);
         assertDoesNotThrow(() ->
                 verify(this.dataBase, never()).query(anyString(), any(), anyInt())
         );
 
         // Accessing any other regions shouldn't cause reads
-        this.regionRepository.save(regs.get("region5"));
-        this.regionRepository.save(regs.get("region4"));
-        this.regionRepository.save(newReg);
+        repo.save(regs.get("region5"));
+        repo.save(regs.get("region4"));
+        repo.save(newReg);
         assertDoesNotThrow(() ->
                 verify(this.dataBase, never()).query(anyString(), any(), anyInt())
         );
 
         // Accessing region2 should cause a read from the database since it was evicted
-        this.regionRepository.save(regs.get("region2"));
+        repo.save(regs.get("region2"));
         assertDoesNotThrow(() ->
                 verify(this.dataBase, atLeastOnce()).query(anyString(), any(), anyInt())
         );

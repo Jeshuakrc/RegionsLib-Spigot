@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
 
 public class ConcurrentRLUCache<K, V> implements ConcurrentMap<K, V> {
 
@@ -19,6 +20,16 @@ public class ConcurrentRLUCache<K, V> implements ConcurrentMap<K, V> {
         this.delegate_ = new LRUCache<>(capacity);
         this.lock_ = new Object();
     }
+
+
+
+    //UTILITY
+    public long onEviction(BiConsumer<K, V> callback) { synchronized (this.lock_) {
+        return this.delegate_.onEviction(callback);
+    }}
+    public void removeEvictionCallback(long id) { synchronized (this.lock_) {
+        this.delegate_.removeEvictionCallback(id);
+    }}
 
 
     //GETTERS

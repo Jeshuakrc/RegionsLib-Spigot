@@ -1,5 +1,6 @@
 package com.kntrel.mc.regionLib.persistence.sqlite;
 
+import com.kntrel.mc.regionLib.cache.RegionSnapshot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
@@ -8,7 +9,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static com.kntrel.mc.regionLib.persistence.sqlite.RegionSnapshotTest.snapshots;
+import static com.kntrel.mc.regionLib.cache.RegionSnapshotTest.snapshots;
+import static com.kntrel.mc.regionLib.persistence.sqlite.SQLiteRegionRepository.*;
 
 public class DataBaseTest {
 
@@ -82,9 +84,9 @@ public class DataBaseTest {
 
     @Test
     void testInserts() {
-        List<RegionSnapshot> snapshots = snapshots(20);
+        List<DTOSnapshot> snapshots = DTOSnapshots(20);
         assertDoesNotThrow(() -> {
-            this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
+            this.dataBase_.insert(snapshots.stream().map(DTOSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
                     .flatMap(s -> Arrays.stream(s.permissions()))
                     .toList());
@@ -131,10 +133,10 @@ public class DataBaseTest {
             }
         });
         int len = 30;
-        List<RegionSnapshot> snapshots = snapshots(len);
+        List<DTOSnapshot> snapshots = DTOSnapshots(len);
 
         assertDoesNotThrow(() -> {
-            this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
+            this.dataBase_.insert(snapshots.stream().map(DTOSnapshot::region).toList());
         });
 
         List<DTO.Region> result = assertDoesNotThrow(() -> this.dataBase_.query("SELECT * FROM region ORDER BY id ASC;", DTO.Region.class));
@@ -153,9 +155,9 @@ public class DataBaseTest {
 
     @Test
     void testUpdateRegions() {
-        List<RegionSnapshot> snapshots = snapshots(5);
+        List<DTOSnapshot> snapshots = DTOSnapshots(5);
         assertDoesNotThrow(() -> {
-            this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
+            this.dataBase_.insert(snapshots.stream().map(DTOSnapshot::region).toList());
         });
 
         // Verify initial insert
@@ -196,9 +198,9 @@ public class DataBaseTest {
 
     @Test
     void testUpdatePermissions() {
-        List<RegionSnapshot> snapshots = snapshots(3);
+        List<DTOSnapshot> snapshots = DTOSnapshots(3);
         assertDoesNotThrow(() -> {
-            this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
+            this.dataBase_.insert(snapshots.stream().map(DTOSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
                     .flatMap(s -> Arrays.stream(s.permissions()))
                     .toList());
@@ -229,9 +231,9 @@ public class DataBaseTest {
 
     @Test
     void testUpdateRules() {
-        List<RegionSnapshot> snapshots = snapshots(2);
+        List<DTOSnapshot> snapshots = DTOSnapshots(2);
         assertDoesNotThrow(() -> {
-            this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
+            this.dataBase_.insert(snapshots.stream().map(DTOSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
                     .flatMap(s -> Arrays.stream(s.rules()))
                     .toList());
@@ -257,9 +259,9 @@ public class DataBaseTest {
 
     @Test
     void testUpdateData() {
-        List<RegionSnapshot> snapshots = snapshots(2);
+        List<DTOSnapshot> snapshots = DTOSnapshots(2);
         assertDoesNotThrow(() -> {
-            this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
+            this.dataBase_.insert(snapshots.stream().map(DTOSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
                     .flatMap(s -> Arrays.stream(s.data()))
                     .toList());
@@ -290,9 +292,9 @@ public class DataBaseTest {
 
     @Test
     void testDeleteRegions() {
-        List<RegionSnapshot> snapshots = snapshots(10);
+        List<DTOSnapshot> snapshots = DTOSnapshots(10);
         assertDoesNotThrow(() -> {
-            this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
+            this.dataBase_.insert(snapshots.stream().map(DTOSnapshot::region).toList());
         });
 
         // Verify initial insert
@@ -304,7 +306,7 @@ public class DataBaseTest {
         // Delete specific regions
         List<DTO.Region> toDelete = snapshots.stream()
                 .limit(3)
-                .map(RegionSnapshot::region)
+                .map(DTOSnapshot::region)
                 .toList();
 
         assertDoesNotThrow(() -> {
@@ -327,9 +329,9 @@ public class DataBaseTest {
 
     @Test
     void testDeletePermissions() {
-        List<RegionSnapshot> snapshots = snapshots(4);
+        List<DTOSnapshot> snapshots = DTOSnapshots(4);
         assertDoesNotThrow(() -> {
-            this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
+            this.dataBase_.insert(snapshots.stream().map(DTOSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
                     .flatMap(s -> Arrays.stream(s.permissions()))
                     .toList());
@@ -357,9 +359,9 @@ public class DataBaseTest {
 
     @Test
     void testDeleteRules() {
-        List<RegionSnapshot> snapshots = snapshots(3);
+        List<DTOSnapshot> snapshots = DTOSnapshots(3);
         assertDoesNotThrow(() -> {
-            this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
+            this.dataBase_.insert(snapshots.stream().map(DTOSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
                     .flatMap(s -> Arrays.stream(s.rules()))
                     .toList());
@@ -388,9 +390,9 @@ public class DataBaseTest {
 
     @Test
     void testDeleteData() {
-        List<RegionSnapshot> snapshots = snapshots(2);
+        List<DTOSnapshot> snapshots = DTOSnapshots(2);
         assertDoesNotThrow(() -> {
-            this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
+            this.dataBase_.insert(snapshots.stream().map(DTOSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
                     .flatMap(s -> Arrays.stream(s.data()))
                     .toList());
@@ -419,9 +421,9 @@ public class DataBaseTest {
 
     @Test
     void testUpdateAndDeleteCombined() {
-        List<RegionSnapshot> snapshots = snapshots(6);
+        List<DTOSnapshot> snapshots = DTOSnapshots(6);
         assertDoesNotThrow(() -> {
-            this.dataBase_.insert(snapshots.stream().map(RegionSnapshot::region).toList());
+            this.dataBase_.insert(snapshots.stream().map(DTOSnapshot::region).toList());
             this.dataBase_.insert(snapshots.stream()
                     .flatMap(s -> Arrays.stream(s.permissions()))
                     .toList());
@@ -473,4 +475,16 @@ public class DataBaseTest {
     public static Object memoryDatabaseObject() {
         return memoryDatabase();
     }
+    private static List<DTOSnapshot> DTOSnapshots(int count) {
+        return snapshots(count).stream()
+                .map(s -> new DTOSnapshot(
+                        toRegionDTO(s),
+                        toPermDTOs(s.permissions(), s.id()).toArray(new DTO.Permission[0]),
+                        toRuleDTOs(s.rules(), s.id()).toArray(new DTO.Rule[0]),
+                        toDataDTOs(s.data(), s.id()).toArray(new DTO.Data[0])
+                ))
+                .toList();
+    }
+
+    private record DTOSnapshot(DTO.Region region, DTO.Permission[] permissions, DTO.Rule[] rules, DTO.Data[] data) {}
 }

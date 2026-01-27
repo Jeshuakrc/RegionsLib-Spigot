@@ -1,16 +1,14 @@
 package com.kntrel.mc.regionLib.persistence.sqlite;
 
-import com.kntrel.mc.regionLib.region.RegionContext;
-import com.kntrel.mc.regionLib.region.ability.Permission;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContextConfig;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.test.mock.MockHierarchyRepository;
 import com.kntrel.mc.regionLib.test.mock.MockServer;
-import com.kntrel.mc.regionLib.util.Grid;
 import com.kntrel.util.cache.ConcurrentRLUCache;
 import org.bukkit.Server;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
-
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
@@ -37,11 +35,11 @@ public class MockRegionContext {
         Plugin plugin = mock(Plugin.class);
         when(plugin.getServer()).thenReturn(server);
         return new RegionContext(
-                new RegionContext.Config(3, 32, Permission.OverlapMode.NEWEST, 5, Grid.CellSize.SIZE_32),
+                RegionContextConfig.build().withCacheCapacity(10).end(),
                 plugin,
                 ctx -> {
                     QueryParser queryParser = new QueryParser(ctx);
-                    return new SQLiteRegionRepository(ctx, dataBase, queryParser, executorService, () -> new ConcurrentRLUCache<>(10));
+                    return new SQLiteRegionRepository(ctx, dataBase, queryParser, executorService);
                 },
                 ctx -> hierarchyRepository
         );

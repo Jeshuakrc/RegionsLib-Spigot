@@ -1,6 +1,6 @@
-package com.kntrel.mc.regionLib.region;
+package com.kntrel.mc.regionLib.region.context;
 
-import com.kntrel.mc.regionLib.RegionLib;
+import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
 import com.kntrel.mc.regionLib.region.display.DisplayToken;
 import com.kntrel.mc.regionLib.util.Area;

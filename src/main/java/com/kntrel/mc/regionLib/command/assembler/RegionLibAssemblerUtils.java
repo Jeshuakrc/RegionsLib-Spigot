@@ -4,7 +4,7 @@ import com.kntrel.mc.commvoker.argument.context.ExecutionContext;
 import com.kntrel.mc.commvoker.assembler.AssemblyException;
 import com.kntrel.mc.regionLib.RegionLib;
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import java.util.Optional;
 import java.util.function.Supplier;
 

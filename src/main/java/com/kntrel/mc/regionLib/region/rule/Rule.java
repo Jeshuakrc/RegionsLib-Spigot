@@ -2,7 +2,7 @@ package com.kntrel.mc.regionLib.region.rule;
 
 import com.kntrel.mc.regionLib.event.RuleTriggeredEvent;
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.react.RegionEventReactor;
 import com.kntrel.mc.regionLib.util.AreaGetter;
 import com.kntrel.mc.regionLib.util.PointGetter;

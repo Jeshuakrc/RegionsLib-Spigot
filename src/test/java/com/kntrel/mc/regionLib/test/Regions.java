@@ -1,15 +1,13 @@
 package com.kntrel.mc.regionLib.test;
 
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.test.mock.MockWorld;
 import org.bukkit.World;
 import org.bukkit.util.BoundingBox;
 import java.util.List;
 import java.util.stream.Stream;
-
-import static org.mockito.Mockito.*;
 
 public final class Regions {
 

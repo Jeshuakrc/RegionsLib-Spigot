@@ -1,13 +1,14 @@
 package com.kntrel.mc.regionLib.persistence.sqlite;
 
 import com.google.gson.JsonPrimitive;
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.region.repository.Condition;
 import com.kntrel.mc.regionLib.region.repository.Query;
+import com.kntrel.mc.regionLib.test.mock.MockWorld;
 import com.kntrel.mc.regionLib.util.Area;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -32,7 +33,7 @@ class QueryParserTest {
     @BeforeEach
     void setUp() {
         this.mockContext = mock(RegionContext.class);
-        this.mockWorld = mock(World.class);
+        this.mockWorld = MockWorld.mockWorld();
         this.mockHierarchyRepository = mock(HierarchyRepository.class);
 
         when(mockContext.getHierarchyRepository()).thenReturn(mockHierarchyRepository);
@@ -196,7 +197,7 @@ class QueryParserTest {
             String sql = parser.parse(query);
 
             assertEquals(
-                    regionSelect("WHERE region.world = 'world' AND region.destroyed = 0"),
+                    regionSelect("WHERE region.world = '" + mockWorld.getUID() + "' AND region.destroyed = 0"),
                     sql
             );
         }
@@ -475,7 +476,7 @@ class QueryParserTest {
                     .asQuery();
             String sql = parser.parse(query);
 
-            assertTrue(sql.contains("region.world = 'world'"));
+            assertTrue(sql.contains("region.world = '" + mockWorld.getUID() + "'"));
             assertTrue(sql.contains("region.min_x <= 100.5"));
             assertTrue(sql.contains("region.max_x >= 100.5"));
             assertTrue(sql.contains("region.min_y <= 64"));
@@ -493,7 +494,7 @@ class QueryParserTest {
                     .asQuery();
             String sql = parser.parse(query);
 
-            assertTrue(sql.contains("region.world = 'world'"));
+            assertTrue(sql.contains("region.world = '" + mockWorld.getUID() + "'"));
             assertTrue(sql.contains("region.min_x < 100"));
             assertTrue(sql.contains("region.max_x > 0"));
             assertTrue(sql.contains("region.min_y < 100"));
@@ -511,7 +512,7 @@ class QueryParserTest {
             String sql = parser.parse(query);
 
             // Chunk 5, 10 starts at (80, _, 160)
-            assertTrue(sql.contains("region.world = 'world'"));
+            assertTrue(sql.contains("region.world = '" + mockWorld.getUID() + "'"));
             assertTrue(sql.contains("region.min_x < 96.0"));  // chunkMaxX
             assertTrue(sql.contains("region.max_x > 80.0"));  // chunkMinX
             assertTrue(sql.contains("region.min_z < 176.0")); // chunkMaxZ

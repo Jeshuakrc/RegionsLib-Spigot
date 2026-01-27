@@ -1,17 +1,12 @@
 package com.kntrel.mc.regionLib.persistence.sqlite;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
+import com.kntrel.mc.regionLib.cache.RegionCache;
+import com.kntrel.mc.regionLib.cache.RegionSnapshot;
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.RegionContext;
-import com.kntrel.mc.regionLib.region.dataContainer.RegionData;
-import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
-import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.repository.Query;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
-import com.kntrel.util.cache.ConcurrentRLUCache;
 import com.kntrel.util.tuple.Pair;
-import org.bukkit.World;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,7 +18,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -32,7 +26,7 @@ public class SQLiteRegionRepository implements RegionRepository {
     // ASSETS
     private static final int SQLITE_STMT_MAX_LENGTH = 1_000_000;
     private static final int SQLITE_QUERY_MAX_DEPTH = 1000;
-    private static final Gson GSON = new Gson();
+
     private record Patch<T>(List<T> inserts, List<T> updates, List<T> deletes) {
 
         Patch() {
@@ -56,9 +50,9 @@ public class SQLiteRegionRepository implements RegionRepository {
     private final DataBase dataBase_;
     private final QueryParser queryParser_;
     private final Map<Class<?>, String> relationalTableCache_;
-    private final ConcurrentMap<Long, RegionSnapshot> snapshotCache_;
     private final ExecutorService writeExecutor_;
     private final AtomicLong idCount_;
+    private final RegionCache cache_;
 
 
     // CONSTRUCTORS
@@ -66,32 +60,22 @@ public class SQLiteRegionRepository implements RegionRepository {
             RegionContext context,
             DataBase database,
             QueryParser queryParser,
-            ExecutorService writesExecutor,
-            Supplier<? extends ConcurrentMap<Long, RegionSnapshot>> cacheFactory
+            ExecutorService writesExecutor
     ) {                                                 //Testing constructor
         this.context_ = context;
         this.dataBase_ = database;
         this.queryParser_ = queryParser;
         this.relationalTableCache_ = new HashMap<>();
-        this.snapshotCache_ = cacheFactory.get();
         this.writeExecutor_ = writesExecutor;
         this.idCount_ = new AtomicLong(queryNextId(this.dataBase_.getConnection()));
+        this.cache_ = this.context_.getCache();
     }
-    public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database, Supplier<? extends ConcurrentMap<Long, RegionSnapshot>> cacheFactory) {
+    public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database) {
         this(
                 context,
                 new DataBase(DataBaseInitializer.getConnection(plugin, database)),
                 new QueryParser(context),
-                Executors.newSingleThreadExecutor(),
-                cacheFactory
-        );
-    }
-    public SQLiteRegionRepository(Plugin plugin, RegionContext context, URI database) {
-        this(
-                plugin,
-                context,
-                database,
-                () -> new ConcurrentRLUCache<>(1024)
+                Executors.newSingleThreadExecutor()
         );
     }
 
@@ -100,8 +84,7 @@ public class SQLiteRegionRepository implements RegionRepository {
     @Override
     public List<Region> get(Query query) {
         List<RegionSnapshot> snapshots = this.getInner(query);
-        snapshots.forEach(s -> this.snapshotCache_.put(s.region().id(), s));
-        return snapshots.stream().map(this::buildRegion).toList();
+        return snapshots.stream().map(s -> s.toRegion(this.context_)).toList();
     }
 
     @Override
@@ -149,33 +132,6 @@ public class SQLiteRegionRepository implements RegionRepository {
         }
         return out;
     }
-    private Region buildRegion(RegionSnapshot snapshot) {
-        World world = this.context_.getServer().getWorld(snapshot.worldName());
-        Hierarchy hierarchy = this.context_.getHierarchyRepository().get((long) snapshot.region().hierarchy()).orElseThrow();
-        Region r = new Region(this.context_, snapshot.boundingBox(), world, snapshot.name(), hierarchy);
-
-        r.setId(snapshot.region().id());
-
-        if (!snapshot.region().enabled()) {
-            r.enabled(false);
-        }
-        if (snapshot.region().destroyed()) {
-            r.destroy();
-        }
-
-        for (DTO.Rule rule : snapshot.rules()) {
-            r.setRuleValue(rule.key(), rule.value());
-        }
-        RegionDataContainer dc = r.getDataContainer();
-        for (DTO.Data data : snapshot.data()) {
-            dc.add(new RegionData(data.key(), GSON.fromJson(data.value(), JsonElement.class)));
-        }
-        for (DTO.Permission perm : snapshot.permissions()) {
-            r.addPermission(UUID.fromString(perm.playerUUID()), perm.level());
-        }
-
-        return r;
-    }
     private void saveInner(Region[] regions, Set<Long> newRegions) {
         Patch<Object> patch = new Patch<>();
         for (Region r : regions) {
@@ -185,14 +141,13 @@ public class SQLiteRegionRepository implements RegionRepository {
             if (r.getId() == null) {
                 r.setId(this.idCount_.getAndIncrement());
             } else if (!newRegions.contains(r.getId())) {
-                oldSnapshot = this.snapshotCache_.get(r.getId());
+                oldSnapshot = this.cache_.get(r.getId()).orElse(null);
                 if (oldSnapshot == null) {
                     List<RegionSnapshot> fetched = this.getInner(Query.builder(this).idIs(r.getId()).asQuery());
                     if (!fetched.isEmpty()) { oldSnapshot = fetched.getFirst(); }
                 }
             }
-            RegionSnapshot currentSnapshot = buildSnapshot(r);
-            this.snapshotCache_.put(r.getId(), currentSnapshot);
+            RegionSnapshot currentSnapshot = new RegionSnapshot(r);
             patch.merge(computePatch(oldSnapshot, currentSnapshot));
         }
 
@@ -220,7 +175,7 @@ public class SQLiteRegionRepository implements RegionRepository {
         Map<Long, List<DTO.Permission>> permMap = perms.stream().collect(Collectors.groupingBy(DTO.Permission::regionId));
         Map<Long, List<DTO.Rule>> ruleMap = rules.stream().collect(Collectors.groupingBy(DTO.Rule::regionId));
         Map<Long, List<DTO.Data>> dataMap = data.stream().collect(Collectors.groupingBy(DTO.Data::regionId));
-        return regs.stream().map(r -> new RegionSnapshot(
+        return regs.stream().map(r -> buildSnapshot(
                 r,
                 permMap.getOrDefault(r.id(), List.of()),
                 ruleMap.getOrDefault(r.id(), List.of()),
@@ -231,48 +186,86 @@ public class SQLiteRegionRepository implements RegionRepository {
 
 
     //HELPERS
-    private static RegionSnapshot buildSnapshot(Region region) {
-        DTO.Region dtoRegion = new DTO.Region(
-                region.getId(),
-                region.getName(),
-                region.getWorld().getName(),
-                region.isEnabled(),
-                region.getHierarchy().getId().intValue(),
-                region.getMinX(),
-                region.getMinY(),
-                region.getMinZ(),
-                region.getMaxX(),
-                region.getMaxY(),
-                region.getMaxZ(),
-                region.isDestroyed()
+    static RegionSnapshot buildSnapshot(DTO.Region region, Collection<DTO.Permission> permissions, Collection<DTO.Rule> rules, Collection<DTO.Data> data) {
+        List<RegionSnapshot.Permission> permsSnap = permissions.stream().map(p -> new RegionSnapshot.Permission(
+                UUID.fromString(p.playerUUID()),
+                p.level()
+        )).toList();
+        List<RegionSnapshot.Entry> rulesSnap = rules.stream().map(r -> new RegionSnapshot.Entry(
+                r.key(),
+                r.value()
+        )).toList();
+        List<RegionSnapshot.Entry> dataSnap = data.stream().map(d -> new RegionSnapshot.Entry(
+                d.key(),
+                d.value()
+        )).toList();
+
+        return new RegionSnapshot(
+                region.id(),
+                region.name(),
+                UUID.fromString(region.world()),
+                region.enabled(),
+                region.hierarchy(),
+                region.minX(),
+                region.minY(),
+                region.minZ(),
+                region.maxX(),
+                region.maxY(),
+                region.maxZ(),
+                region.destroyed(),
+                permsSnap,
+                rulesSnap,
+                dataSnap
         );
-
-        DTO.Permission[] permissions = region.getPermissions().stream()
-                .map(perm -> new DTO.Permission(
-                        region.getId(),
-                        perm.getPlayerId().toString(),
-                        perm.getGroup().getLevel()
-                ))
-                .toArray(DTO.Permission[]::new);
-
-        DTO.Rule[] rules = region.getRuleValues().stream()
-                .map(ruleValue -> new DTO.Rule(
-                        region.getId(),
-                        ruleValue.getRule().getName(),
-                        ruleValue.toString()
-                ))
-                .toArray(DTO.Rule[]::new);
-
-        RegionDataContainer dataContainer = region.getDataContainer();
-        DTO.Data[] data = dataContainer.getAll().stream()
-                .map(regionData -> new DTO.Data(
-                        region.getId(),
-                        regionData.getKey(),
-                        GSON.toJson(regionData.getValue())
-                ))
-                .toArray(DTO.Data[]::new);
-
-        return new RegionSnapshot(dtoRegion, permissions, rules, data);
+    }
+    static DTO.Region toRegionDTO(RegionSnapshot src) {
+        return new DTO.Region(
+                src.id(),
+                src.name(),
+                src.world().toString(),
+                src.enabled(),
+                src.hierarchy(),
+                src.minX(),
+                src.minY(),
+                src.minZ(),
+                src.maxX(),
+                src.maxY(),
+                src.maxZ(),
+                src.destroyed()
+        );
+    }
+    static List<DTO.Permission> toPermDTOs(Iterable<RegionSnapshot.Permission> src, long regionId) {
+        List<DTO.Permission> out = new ArrayList<>();
+        for (RegionSnapshot.Permission p : src) {
+            out.add(new DTO.Permission(
+                    regionId,
+                    p.playerUUID().toString(),
+                    p.level()
+            ));
+        }
+        return out;
+    }
+    static List<DTO.Rule> toRuleDTOs(Iterable<RegionSnapshot.Entry> src, long regionId) {
+        List<DTO.Rule> out = new ArrayList<>();
+        for (RegionSnapshot.Entry r : src) {
+            out.add(new DTO.Rule(
+                    regionId,
+                    r.key(),
+                    r.value()
+            ));
+        }
+        return out;
+    }
+    static List<DTO.Data> toDataDTOs(Iterable<RegionSnapshot.Entry> src, long regionId) {
+        List<DTO.Data> out = new ArrayList<>();
+        for (RegionSnapshot.Entry d : src) {
+            out.add(new DTO.Data(
+                    regionId,
+                    d.key(),
+                    d.value()
+            ));
+        }
+        return out;
     }
     private static long queryNextId(Connection conn) {
         String sql = "SELECT MAX(id) AS max_id FROM region;";
@@ -288,12 +281,13 @@ public class SQLiteRegionRepository implements RegionRepository {
     }
     private static Patch<?> computePatch(@Nullable RegionSnapshot old, @NotNull RegionSnapshot current) {
         List<Object> inserts = new ArrayList<>(), updates = new ArrayList<>(), deletes = new ArrayList<>();
+        long id = current.id();
         Patch<Object> out = new Patch<>(inserts, updates, deletes);
         if (old == null) {
-            inserts.add(current.region());
-            inserts.addAll(Arrays.asList(current.permissions()));
-            inserts.addAll(Arrays.asList(current.rules()));
-            inserts.addAll(Arrays.asList(current.data()));
+            inserts.add(toRegionDTO(current));
+            inserts.addAll(toPermDTOs(current.permissions(), id));
+            inserts.addAll(toRuleDTOs(current.rules(), id));
+            inserts.addAll(toDataDTOs(current.data(), id));
             return out;
         }
 
@@ -303,29 +297,32 @@ public class SQLiteRegionRepository implements RegionRepository {
         }
 
         if (old.regionFingerprint() != current.regionFingerprint()) {
-            updates.add(current.region());
+            updates.add(toRegionDTO(current));
         }
         if (old.permissionsFingerprint() != current.permissionsFingerprint()) {
-            Patch<DTO.Permission> p = computePatch(old.permissions(), current.permissions(), DTO.Permission::playerUUID);
+            List<DTO.Permission> o = toPermDTOs(old.permissions(), id), n = toPermDTOs(current.permissions(), id);
+            Patch<DTO.Permission> p = computePatch(o, n, DTO.Permission::playerUUID);
             out.merge(p);
         }
         if (old.rulesFingerprint() != current.rulesFingerprint()) {
-            Patch<DTO.Rule> p = computePatch(old.rules(), current.rules(), DTO.Rule::key);
+            List<DTO.Rule> o = toRuleDTOs(old.rules(), id), n = toRuleDTOs(current.rules(), id);
+            Patch<DTO.Rule> p = computePatch(o, n, DTO.Rule::key);
             out.merge(p);
         }
         if (old.dataFingerprint() != current.dataFingerprint()) {
-            Patch<DTO.Data> p = computePatch(old.data(), current.data(), DTO.Data::key);
+            List<DTO.Data> o = toDataDTOs(old.data(), id), n = toDataDTOs(current.data(), id);
+            Patch<DTO.Data> p = computePatch(o, n, DTO.Data::key);
             out.merge(p);
         }
 
         return out;
     }
 
-    private static <T, K> Patch<T> computePatch(T[] old, T[] current, Function<T, K> keyExtractor) {
+    private static <T, K> Patch<T> computePatch(Collection<T> old, Collection<T> current, Function<T, K> keyExtractor) {
         List<T> inserts = new ArrayList<>(), updates = new ArrayList<>(), deletes = new ArrayList<>();
         Patch<T> out = new Patch<>(inserts, updates, deletes);
 
-        Map<K, T> oldMap = new HashMap<>(old.length * 2);
+        Map<K, T> oldMap = new HashMap<>(old.size() * 2);
         for (T t : old) { oldMap.put(keyExtractor.apply(t), t); }
 
         for (T t : current) {

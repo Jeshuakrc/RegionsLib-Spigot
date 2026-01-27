@@ -1,7 +1,9 @@
-package com.kntrel.mc.regionLib.region;
+package com.kntrel.mc.regionLib.region.context;
 
 import com.kntrel.mc.regionLib.Constants;
+import com.kntrel.mc.regionLib.cache.RegionCache;
 import com.kntrel.mc.regionLib.persistence.sqlite.MockRegionContext;
+import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.test.mock.MockChunk;
 import com.kntrel.mc.regionLib.util.Grid;
@@ -34,7 +36,7 @@ public class HotRegionRepositoryTest {
     @BeforeEach void setup() {
         this.regionContext = MockRegionContext.mockContext();
         this.delegate = spy(this.regionContext.getRegionRepository());
-        this.repository = new HotRegionRepository(delegate, GRID_SIZE);
+        this.repository = new HotRegionRepository(new RegionCache(), this.delegate, GRID_SIZE);
         this.world = this.regionContext.getServer().getWorlds().getFirst();
     }
 
@@ -88,15 +90,15 @@ public class HotRegionRepositoryTest {
         assertTrue(this.repository.getAll().isEmpty());
     }
     @Test void testColdRegionsInLoadedCellRemainHiddenUntilChunkLoads() {
-        Region hotRegion = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "Hot");
-        Region coldRegion = regionInChunks(1, 0, 1, 0, this.regionContext, this.world, "Cold");
+        Region hotRegion = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "HotReg");
+        Region coldRegion = regionInChunks(1, 0, 1, 0, this.regionContext, this.world, "ColdReg");
         this.repository.save(hotRegion, coldRegion);
 
         loadChunk(0, 0);
-        assertRegionNames(this.repository.getAll(), "Hot");
+        assertRegionNames(this.repository.getAll(), "HotReg");
 
         loadChunk(1, 0);
-        assertRegionNames(this.repository.getAll(), "Cold", "Hot");
+        assertRegionNames(this.repository.getAll(), "ColdReg", "HotReg");
     }
     @Test void testRegionResizeMakesHotWhenTouchingLoadedChunk() {
         Region region = regionInChunks(2, 2, 2, 2, this.regionContext, this.world, "Resize Hot");
@@ -121,13 +123,13 @@ public class HotRegionRepositoryTest {
         assertTrue(this.repository.getAll().isEmpty());
     }
     @Test void testWarmRegionsIncludeColdRegionsInLoadedCell() {
-        Region hotRegion = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "Hot");
-        Region coldRegion = regionInChunks(1, 0, 1, 0, this.regionContext, this.world, "Cold");
+        Region hotRegion = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "HotReg");
+        Region coldRegion = regionInChunks(1, 0, 1, 0, this.regionContext, this.world, "ColdReg");
         this.repository.save(hotRegion, coldRegion);
 
         loadChunk(0, 0);
-        assertRegionNames(this.repository.getWarmRegions(), "Cold", "Hot");
-        assertRegionNames(this.repository.getAll(), "Hot");
+        assertRegionNames(this.repository.getWarmRegions(), "ColdReg", "HotReg");
+        assertRegionNames(this.repository.getAll(), "HotReg");
     }
     @Test void testWarmRegionUnloadAfterLastChunkLeavesCell() {
         Region region = regionInChunks(0, 0, 1, 1, this.regionContext, this.world, "Warm Region");

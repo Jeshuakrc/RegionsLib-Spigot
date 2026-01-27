@@ -1,7 +1,7 @@
 package com.kntrel.mc.regionLib.region.react;
 
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.repository.RegionReadRepository;
 import com.kntrel.mc.regionLib.util.Area;
 import com.kntrel.mc.regionLib.util.AreaGetter;

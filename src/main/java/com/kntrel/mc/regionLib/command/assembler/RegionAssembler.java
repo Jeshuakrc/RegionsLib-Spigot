@@ -8,7 +8,7 @@ import com.kntrel.mc.commvoker.provided.assemblers.StringAssembler;
 import com.kntrel.mc.regionLib.RegionLib;
 import com.kntrel.mc.regionLib.region.NamespaceRegionKey;
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.RegionContext;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.repository.Condition;
 import com.mojang.brigadier.suggestion.Suggestions;
