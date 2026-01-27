@@ -2,6 +2,7 @@ package com.kntrel.mc.regionLib.event;
 
 import com.kntrel.mc.regionLib.region.Region;
 import org.bukkit.event.Event;
+import org.jetbrains.annotations.NotNull;
 
 public abstract class RegionEvent extends Event {
 
@@ -10,13 +11,13 @@ public abstract class RegionEvent extends Event {
 
 
     //CONSTRUCTORS
-    public RegionEvent(Region region) {
+    public RegionEvent(@NotNull Region region) {
         this.region_ = region;
     }
 
 
     //GETTERS
-    public Region getRegion() {
+    @NotNull public Region getRegion() {
         return this.region_;
     }
 

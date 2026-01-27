@@ -22,11 +22,12 @@ public class RegionCreateEvent extends RegionEvent implements Cancellable {
 
 
     //CONSTRUCTOR
-    public RegionCreateEvent(Region region, @Nullable Entity creator) {
+    public RegionCreateEvent(@NotNull Region region, @Nullable Entity creator) {
         super(region);
         this.creator_ = creator;
         this.canceled_ = false;
     }
+
 
     //GETTERS
     @Override public boolean isCancelled() {
@@ -35,6 +36,7 @@ public class RegionCreateEvent extends RegionEvent implements Cancellable {
     public Optional<Entity> getCreator() {
         return Optional.ofNullable(this.creator_);
     }
+
 
     //SETTERS
     @Override public void setCancelled(boolean b) {

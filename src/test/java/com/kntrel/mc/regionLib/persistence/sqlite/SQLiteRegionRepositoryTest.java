@@ -72,11 +72,11 @@ public class SQLiteRegionRepositoryTest {
                 plugin,
                 ctx -> {
                     this.queryParser = new QueryParser(ctx);
-                    return new SQLiteRegionRepository(ctx, this.dataBase, this.queryParser, this.executorService);
+                    this.regionRepository = new SQLiteRegionRepository(ctx, this.dataBase, this.queryParser, this.executorService);
+                    return this.regionRepository;
                 },
                 ctx -> this.hierarchyRepository
         );
-        this.regionRepository = (SQLiteRegionRepository) this.regionContext.getRegionRepository();
     }
 
 

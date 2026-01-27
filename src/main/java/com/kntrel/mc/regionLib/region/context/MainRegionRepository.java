@@ -1,8 +1,9 @@
 package com.kntrel.mc.regionLib.region.context;
 
 import com.kntrel.mc.regionLib.cache.RegionCache;
+import com.kntrel.mc.regionLib.cache.RegionSnapshot;
 import com.kntrel.mc.regionLib.event.RegionCreateEvent;
-import com.kntrel.mc.regionLib.event.RegionDestroyEvent;
+import com.kntrel.mc.regionLib.event.RegionUpdatedEvent;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.repository.AttributedRegionRepository;
 import com.kntrel.mc.regionLib.region.repository.Query;
@@ -20,27 +21,31 @@ class MainRegionRepository implements AttributedRegionRepository {
     private final RegionRepository saveDelegate_;
     private final RegionReadRepository readDelegate_;
     private final PluginManager pluginManager_;
+    private final RegionCache cache_;
 
 
     //CONSTRUCTORS
-    public MainRegionRepository(RegionRepository saveDelegate, RegionReadRepository readDelegate, PluginManager pluginManager) {
+    public MainRegionRepository(RegionRepository saveDelegate, RegionReadRepository readDelegate, PluginManager pluginManager, RegionCache cache) {
         this.saveDelegate_ = saveDelegate;
         this.readDelegate_ = readDelegate;
         this.pluginManager_ = pluginManager;
+        this.cache_ = cache;
     }
-    public MainRegionRepository(RegionRepository delegate, PluginManager pluginManager) {
-        this(delegate, delegate, pluginManager);
+    public MainRegionRepository(RegionRepository delegate, PluginManager pluginManager, RegionCache cache) {
+        this(delegate, delegate, pluginManager, cache);
     }
 
 
     //IMPLEMENTATION
     @Override public List<Region> get(Query query) {
-        return this.readDelegate_.get(query);
+        List<Region> out = this.readDelegate_.get(query);
+        out.forEach(this.cache_::put);
+        return out;
     }
     @Override public void save(@Nullable Entity doer, Region... region) {
-        this.saveDelegate_.save(
-                Arrays.stream(region).filter(r -> this.inspect(doer, r)).toArray(Region[]::new)
-        );
+        Region[] inspected = Arrays.stream(region).filter(r -> this.inspect(doer, r)).toArray(Region[]::new);
+        this.saveDelegate_.save(inspected);
+        for (Region r : inspected) { this.cache_.put(r); }
     }
 
 
@@ -48,17 +53,25 @@ class MainRegionRepository implements AttributedRegionRepository {
     private boolean inspect(@Nullable Entity doer, Region region) {
 
         if (region.getId() == null) {
-            RegionCreateEvent createEvent = new RegionCreateEvent(region, doer);
-            this.pluginManager_.callEvent(createEvent);
-            if (createEvent.isCancelled()) { return false; }
+            RegionCreateEvent event = new RegionCreateEvent(region, doer);
+            this.pluginManager_.callEvent(event);
+            return !event.isCancelled();
         }
 
-        if (region.isDestroyed()) {
-            RegionDestroyEvent destroyEvent = new RegionDestroyEvent(region, doer);
-            this.pluginManager_.callEvent(destroyEvent);
-            if (destroyEvent.isCancelled()) { return false; }
+        RegionSnapshot old = this.cache_.get(region.getId()).orElse(null);
+        if (old == null) {
+            Region reg = this.readDelegate_.get(region.getId()).orElse(null);
+            if (reg != null) {
+                old = new RegionSnapshot(reg);
+                this.cache_.put(old);
+            }
         }
+        if (old == null) { return true; }
 
-        return true;
+        RegionSnapshot curr = new RegionSnapshot(region);
+        RegionUpdatedEvent event = new RegionUpdatedEvent(region, old, curr, doer);
+        this.pluginManager_.callEvent(event);
+
+        return !event.isCancelled();
     }
 }
