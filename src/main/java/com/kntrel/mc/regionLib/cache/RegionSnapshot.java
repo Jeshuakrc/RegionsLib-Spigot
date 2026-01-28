@@ -7,6 +7,9 @@ import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionData;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
+import com.kntrel.mc.regionLib.region.rule.Rule;
+import com.kntrel.mc.regionLib.region.rule.RuleValue;
+import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import com.kntrel.util.Fingerprint64;
 import org.bukkit.World;
 import org.bukkit.util.BoundingBox;
@@ -268,7 +271,9 @@ public class RegionSnapshot {
         }
 
         for (RegionSnapshot.Entry rule : snapshot.rules()) {
-            r.setRuleValue(rule.key(), rule.value());
+            Rule<?> actualRule = context.getRuleRegistry().get(rule.key()).orElse(null);
+            if (actualRule == null) { r.setRuleValue(rule.key(), rule.value()); }
+            else { r.setRuleValue(new RuleValue<>(actualRule, rule.value)); }
         }
         RegionDataContainer dc = r.getDataContainer();
         for (RegionSnapshot.Entry data : snapshot.data()) {

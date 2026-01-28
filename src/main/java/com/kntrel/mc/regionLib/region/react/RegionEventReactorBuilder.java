@@ -107,7 +107,7 @@ public abstract class RegionEventReactorBuilder<E extends Event ,T extends Regio
         if (this.areaGetter_ == null && BlockEvent.class.isAssignableFrom(this.eventClass_)) {
             this.areaGetter_ = e -> {
                 BlockEvent be = (BlockEvent) e;
-                return new Area(be.getBlock().getBoundingBox(), be.getBlock().getWorld());
+                return Area.ofBlock(be.getBlock());
             };
         }
         if (this.areaGetter_ == null && PlayerInteractEvent.class.isAssignableFrom(this.eventClass_)) {
