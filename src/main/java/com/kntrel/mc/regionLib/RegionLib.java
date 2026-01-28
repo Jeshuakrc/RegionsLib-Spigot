@@ -8,12 +8,14 @@ import com.kntrel.mc.regionLib.command.assembler.*;
 import com.kntrel.mc.regionLib.persistence.sqlite.JsonHierarchyRepository;
 import com.kntrel.mc.regionLib.persistence.sqlite.SQLiteRegionRepository;
 import com.kntrel.mc.regionLib.region.Region;
+import com.kntrel.mc.regionLib.region.ability.Abilities;
 import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.context.RegionContextConfig;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.RuleValue;
+import com.kntrel.mc.regionLib.region.rule.Rules;
 import com.kntrel.mc.regionLib.util.Grid;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.Plugin;
@@ -152,13 +154,17 @@ public final class RegionLib extends JavaPlugin {
             try { hierarchiesFile.createNewFile(); } catch (IOException e) { throw new RuntimeException(e); }
         }
 
-        return new RegionContext(
+        RegionContext out = new RegionContext(
                 namespace,
                 config,
                 plugin,
                 ctx -> new SQLiteRegionRepository(plugin, ctx, database),
                 ctx -> new JsonHierarchyRepository(hierarchiesFile)
         );
+        out.getAbilityRegistry().registerFrom(Abilities.class);
+        out.getRuleRegistry().registerFrom(Rules.class);
+
+        return out;
     }
     public static RegionContext createContext(Plugin plugin, URI hierarchies, URI database) {
         return createContext(plugin, plugin.getName(), DEFAULT_CONFIG, hierarchies, database);

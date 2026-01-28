@@ -132,7 +132,7 @@ public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E
             exception = e;
         }
         if (ag == null && pg == null) {
-            throw (exception != null) ? new RuntimeException(exception) : new IllegalStateException("Unable to build ability. Cannot infer location");
+            throw (exception != null) ? new RuntimeException(exception) : new IllegalStateException("Unable to build rule. Cannot infer location");
         }
 
         String name = this.getName();
