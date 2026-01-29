@@ -18,8 +18,8 @@ import java.util.function.*;
 public class Rule<T> extends RegionEventReactor implements BiConsumer<Event, RegionContext> {
 
     //STATIC
-    public static <E extends Event> RuleBuilder.BooleanRuleBuilder<E> on(Class<E> eventClass) {
-        return RuleBuilder.on(eventClass);
+    public static <E extends Event> RuleTriggerBuilder.BooleanRuleTriggerBuilder<E> on(Class<E> eventClass) {
+        return RuleTriggerBuilder.on(eventClass);
     }
 
 

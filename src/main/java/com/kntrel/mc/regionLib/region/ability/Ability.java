@@ -4,8 +4,6 @@ import com.kntrel.mc.regionLib.event.AbilityTriggeredEvent;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.react.RegionEventReactor;
-import com.kntrel.mc.regionLib.util.AreaGetter;
-import com.kntrel.mc.regionLib.util.PointGetter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;

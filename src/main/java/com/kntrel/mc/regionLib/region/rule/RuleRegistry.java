@@ -1,15 +1,20 @@
 package com.kntrel.mc.regionLib.region.rule;
 
 
+import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.react.ReflectiveEventReactorRegistry;
+import com.kntrel.mc.regionLib.trigger.TriggerListenerRegistry;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import org.bukkit.event.Event;
+import org.bukkit.event.EventPriority;
+
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
-public class RuleRegistry extends ReflectiveEventReactorRegistry<Rule<?>> {
+public class RuleRegistry extends TriggerListenerRegistry<RuleTrigger<?, ?>, RuleN<?>> {
 
     @SuppressWarnings("unchecked")
     public RuleRegistry(RegionContext context) {
@@ -17,8 +22,13 @@ public class RuleRegistry extends ReflectiveEventReactorRegistry<Rule<?>> {
     }
 
     @Override
-    public <E extends Event> RuleBuilder.BooleanRuleBuilder<E> registerOn(Class<E> eventClass) {
-        return new InnerBooleanRuleBuilder<>(eventClass, this);
+    protected void handle(List<Region> regions, Event event, RuleN<?> listener, RuleTrigger<?, ?> trigger, EventPriority bukkitPriority) {
+
+    }
+
+    @Override
+    public <E extends Event> RuleTriggerBuilder.BooleanRuleTriggerBuilder<E> registerOn(Class<E> eventClass) {
+        return new InnerBooleanRuleTriggerBuilder<>(eventClass, this);
     }
 
     @Override
@@ -40,24 +50,24 @@ public class RuleRegistry extends ReflectiveEventReactorRegistry<Rule<?>> {
     }
 
 
-    protected static class InnerBooleanRuleBuilder<E extends Event> extends RuleBuilder.BooleanRuleBuilder<E> {
+    protected static class InnerBooleanRuleTriggerBuilder<E extends Event> extends RuleTriggerBuilder.BooleanRuleTriggerBuilder<E> {
 
         private final RuleRegistry registry_;
 
-        protected InnerBooleanRuleBuilder(Class<E> eventClass, RuleRegistry registry) {
+        protected InnerBooleanRuleTriggerBuilder(Class<E> eventClass, RuleRegistry registry) {
             super(eventClass);
             this.registry_ = registry;
         }
 
-        @Override public <T> RuleBuilder<E, T> having(ValueType<T> type) {
-            return new InnerRuleBuilder<>(this, type, registry_);
+        @Override public <T> RuleTriggerBuilder<E, T> having(ValueType<T> type) {
+            return new InnerRuleTriggerBuilder<>(this, type, registry_);
         }
     }
-    protected static class InnerRuleBuilder<E extends Event, T> extends RuleBuilder<E, T> {
+    protected static class InnerRuleTriggerBuilder<E extends Event, T> extends RuleTriggerBuilder<E, T> {
 
         private final RuleRegistry registry_;
 
-        protected InnerRuleBuilder(RuleBuilder<E, ?> other, ValueType<T> type, RuleRegistry registry) {
+        protected InnerRuleTriggerBuilder(RuleTriggerBuilder<E, ?> other, ValueType<T> type, RuleRegistry registry) {
             super(other, type);
             this.registry_ = registry;
         }
