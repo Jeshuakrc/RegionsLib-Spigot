@@ -5,10 +5,8 @@ import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.repository.RegionReadRepository;
 import com.kntrel.util.tuple.Pair;
 import org.bukkit.event.Event;
-import org.bukkit.event.EventException;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import java.util.*;
@@ -57,15 +55,39 @@ public abstract class TriggerListenerRegistry<T extends RegionTrigger<? extends 
     }
 
 
-    //CONTRACT
-    protected void handle(List<Pair<L, T>> triggerEntries, Event event, EventPriority bukkitPriority) {
+    //HANDLE PIPELINE
+    protected void handle(Event event, EventKey eventKey) {
+        Set<TriggerKey<T>> keys = this.eventMap_.get(eventKey);
+        if (keys == null) { return; }
+        List<Pair<L, T>> triggerEntries = new ArrayList<>();
+        for (TriggerKey<T> tk : keys) {
+            L listener = this.keyMap_.get(tk.listenerName());
+            if (listener == null) {
+                throw new IllegalStateException("No TriggerListener registered with name '" + tk.listenerName() + "'");
+            }
+            triggerEntries.add(Pair.of(listener, tk.trigger()));
+        }
+        this.handle(triggerEntries, event);
+    }
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    protected void handle(List<Pair<L, T>> triggerEntries, Event event) {
         for (Pair<L, T> lt : triggerEntries) {
+            RegionTrigger trg = lt.second();
+            if (trg.appliesTo(event)) { return; }
 
+            L listener = lt.first();
+            Bounds loc = trg.localize(event);
+            if (loc == null) { return; }
 
-            this.handle(Collections.emptyList(), event, lt.first(), lt.second(), bukkitPriority);
+            RegionReadRepository repo = this.context_.getHotRegionRepository();
+            List<Region> regions = (loc.isArea())
+                    ? repo.getIn(loc.getArea())
+                    : repo.getAt(loc.getPoint());
+
+            this.handle(regions, event, listener, lt.second());
         }
     }
-    protected abstract void handle(List<Region> regions, Event event, L listener, T trigger, EventPriority bukkitPriority);
+    protected abstract void handle(List<Region> regions, Event event, L listener, T trigger);
 
 
     //HELPERS
@@ -80,7 +102,7 @@ public abstract class TriggerListenerRegistry<T extends RegionTrigger<? extends 
                     eventKey.eventClass(),
                     VOID_LISTENER,
                     eventKey.priority(),
-                    new Handler<>(this, eventKey),
+                    (l, e) -> this.handle(e, eventKey),
                     this.plugin_,
                     true
             );
@@ -103,39 +125,4 @@ public abstract class TriggerListenerRegistry<T extends RegionTrigger<? extends 
             return this.trigger().compareTo(o.trigger());
         }
     }
-
-    protected record Handler<
-        T extends RegionTrigger<?>,
-        L extends TriggerListener<? extends T>
-    >(TriggerListenerRegistry<T, L> registry, EventKey eventKey) implements EventExecutor {
-
-        @Override
-        public void execute(@NotNull Listener ignored, @NotNull Event event) throws EventException {
-            Set<TriggerKey<T>> keys = this.registry().eventMap_.get(this.eventKey());
-            if (keys == null) { return; }
-            keys.forEach(tk -> this.handleTrigger(tk, event));
-        }
-
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        private void handleTrigger(TriggerKey<T> tk, Event event) {
-            RegionTrigger trg = tk.trigger();
-            if (trg.appliesTo(event)) { return; }
-
-            L listener = this.registry().keyMap_.get(tk.listenerName());
-            if (listener == null) {
-                throw new IllegalStateException("No TriggerListener registered with name '" + tk.listenerName() + "'");
-            }
-
-            Bounds loc = trg.localize(event);
-            if (loc == null) { return; }
-
-            RegionReadRepository repo = this.registry().context_.getHotRegionRepository();
-            List<Region> regions = (loc.isArea())
-                    ? repo.getIn(loc.getArea())
-                    : repo.getAt(loc.getPoint());
-
-            this.registry().handle(regions, event, listener, tk.trigger(), trg.bukkitPriority());
-        }
-    }
-
 }

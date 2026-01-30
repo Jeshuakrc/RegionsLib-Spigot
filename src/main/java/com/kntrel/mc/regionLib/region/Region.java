@@ -190,7 +190,7 @@ public class Region implements Comparable<Region> {
         return Optional.of(type.valueOf(ruleValue.toString()));
     }
     public <T> Optional<T> getRuleValue(Rule<T> rule) {
-        return this.getRuleValue(rule.getName(), rule.getValueType());
+        return this.getRuleValue(rule.name(), rule.getValueType());
     }
     public List<Permission> getPermissions() {
         return List.copyOf(this.permissions_);
@@ -277,14 +277,14 @@ public class Region implements Comparable<Region> {
 
     //RULE
     public boolean hasRule(Rule<?> rule) {
-        ValueHolder<?> valueHolder = this.rulesValues_.get(rule.getName());
+        ValueHolder<?> valueHolder = this.rulesValues_.get(rule.name());
         return rule.getValueType().equals(valueHolder.getType());
     }
     public boolean hasRule(String name) {
         return this.rulesValues_.containsKey(name);
     }
     public void setRuleValue(RuleValue<?> ruleValue) {
-        this.rulesValues_.put(ruleValue.getRule().getName(), ruleValue);
+        this.rulesValues_.put(ruleValue.getRule().name(), ruleValue);
     }
     public <T> void setRuleValue(String name, T value) {
         this.rulesValues_.put(name, ValueHolder.of(value));

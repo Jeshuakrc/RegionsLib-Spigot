@@ -2,6 +2,7 @@ package com.kntrel.mc.regionLib.trigger.build;
 
 import com.kntrel.mc.regionLib.trigger.Bounds;
 import com.kntrel.mc.regionLib.trigger.RegionTrigger;
+import com.kntrel.mc.regionLib.trigger.TriggerListener;
 import com.kntrel.mc.regionLib.util.Area;
 import com.kntrel.util.Priority;
 import org.bukkit.Location;
@@ -12,33 +13,42 @@ import org.bukkit.event.block.BlockEvent;
 import org.bukkit.event.entity.EntityEvent;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.jetbrains.annotations.Nullable;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public abstract class TriggerBuilder<E extends Event, T extends RegionTrigger<E>, B extends TriggerBuilder<E, T, B>> {
+public abstract class TriggerBuilder<
+        E extends Event,
+        T extends RegionTrigger<?>,
+        L extends TriggerListener<? extends T>,
+        B extends TriggerBuilder<E, T, L, B>
+> {
 
+    //LISTENER MEMBERS
+    protected final Set<T> triggers_;
+    private String name_ = null;
+
+
+    //CURRENT TRIGGER MEMBERS
     protected final Class<E> eventClass_;
     protected final B instance_;
     protected Function<E, Bounds> localizer_;
     protected Predicate<E> validator_ = e -> true;
-
     protected EventPriority bukkitPriority_ = EventPriority.NORMAL;
     protected Priority priority_ = Priority.NORMAL;
 
 
     // CONSTRUCTORS
     @SuppressWarnings("unchecked")
-    protected TriggerBuilder(Class<E> eventClass) {
+    protected TriggerBuilder(Class<E> eventClass, Set<T> existingTriggers) {
         this.eventClass_ = eventClass;
         this.instance_ = (B) this;
+        this.triggers_ = new HashSet<>(existingTriggers);
     }
-    protected TriggerBuilder(TriggerBuilder<E, ?, ?> other) {
-        this(other.eventClass_);
-        this.validator_ = other.validator_;
-        this.localizer_ = other.localizer_;
-        this.bukkitPriority_ = other.bukkitPriority_;
-        this.priority_ = other.priority_;
+
+    protected TriggerBuilder(Class<E> eventClass) {
+        this(eventClass, new HashSet<>());
     }
 
 
@@ -73,6 +83,20 @@ public abstract class TriggerBuilder<E extends Event, T extends RegionTrigger<E>
     }
     public B prioritize(int priority, EventPriority eventPriority) {
         return this.prioritize(Priority.of(priority), eventPriority);
+    }
+    public <N extends Enum<N>> EnumTriggerBuilder<E, N, B> withEnum(Function<E, N> instanceGetter) {
+        return new EnumTriggerBuilder<>(this.instance_, instanceGetter);
+    }
+    public <E2 extends Event> TriggerBuilder<E2, T, ? extends TriggerListener<? extends T>, ?> alsoOn(Class<E2> eventClass) {
+        this.triggers_.add(this.buildTrigger());
+        return this.next(eventClass, this.triggers_);
+    }
+
+
+    //FINALIZER
+    protected L build() {
+        this.triggers_.add(this.buildTrigger());
+        return this.buildListener(this.triggers_);
     }
 
 
@@ -118,13 +142,10 @@ public abstract class TriggerBuilder<E extends Event, T extends RegionTrigger<E>
     }
 
 
-    //FINAL OPERATIONS
-    public <N extends Enum<N>> EnumBuilder<E, N, T> withEnum(Function<E, N> instanceGetter) {
-        return new EnumBuilder<>(this, instanceGetter);
-    }
-    public T build() {
-        return this.build(null);
-    }
-    protected abstract T build(@Nullable Predicate<E> extraCheck);
+
+    //CONTRACT
+    protected abstract T buildTrigger();
+    protected abstract L buildListener(Set<T> triggers);
+    protected abstract <E2 extends Event> TriggerBuilder<E2, T, ? extends TriggerListener<? extends T>, ?> next(Class<E2> eventClass, Set<T> existingTriggers);
 
 }
