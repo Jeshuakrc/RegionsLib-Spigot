@@ -10,7 +10,7 @@ public class RuleValue<T> extends ValueHolder<T> {
 
     //CONSTRUCTOR
     public RuleValue(Rule<T> rule, String value) {
-        super(value, rule.getValueType());
+        super(value, rule.valueType());
         this.rule_ = rule;
     }
 

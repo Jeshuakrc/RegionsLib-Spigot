@@ -15,13 +15,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-public abstract class ReflectiveTriggerListernerRegistry<T extends RegionTrigger<? extends Event>, L extends TriggerListener<? extends T>>
-extends TriggerListenerRegistry<T, L> {
+public abstract class ReflectiveListernerRegistry<T extends RegionTrigger<? extends Event>, L extends RegionListener<? extends T>>
+extends ListenerRegistry<T, L> {
 
     private final Class<L> listenerClass_;
     private final Class<? extends Annotation> flag_;
 
-    public ReflectiveTriggerListernerRegistry(RegionContext context, Class<L> reactorClass, Class<? extends Annotation> flagAnnotation) {
+    public ReflectiveListernerRegistry(RegionContext context, Class<L> reactorClass, Class<? extends Annotation> flagAnnotation) {
         super(context);
         this.listenerClass_ = reactorClass;
         this.flag_ = flagAnnotation;

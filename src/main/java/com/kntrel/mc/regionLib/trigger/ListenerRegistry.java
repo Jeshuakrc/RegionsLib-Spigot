@@ -11,7 +11,7 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
-public abstract class TriggerListenerRegistry<T extends RegionTrigger<? extends Event>, L extends TriggerListener<? extends T>> {
+public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>, L extends RegionListener<? extends T>> {
 
     //ASSETS
     private static final Listener VOID_LISTENER = new Listener(){};
@@ -25,7 +25,7 @@ public abstract class TriggerListenerRegistry<T extends RegionTrigger<? extends 
 
 
     // CONSTRUCTORS
-    public TriggerListenerRegistry(RegionContext context) {
+    public ListenerRegistry(RegionContext context) {
         this.context_ = context;
         this.plugin_ = this.context_.getPlugin();
         this.keyMap_ = new HashMap<>();

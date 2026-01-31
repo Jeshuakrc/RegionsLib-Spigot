@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class EnumTriggerBuilder<E extends Event, N extends Enum<N>, B extends TriggerBuilder<E, ?, ?, B>> {
+public class EnumTriggerBuilder<E extends Event, N extends Enum<N>, B extends ListenerBuilder<E, ?, ?, B>> {
 
     private final B father_;
     private final Function<E, N> supplier_;
