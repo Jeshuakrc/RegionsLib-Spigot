@@ -8,7 +8,7 @@ public interface RegionTrigger<E extends Event> extends Comparable<RegionTrigger
 
     Class<E> eventClass();
 
-    EventPriority bukkitPriority();
+    default EventPriority bukkitPriority() { return EventPriority.NORMAL; }
 
     Priority priority();
 

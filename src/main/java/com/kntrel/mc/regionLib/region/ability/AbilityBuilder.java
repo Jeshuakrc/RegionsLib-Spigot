@@ -1,7 +1,7 @@
 package com.kntrel.mc.regionLib.region.ability;
 
-import com.kntrel.mc.regionLib.region.react.ReflectiveNameable;
-import com.kntrel.mc.regionLib.region.react.RegionEventReactorBuilder;
+import com.kntrel.mc.regionLib.trigger.build.ListenerBuilder;
+import com.kntrel.mc.regionLib.trigger.build.ReflectiveNameable;
 import com.kntrel.mc.regionLib.util.AreaGetter;
 import com.kntrel.mc.regionLib.util.PointGetter;
 import org.bukkit.entity.Player;
@@ -11,10 +11,16 @@ import org.bukkit.event.player.PlayerEvent;
 import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E, Ability, AbilityBuilder<E>> {
+public class AbilityBuilder<E extends Event> extends ListenerBuilder<
+        E,
+        AbilityTrigger<?>,
+        Ability,
+        AbilityBuilder<E>
+> {
 
     // Fields
     private Function<E, Player> playerGetter_;
@@ -29,6 +35,7 @@ public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E
     protected AbilityBuilder(Class<E> eventClass) {
         super(eventClass);
     }
+
 
 
     // CHAINED CONFIG
@@ -115,6 +122,19 @@ public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E
         }
         return new Ability(name, this.eventClass_, validator, this.getPlayerGetter(), ag, order, this.bukkitPriority_, this.extends_);
     }
+
+
+    //IMPLEMENTATION
+    @Override protected AbilityTrigger<?> buildTrigger() {
+        return null;
+    }
+    @Override protected Ability buildListener(Set<AbilityTrigger<?>> triggers) {
+        return null;
+    }
+    @Override protected <E2 extends Event> AbilityBuilder<E2> next(Class<E2> eventClass, Set<AbilityTrigger<?>> existingTriggers) {
+        return null;
+    }
+
 
     private static class ReflectiveAbility extends Ability implements ReflectiveNameable {
 

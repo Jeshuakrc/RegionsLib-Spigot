@@ -46,9 +46,9 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
 
     //TRIGGER FIELDS
     protected final ValueType<T> type_;
-    protected TriPredicate<T, E, Region> test_;
-    protected TriConsumer<T, E, Region> action_;
-    protected BiConsumer<Event, Region> absentAction_;
+    protected TriPredicate<T, E, Region> test_ = (t, r, e) -> true;
+    protected TriConsumer<T, E, Region> action_ = null;
+    protected BiConsumer<Event, Region> absentAction_ = (e, r) -> {};
 
 
     //CONSTRUCTORS
@@ -61,8 +61,6 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
     ) {
         super(eventClass, existingTriggers);
         this.type_ = valueType;
-        this.test_ = (t, r, e) -> true;
-        this.action_ = null;
         this.actions_ = actions;
         this.absentActions_ = absentActions;
     }

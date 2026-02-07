@@ -3,6 +3,7 @@ package com.kntrel.mc.regionLib.trigger;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.repository.RegionReadRepository;
+import com.kntrel.util.SetMap;
 import com.kntrel.util.tuple.Pair;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
@@ -15,13 +16,16 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
 
     //ASSETS
     private static final Listener VOID_LISTENER = new Listener(){};
+    private static <T extends RegionTrigger<?>, L extends RegionListener<? extends T>> Comparator<TriggerKey<T, L>> triggerKeyComparator() {
+        return Comparator.<TriggerKey<T, L>>naturalOrder().reversed();
+    }
 
 
     //FIELDS
     protected final RegionContext context_;
     protected final Plugin plugin_;
     protected final Map<String, L> keyMap_;
-    protected final Map<EventKey, Set<TriggerKey<T>>> eventMap_;
+    protected final SetMap<EventKey, TriggerKey<T, L>> eventMap_;
 
 
     // CONSTRUCTORS
@@ -29,7 +33,7 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
         this.context_ = context;
         this.plugin_ = this.context_.getPlugin();
         this.keyMap_ = new HashMap<>();
-        this.eventMap_ = new HashMap<>();
+        this.eventMap_ = new SetMap<>(() -> new TreeSet<>(triggerKeyComparator())); // Keeps the reactors sorted by priority
     }
 
 
@@ -57,27 +61,25 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
 
     //HANDLE PIPELINE
     protected void handle(Event event, EventKey eventKey) {
-        Set<TriggerKey<T>> keys = this.eventMap_.get(eventKey);
+        TreeSet<TriggerKey<T, L>> keys = (TreeSet<TriggerKey<T,L>>) this.eventMap_.get(eventKey);
         if (keys == null) { return; }
-        List<Pair<L, T>> triggerEntries = new ArrayList<>();
-        for (TriggerKey<T> tk : keys) {
-            L listener = this.keyMap_.get(tk.listenerName());
-            if (listener == null) {
-                throw new IllegalStateException("No TriggerListener registered with name '" + tk.listenerName() + "'");
-            }
-            triggerEntries.add(Pair.of(listener, tk.trigger()));
-        }
-        this.handle(triggerEntries, event);
+        this.handle(keys, event, eventKey.priority());
     }
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    protected void handle(List<Pair<L, T>> triggerEntries, Event event) {
+    protected void handle(SequencedCollection<? extends Pair<L, T>> triggerEntries, Event event, EventPriority priority) {
         for (Pair<L, T> lt : triggerEntries) {
             RegionTrigger trg = lt.second();
-            if (trg.appliesTo(event)) { return; }
+            try {
+                if (trg.appliesTo(event)) { continue; }
+            } catch (Throwable e) {
+                this.context_.getServer().getLogger().severe("Trigger in listener'" + lt.first().name() + "' failed to validate. Event: " + event.getClass().getSimpleName() + ". Falling back as non-applicable.");
+                this.context_.getServer().getLogger().severe("Caused by: " + e);
+                continue;
+            }
 
             L listener = lt.first();
             Bounds loc = trg.localize(event);
-            if (loc == null) { return; }
+            if (loc == null) { continue; }
 
             RegionReadRepository repo = this.context_.getHotRegionRepository();
             List<Region> regions = (loc.isArea())
@@ -92,12 +94,10 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
 
     //HELPERS
     private void registerTrigger(L listener, T trigger) {
-        TriggerKey<T> tk = new TriggerKey<>(listener.name(), trigger);
+        TriggerKey<T, L> tk = new TriggerKey<>(listener, trigger);
         EventKey eventKey = new EventKey(trigger.eventClass(), trigger.bukkitPriority());
 
         if (!this.eventMap_.containsKey(eventKey)) {
-            this.eventMap_.put(eventKey, new TreeSet<>());  // Keeps the reactors sorted by priority
-
             this.plugin_.getServer().getPluginManager().registerEvent(
                     eventKey.eventClass(),
                     VOID_LISTENER,
@@ -108,7 +108,7 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
             );
         }
 
-        this.eventMap_.get(eventKey).add(tk);
+        this.eventMap_.putInto(eventKey, tk);
     }
 
 
@@ -120,9 +120,11 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
 
     }
 
-    protected record TriggerKey<T extends RegionTrigger<?>>(String listenerName, T trigger) implements Comparable<TriggerKey<?>> {
-        @Override public int compareTo(@NotNull TriggerKey<?> o) {
+    protected record TriggerKey<T extends RegionTrigger<?>, L extends RegionListener<? extends T>>(L listener, T trigger) implements Comparable<TriggerKey<?, ?>>, Pair<L, T> {
+        @Override public int compareTo(@NotNull TriggerKey<?, ?> o) {
             return this.trigger().compareTo(o.trigger());
         }
+        @Override public L first() { return this.listener(); }
+        @Override public T second() { return this.trigger(); }
     }
 }

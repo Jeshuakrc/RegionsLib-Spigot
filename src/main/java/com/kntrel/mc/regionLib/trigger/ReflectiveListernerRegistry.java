@@ -18,15 +18,20 @@ import java.util.stream.Stream;
 public abstract class ReflectiveListernerRegistry<T extends RegionTrigger<? extends Event>, L extends RegionListener<? extends T>>
 extends ListenerRegistry<T, L> {
 
+    //FIELDS
     private final Class<L> listenerClass_;
     private final Class<? extends Annotation> flag_;
 
+
+    //CONSTRUCTOR
     public ReflectiveListernerRegistry(RegionContext context, Class<L> reactorClass, Class<? extends Annotation> flagAnnotation) {
         super(context);
         this.listenerClass_ = reactorClass;
         this.flag_ = flagAnnotation;
     }
 
+
+    //UTILITY
     public void registerFrom(Class<?> clazz) {
         this.extract(clazz, null).forEach(this::register);
     }
@@ -34,6 +39,8 @@ extends ListenerRegistry<T, L> {
         this.extract(obj.getClass(), obj).forEach(this::register);
     }
 
+
+    //HELPERS
     @SuppressWarnings("unchecked")
     protected List<L> extract(Class<?> clazz, @Nullable Object obj) {
         var members = Stream.concat(Arrays.stream(clazz.getFields()), Arrays.stream(clazz.getMethods())).toList();
@@ -69,5 +76,4 @@ extends ListenerRegistry<T, L> {
 
         return listeners;
     }
-
 }

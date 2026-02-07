@@ -33,4 +33,7 @@ final class OrphanRule implements Rule<String> {
     @Override public void fire(String value, Event event, Region triggerer) {
         // Do nothing
     }
+    @Override public void fireOnAbsent(Event event, Region triggerer) {
+        // Do nothing
+    }
 }
