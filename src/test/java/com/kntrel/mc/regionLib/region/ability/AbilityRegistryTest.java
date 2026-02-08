@@ -6,19 +6,17 @@ import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
 import com.kntrel.mc.regionLib.testsupport.TestContextFactory;
 import com.kntrel.mc.regionLib.testsupport.TestEvents;
 import com.kntrel.mc.regionLib.testsupport.TestRegionReadRepository;
+import com.kntrel.util.Priority;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.junit.jupiter.api.Test;
-
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class AbilityRegistryTest {
 
@@ -225,5 +223,73 @@ class AbilityRegistryTest {
 
         registry.register(superAbility);
         assertThrows(IllegalStateException.class, () -> registry.register(subAbility));
+    }
+
+    @Test
+    void noTriggerIsTestedMoreThanOnce() {
+
+        AtomicInteger testACount = new AtomicInteger(), testBCount = new AtomicInteger();
+        Player player = mock(Player.class);
+        World world = mock(World.class);
+        Location location = new Location(world, 0, 64, 0);
+
+        Ability abilityA = Ability.on(TestEvents.SimplePlayerEvent.class)
+                .at(e -> location)
+                .when(e -> {
+                    testACount.incrementAndGet();
+                    return true;
+                })
+                .named("abilityA");
+
+        Ability abilityB = Ability.on(TestEvents.SimplePlayerEvent.class)
+                .at(e -> location)
+                .when(e -> {
+                    testBCount.incrementAndGet();
+                    return true;
+                })
+                .extend(abilityA)
+                .prioritize(Priority.HIGH)
+                .named("abilityB");
+
+        Region region = mock(Region.class);
+        when(region.checkAbility(player, abilityA)).thenReturn(true);
+        when(region.checkAbility(player, abilityB)).thenReturn(true);
+
+        TestRegionReadRepository repository = new TestRegionReadRepository();
+        repository.setRegions(List.of(region));
+
+        ExposedAbilityRegistry registry = new ExposedAbilityRegistry(TestContextFactory.mockContext(repository), Permission.OverlapMode.ANY);
+        registry.register(abilityA);
+        registry.register(abilityB);
+
+        RegionTrigger<?> trigger = abilityA.triggers().iterator().next();
+        registry.handleEvent(new TestEvents.SimplePlayerEvent(player), trigger);
+
+        assertEquals(1, testACount.get(), "Ability A's trigger was tested more than once");
+        assertEquals(1, testBCount.get(), "Ability B's trigger was tested more than once");
+
+        testACount.set(0); testBCount.set(0);
+        AtomicInteger testCCount = new AtomicInteger();
+        Ability abilityC = Ability.on(TestEvents.SimplePlayerEvent.class)
+                .at(e -> location)
+                .when(e -> {
+                    testCCount.incrementAndGet();
+                    return false;
+                })
+                .extend(abilityA)
+                .prioritize(Priority.HIGHEST)
+                .named("abilityC");
+
+        registry.register(abilityC);
+
+        registry.handleEvent(new TestEvents.SimplePlayerEvent(player), trigger);
+        assertEquals(1, testACount.get(), "Ability A's trigger was tested more than once");
+        assertEquals(1, testBCount.get(), "Ability B's trigger was tested more than once");
+        assertEquals(1, testCCount.get(), "Ability C's trigger was tested more than once");
+    }
+
+    @Test
+    void highestPriorityRunsFirst() {
+
     }
 }

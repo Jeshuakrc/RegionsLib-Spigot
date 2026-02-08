@@ -16,9 +16,6 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
 
     //ASSETS
     private static final Listener VOID_LISTENER = new Listener(){};
-    private static <T extends RegionTrigger<?>, L extends RegionListener<? extends T>> Comparator<TriggerKey<T, L>> triggerKeyComparator() {
-        return Comparator.<TriggerKey<T, L>>naturalOrder().reversed();
-    }
 
 
     //FIELDS
@@ -33,7 +30,7 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
         this.context_ = context;
         this.plugin_ = this.context_.getPlugin();
         this.keyMap_ = new HashMap<>();
-        this.eventMap_ = new SetMap<>(() -> new TreeSet<>(triggerKeyComparator())); // Keeps the reactors sorted by priority
+        this.eventMap_ = new SetMap<>(TreeSet::new); // Keeps the reactors sorted by priority
     }
 
 
@@ -113,7 +110,12 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
 
 
     //SUBTYPES
-    public record EventKey(Class<? extends Event> eventClass, EventPriority priority) {
+    protected record EventKey(Class<? extends Event> eventClass, EventPriority priority) {
+        public EventKey(Class<? extends Event> eventClass, EventPriority priority) {
+            this.eventClass = eventClass;
+            this.priority = priority;
+        }
+
         @Override public String toString() {
             return eventClass().getSimpleName() + "::" + priority().name();
         }
