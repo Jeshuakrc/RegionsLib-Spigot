@@ -131,8 +131,8 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
         @Override public T second() { return this.trigger(); }
     }
     private record Executor(EventKey eventKey, ListenerRegistry<?, ?> registry) implements EventExecutor {
-        @Override public void execute(@NotNull Listener listener, @NotNull Event event) {
-            if (!this.eventKey().eventClass().isInstance(listener)) { return; }
+        @Override public void execute(@NotNull Listener ignored, @NotNull Event event) {
+            if (!this.eventKey().eventClass().isInstance(event)) { return; }
             this.registry().handle(event, this.eventKey());
         }
     }
