@@ -197,7 +197,7 @@ public class RegionCommand {
         }
         msg.append((regions.size() > 1) ? "have" : "has")
                 .append(" benn updated: '")
-                .append(ruleValue.getRule().getName())
+                .append(ruleValue.getRule().name())
                 .append("' set to '")
                 .append(ruleValue)
                 .append("'");
@@ -214,7 +214,7 @@ public class RegionCommand {
         StringBuilder msg = new StringBuilder();
         for (int i = 0; i < regions.size(); i++) {
             Region r = regions.get(i);
-            r.removeRule(rule.getName());
+            r.removeRule(rule.name());
             if (i == (regions.size() - 1) && i > 0) {
                 msg.append("and ");
             }
@@ -222,7 +222,7 @@ public class RegionCommand {
         }
         msg.append((regions.size() > 1) ? "have" : "has")
                 .append(" benn updated: '")
-                .append(rule.getName())
+                .append(rule.name())
                 .append("' set to default");
 
         regions.forEach(Region::save);

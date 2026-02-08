@@ -141,7 +141,7 @@ class QueryParser {
 
             case Condition.HasRule hasRule -> "regionRule.key = '" + escapeSqlString(hasRule.ruleName()) + "'";
 
-            case Condition.RuleIs<?> ruleIs -> "regionRule.key = '" + escapeSqlString(ruleIs.rule().getName()) + "' AND regionRule.value = '" + escapeSqlString(String.valueOf(ruleIs.value())) + "'";
+            case Condition.RuleIs<?> ruleIs -> "regionRule.key = '" + escapeSqlString(ruleIs.rule().name()) + "' AND regionRule.value = '" + escapeSqlString(String.valueOf(ruleIs.value())) + "'";
 
             case Condition.HasDataKey hasDataKey -> "regionData.key = '" + escapeSqlString(hasDataKey.key()) + "'";
 

@@ -40,7 +40,7 @@ public class RuleValueAssembler implements BiComposedAssembler<Object, Rule<?>, 
 
     @Override
     public CompletableFuture<Suggestions> secondSuggest(ExecutionContext<?> ctx, Rule<?> rule, SuggestionsBuilder suggestionsBuilder) {
-        ValueType<?> valueType = rule.getValueType();
+        ValueType<?> valueType = rule.valueType();
         if (valueType.equals(ValueType.BOOL)) {
             suggestionsBuilder.suggest("true");
             suggestionsBuilder.suggest("false");

@@ -1,71 +1,41 @@
 package com.kntrel.mc.regionLib.region.rule;
 
-
+import com.kntrel.mc.regionLib.event.RuleTriggeredEvent;
+import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.context.RegionContext;
-import com.kntrel.mc.regionLib.region.ability.Ability;
-import com.kntrel.mc.regionLib.region.react.ReflectiveEventReactorRegistry;
-import com.kntrel.mc.regionLib.util.valueType.ValueType;
+import com.kntrel.mc.regionLib.region.listen.Place;
+import com.kntrel.mc.regionLib.region.listen.ReflectiveListernerRegistry;
+import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
+import com.kntrel.mc.regionLib.util.valueType.ValueHolder;
 import org.bukkit.event.Event;
-import java.util.Set;
-import java.util.function.Predicate;
+import java.util.List;
 
-public class RuleRegistry extends ReflectiveEventReactorRegistry<Rule<?>> {
+public class RuleRegistry extends ReflectiveListernerRegistry<RegionTrigger<?>, Rule<?>> {
 
     @SuppressWarnings("unchecked")
     public RuleRegistry(RegionContext context) {
         super(context, (Class<Rule<?>>) (Class<?>) Rule.class, DeclareRule.class);
     }
 
+    @Override @SuppressWarnings({ "rawtypes", "unchecked" })
+    protected void handle(List<Region> regions, Event event, Rule<?> rule, RegionTrigger<?> trigger, Place place) {
+        for (Region region : regions) {
+            ValueHolder<?> valueHolder = region.getRuleValue(rule.name()).orElse(null);
+
+            RuleTriggeredEvent ev = new RuleTriggeredEvent(region, rule, valueHolder, trigger, event, place);
+            this.plugin_.getServer().getPluginManager().callEvent(ev);
+            if (ev.isCancelled()) { continue; }
+
+            if (valueHolder != null) { ((Rule) rule).fire(valueHolder.get(), event, region); }
+            else { rule.fireOnAbsent(event, region); }
+        }
+    }
+
     @Override
-    public <E extends Event> RuleBuilder.BooleanRuleBuilder<E> registerOn(Class<E> eventClass) {
-        return new InnerBooleanRuleBuilder<>(eventClass, this);
-    }
-
-    @Override
-    protected void onEvent(Event event, EventKey eventKey) {
-        Set<Rule<?>> rules = this.eventMap_.get(eventKey);
-
-        //Keeping the highest priority Ability
-        Ability definitive = null;
-        for (Rule<?> r : rules) {
-            if (!r.appliesTo(event)) { continue; }
-            try {
-                r.fire(event, this.context_);
-            } catch (Throwable t) {
-                this.plugin_.getLogger().warning("Error while firing rule '" + r.getName() + "': " + t);
-            }
+    protected void registerTrigger(Rule<?> listener, RegionTrigger<?> trigger) {
+        if (trigger.eventClass().equals(RuleTriggeredEvent.class)) {
+            throw new IllegalArgumentException("A rule cannot listen to RuleTriggeredEvent.");
         }
-
-        //TODO: Logging
-    }
-
-
-    protected static class InnerBooleanRuleBuilder<E extends Event> extends RuleBuilder.BooleanRuleBuilder<E> {
-
-        private final RuleRegistry registry_;
-
-        protected InnerBooleanRuleBuilder(Class<E> eventClass, RuleRegistry registry) {
-            super(eventClass);
-            this.registry_ = registry;
-        }
-
-        @Override public <T> RuleBuilder<E, T> having(ValueType<T> type) {
-            return new InnerRuleBuilder<>(this, type, registry_);
-        }
-    }
-    protected static class InnerRuleBuilder<E extends Event, T> extends RuleBuilder<E, T> {
-
-        private final RuleRegistry registry_;
-
-        protected InnerRuleBuilder(RuleBuilder<E, ?> other, ValueType<T> type, RuleRegistry registry) {
-            super(other, type);
-            this.registry_ = registry;
-        }
-
-        @Override public Rule<T> build(Predicate<E> additionalChecks) {
-            Rule<T> r = super.build(additionalChecks);
-            this.registry_.register(r);
-            return r;
-        }
+        super.registerTrigger(listener, trigger);
     }
 }

@@ -1,61 +1,127 @@
 package com.kntrel.mc.regionLib.region.ability;
 
-import com.kntrel.mc.regionLib.region.react.ReflectiveNameable;
-import com.kntrel.mc.regionLib.region.react.RegionEventReactorBuilder;
-import com.kntrel.mc.regionLib.util.AreaGetter;
-import com.kntrel.mc.regionLib.util.PointGetter;
+import com.kntrel.mc.regionLib.region.Region;
+import com.kntrel.mc.regionLib.region.listen.Place;
+import com.kntrel.mc.regionLib.region.listen.build.ListenerBuilder;
+import com.kntrel.mc.regionLib.region.listen.build.ReflectiveNameable;
+import com.kntrel.util.Priority;
+import com.kntrel.util.SetMap;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerEvent;
 import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E, Ability, AbilityBuilder<E>> {
+public class AbilityBuilder<E extends Event> extends ListenerBuilder<
+        E,
+        AbilityTrigger<?>,
+        Ability,
+        AbilityBuilder<E>
+> {
 
-    // Fields
-    private Function<E, Player> playerGetter_;
-    private Ability extends_;
+    // CONSTANTS
+    private static <E extends Event> BiConsumer<E, List<Region>> defaultOnAllowed() {
+        return (e, r) -> {};
+    }
+    private static <E extends Event> BiConsumer<E, List<Region>> defaultOnDenied() {
+        return (e, r) -> {
+            if (e instanceof Cancellable can) { can.setCancelled(true); }
+        };
+    }
 
 
-    // CONSTRUCTORS
-    // Fabric static method for readability
+    // TRIGGER FIELDS
+    private Function<E, Player> attributer = null;
+    private BiConsumer<E, List<Region>> onAllowed_ = defaultOnAllowed();
+    private BiConsumer<E, List<Region>> onDenied_ = defaultOnDenied();
+
+
+    // ABILITY FIELDS
+    private Ability extends_ = null;
+    private String name_ = null;
+    private SetMap<Class<? extends Event>, BiConsumer<Event, List<Region>>> onAllowedMap_;
+    private SetMap<Class<? extends Event>, BiConsumer<Event, List<Region>>> onDeniedMap_;
+
+    //FACTORY
     public static <E extends Event> AbilityBuilder<E> on(Class<E> eventClass) {
         return new AbilityBuilder<>(eventClass);
     }
-    protected AbilityBuilder(Class<E> eventClass) {
+
+
+    //CONSTRUCTOR
+    private AbilityBuilder(
+            Class<E> eventClass,
+            Set<AbilityTrigger<?>> existingTriggers,
+            SetMap<Class<? extends Event>, BiConsumer<Event, List<Region>>> onAllowedMap,
+            SetMap<Class<? extends Event>, BiConsumer<Event, List<Region>>> onDeniedMap
+        ) {
+        super(eventClass, existingTriggers);
+        this.onAllowedMap_ = onAllowedMap;
+        this.onDeniedMap_ = onDeniedMap;
+    }
+    private AbilityBuilder(Class<E> eventClass) {
         super(eventClass);
+        this.onAllowedMap_ = new SetMap<>();
+        this.onDeniedMap_ = new SetMap<>();
     }
 
 
     // CHAINED CONFIG
     public AbilityBuilder<E> by(Function<E, Player> playerGetter) {
-        this.playerGetter_ = playerGetter;
+        this.attributer = playerGetter;
         return this;
     }
+
     public AbilityBuilder<E> extend(Ability extendAbility) {
         this.extends_ = extendAbility;
         return this;
     }
+    public AbilityBuilder<E> ifAllowed(BiConsumer<E, List<Region>> onAllowed) {
+        this.onAllowed_ = onAllowed;
+        return this;
+    }
+    public AbilityBuilder<E> ifDenied(BiConsumer<E, List<Region>> onDenied) {
+        this.onDenied_ = onDenied;
+        return this;
+    }
+    public AbilityBuilder<E> ifDeniedCancelAnd(BiConsumer<E, List<Region>> onDenied) {
+        this.onDenied_ = (e, r) -> {
+            defaultOnDenied().accept(e, r);
+            onDenied.accept(e, r);
+        };
+        return this;
+    }
+
+    @Override @SuppressWarnings("unchecked")
+    public <E2 extends Event> AbilityBuilder<E2> alsoOn(Class<E2> eventClass) {
+        return (AbilityBuilder<E2>) super.alsoOn(eventClass);
+    }
+
+    //FINAL
+    public Ability named(String name) {
+        this.name_ = name;
+        return this.build();
+    }
+
+    public Ability done() {
+        return this.build();
+    }
 
 
     //GETTERS
-    protected PointGetter getPointGetter() {
-        try {
-            return super.getPointGetter();
-        } catch (IllegalStateException e) {
-            e.printStackTrace();
-        }
-        Function<Event, Player> playerGetter = this.getPlayerGetter();
-        return e -> playerGetter.apply(e).getLocation();
-    }
-    protected Function<Event, Player> getPlayerGetter() {
+    protected Function<E, Player> getAttributer() {
         // If explicitly provided, return right away
-        if (playerGetter_ != null) {
-            return e -> this.playerGetter_.apply(this.eventClass_.cast(e));
+        if (attributer != null) {
+            return attributer;
         }
 
         // Else, try to cast to PlayerEvent
@@ -67,7 +133,9 @@ public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E
         Method playerGetterMethod = null;
         try {
             playerGetterMethod = this.eventClass_.getMethod("getPlayer");
-        } catch (NoSuchMethodException ignored) {}
+        } catch (NoSuchMethodException ignored) {
+        }
+
         if (!(playerGetterMethod != null && playerGetterMethod.getReturnType().equals(Player.class))) {
             throw new IllegalStateException("Cannot build Ability. Unable de infer player from event.");
         }
@@ -83,64 +151,124 @@ public class AbilityBuilder<E extends Event> extends RegionEventReactorBuilder<E
     }
 
 
-    //FINAL OPERATIONS
-    @Override protected Ability build(@Nullable Predicate<E> extraCheck) {
+    //IMPLEMENTATION
+    @Override @SuppressWarnings("unchecked")
+    protected AbilityTrigger<?> buildTrigger() {
 
-        PointGetter pg = null; AreaGetter ag = null; Exception exception = null;
-        try {
-            ag = this.getAreaGetter();
-        } catch (Exception e) { exception = e; }
-        try {
-            pg = this.getPointGetter();
-        } catch (Exception e) { exception = e; }
-        if (ag == null && pg == null) {
-            throw (exception != null) ? new RuntimeException(exception) : new IllegalStateException("Unable to build ability. Cannot infer location");
-        }
+        this.onAllowedMap_.putInto(this.eventClass_, (BiConsumer<Event, List<Region>>) this.onAllowed_);
+        this.onDeniedMap_.putInto(this.eventClass_, (BiConsumer<Event, List<Region>>) this.onDenied_);
 
-        String name = this.getName();
-        Predicate<Event> validator = this.getValidator();
-        int order = (this.priority_ != null) ? this.priority_ : 0;
-        if (extraCheck != null) {
-            validator = validator.and(e -> extraCheck.test(this.eventClass_.cast(e)));
-        }
-
-        if (pg != null) {
-            if (name == null) {
-                return new ReflectiveAbility(this.eventClass_, validator, this.getPlayerGetter(), pg, order, this.bukkitPriority_, this.extends_);
-            }
-            return new Ability(name, this.eventClass_, validator, this.getPlayerGetter(), pg, order, this.bukkitPriority_, this.extends_);
-        }
-        if (name == null) {
-            return new ReflectiveAbility(this.eventClass_, validator, this.getPlayerGetter(), ag, order, this.bukkitPriority_, this.extends_);
-        }
-        return new Ability(name, this.eventClass_, validator, this.getPlayerGetter(), ag, order, this.bukkitPriority_, this.extends_);
+        return new AbilityTriggerImpl<E>(
+                this.eventClass_,
+                this.priority_,
+                this.getAttributer(),
+                this.getLocalizer(),
+                this.validator_
+        );
     }
 
-    private static class ReflectiveAbility extends Ability implements ReflectiveNameable {
+    @Override
+    protected Ability buildListener(Set<AbilityTrigger<?>> triggers) {
 
-        private String renamed_;
+        BiConsumer<Event, List<Region>> onAllowed = new FinalAction(this.onAllowedMap_),
+                                        onDenied = new FinalAction(this.onDeniedMap_);
 
-        public ReflectiveAbility(Class<? extends Event> eventClass, Predicate<Event> validator, Function<Event, Player> playerGetter, PointGetter pointGetter, int order, @Nullable EventPriority priority, @Nullable Ability dependsOn) {
-            super("", eventClass, validator, playerGetter, pointGetter, order, priority, dependsOn);
-            this.renamed_ = null;
-        }
-        public ReflectiveAbility(Class<? extends Event> eventClass, Predicate<Event> validator, Function<Event, Player> playerGetter, AreaGetter areaGetter, int order, @Nullable EventPriority priority, @Nullable Ability dependsOn) {
-            super("", eventClass, validator, playerGetter, areaGetter, order, priority, dependsOn);
-            this.renamed_ = null;
+        if (this.name_ == null) {
+            return new ReflectiveNameableAbility(triggers, this.extends_, onAllowed, onDenied);
         }
 
-        @Override public String getName() {
-            if (this.renamed_ == null) {
-                throw new IllegalStateException("Trying to access an unnamed ability's name");
+        return new AbilityImpl(this.name_, triggers, this.extends_, onAllowed, onDenied);
+    }
+
+    @Override
+    protected <E2 extends Event> AbilityBuilder<E2> next(Class<E2> eventClass, Set<AbilityTrigger<?>> existingTriggers) {
+        return new AbilityBuilder<>(eventClass, existingTriggers, this.onAllowedMap_, this.onDeniedMap_);
+    }
+
+
+    //SUBTYPES
+    private record FinalAction(SetMap<Class<? extends Event>, BiConsumer<Event, List<Region>>> actionMap) implements BiConsumer<Event, List<Region>> {
+        @Override
+        public void accept(Event e, List<Region> r) {
+            var actions = this.actionMap.get(e.getClass());
+            if (actions == null) { return; }
+            for (var action : actions) {
+                action.accept(e, r);
             }
-            return this.renamed_;
+        }
+    }
+    private record AbilityTriggerImpl<E extends Event>(
+            Class<E> eventClass,
+            Priority priority,
+            Function<E, Player> attributer,
+            Function<E, Place> localizer,
+            Predicate<E> validator
+
+    ) implements AbilityTrigger<E> {
+
+        @Override
+        public Player attribute(E event) {
+            return this.attributer.apply(event);
         }
 
-        @Override public void setName(String name) {
-            if (this.renamed_ != null) {
-                throw new IllegalStateException("Cannot name an ability twice");
-            }
-            this.renamed_ = name;
+        @Override
+        public Class<E> eventClass() {
+            return this.eventClass;
+        }
+
+        @Override
+        public Priority priority() {
+            return this.priority;
+        }
+
+        @Override
+        public Place localize(E event) {
+            return this.localizer.apply(event);
+        }
+
+        @Override
+        public boolean appliesTo(E event) {
+            return this.validator.test(event);
+        }
+    }
+    private static class ReflectiveNameableAbility implements Ability, ReflectiveNameable<Ability> {
+
+        //FIELDS
+        private final Set<AbilityTrigger<?>> triggers_;
+        private final Ability super_;
+        private final BiConsumer<Event, List<Region>> onAllowed_;
+        private final BiConsumer<Event, List<Region>> onDenied_;
+        private String name_;
+
+
+        //CONSTRUCTOR
+        public ReflectiveNameableAbility(Set<AbilityTrigger<?>> triggers, @Nullable Ability superAbility, BiConsumer<Event, List<Region>> onAllowed, BiConsumer<Event, List<Region>> onDenied) {
+            this.triggers_ = Set.copyOf(triggers);
+            this.super_ = superAbility;
+            this.onAllowed_ = onAllowed;
+            this.onDenied_ = onDenied;
+            this.name_ = null;
+        }
+
+
+        //IMPLEMENTATION
+        @Override public Optional<Ability> superAbility() { return Optional.ofNullable(this.super_); }
+        @Override public void onAllowed(Event event, List<Region> regions) {
+            this.onAllowed_.accept(event, regions);
+        }
+        @Override public void onDenied(Event event, List<Region> regions) {
+            this.onDenied_.accept(event, regions);
+        }
+        @Override public String name() {
+            if (this.name_ != null) { return this.name_; }
+            throw new IllegalStateException("ReflectiveNameableAbility does not have a name.");
+        }
+        @Override public Collection<AbilityTrigger<?>> triggers() {
+            return this.triggers_;
+        }
+        @Override public Ability namedAs(String name) {
+            this.name_ = name;
+            return this;
         }
     }
 }

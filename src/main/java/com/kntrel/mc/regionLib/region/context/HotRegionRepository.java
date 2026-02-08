@@ -107,6 +107,7 @@ class HotRegionRepository implements RegionReadRepository, Listener {
             }
             this.insert(r);
         }
+        for (Region r : regions) { this.regionMap_.put(r.getId(), r); }
     }
     @EventHandler public void handleChunkLoad(ChunkLoadEvent event) {
         Chunk chunk = event.getChunk();

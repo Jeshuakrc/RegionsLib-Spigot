@@ -3,7 +3,6 @@ package com.kntrel.mc.regionLib.region.context;
 import com.kntrel.mc.regionLib.cache.RegionCache;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.ability.Ability;
-import com.kntrel.mc.regionLib.region.ability.AbilityBuilder;
 import com.kntrel.mc.regionLib.region.ability.AbilityRegistry;
 import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
 import com.kntrel.mc.regionLib.region.display.BlockDisplayAreaDisplayer;
@@ -22,7 +21,6 @@ import org.bukkit.event.Event;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.Nullable;
-
 import java.util.List;
 import java.util.function.Function;
 
@@ -56,7 +54,7 @@ public class RegionContext implements AttributedRegionRepository {
         this.config_ = config;
         this.plugin_ = plugin;
         this.hierarchyRepository_ = hierarchyRepFactory.apply(this);
-        this.abilityRegistry_ = new AbilityRegistry(this);
+        this.abilityRegistry_ = new AbilityRegistry(this, this.config_.permissionsOverlapMode);
         this.ruleRegistry_ = new RuleRegistry(this);
         this.displayController_ = new DisplayController(this, new BlockDisplayAreaDisplayer(this), this.config_.regionDisplayDurationSeconds);
         this.cache_ = new RegionCache(this.config_.cacheCapacity);
@@ -64,6 +62,8 @@ public class RegionContext implements AttributedRegionRepository {
         this.delegateRegionRepository_ = regionRepFactory.apply(this);
         this.hotRegionRepository_ = new HotRegionRepository(this.cache_, this.delegateRegionRepository_, this.config_.cellSize);
         this.regionRepository_ = new MainRegionRepository(new HotRegionRepositoryWrapper(this.hotRegionRepository_), this.delegateRegionRepository_, this.plugin_.getServer().getPluginManager(), this.cache_);
+
+        this.plugin_.getServer().getPluginManager().registerEvents(this.hotRegionRepository_, this.plugin_);
     }
     public RegionContext(RegionContextConfig config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
         this(plugin.getName(), config, plugin, regionRepFactory, hierarchyRepFactory);
@@ -115,9 +115,6 @@ public class RegionContext implements AttributedRegionRepository {
     }
     public void registerAbility(Ability ability) {
         this.abilityRegistry_.register(ability);
-    }
-    public <E extends Event> AbilityBuilder<E> registerAbilityOn(Class<E> eventClass) {
-        return this.abilityRegistry_.registerOn(eventClass);
     }
     public void displayRegion(Region region, AreaDisplayer displayer, long seconds, Player player) {
         this.displayController_.display(region, displayer, seconds, player);

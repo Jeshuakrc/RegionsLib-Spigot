@@ -1,221 +1,301 @@
 package com.kntrel.mc.regionLib.region.rule;
 
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.react.ReflectiveNameable;
-import com.kntrel.mc.regionLib.region.react.RegionEventReactorBuilder;
-import com.kntrel.mc.regionLib.util.Area;
-import com.kntrel.mc.regionLib.util.AreaGetter;
-import com.kntrel.mc.regionLib.util.PointGetter;
+import com.kntrel.mc.regionLib.region.listen.Place;
+import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
+import com.kntrel.mc.regionLib.region.listen.build.ReflectiveNameable;
+import com.kntrel.mc.regionLib.region.listen.build.ListenerBuilder;
+import com.kntrel.util.Priority;
+import com.kntrel.util.SetMap;
 import com.kntrel.util.TriPredicate;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import org.apache.logging.log4j.util.TriConsumer;
-import org.bukkit.Location;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
-import org.jetbrains.annotations.NotNull;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.*;
 
-public class RuleBuilder<E extends Event, T> extends RegionEventReactorBuilder<E, Rule<T>, RuleBuilder<E, T>> {
+public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T, B>> extends ListenerBuilder<
+        E,
+        RegionTrigger<?>,
+        Rule<T>,
+        B
+> {
 
-    //FIELDS
-    private final ValueType<T> type_;
-    private TriPredicate<E, T, Region> testTri_ = null;
-    private BiPredicate<E, T> testBi_ = null;
-    private Predicate<T> test_ = null;
-    private TriConsumer<E, T, Region> actionTri_ = null;
-    private BiConsumer<E, T> actionBi_ = null;
-    private Consumer<E> action_ = null;
+    //FACTORY
+    public static <T> Starter<T> of(ValueType<T> type) {
+        return new Starter<>(type);
+    }
+
+    public static <T> Starter<T> of(Class<T> clazz) {
+        return of(ValueType.of(clazz));
+    }
+
+    public static <E extends Event> Bool<E> on(Class<E> eventClass) {
+        return new Bool<>(eventClass, new HashSet<>(), new SetMap<>(), new SetMap<>());
+    }
+
+    //LISTENER FIELDS
+    protected final SetMap<Class<? extends Event>, TriConsumer<T, Event, Region>> actions_;
+    protected final SetMap<Class<? extends Event>, BiConsumer<Event, Region>> absentActions_;
+    protected String name_;
+
+
+    //TRIGGER FIELDS
+    protected final ValueType<T> type_;
+    protected TriPredicate<T, E, Region> test_ = (t, r, e) -> true;
+    protected TriConsumer<T, E, Region> action_ = null;
+    protected BiConsumer<Event, Region> absentAction_ = (e, r) -> {};
 
 
     //CONSTRUCTORS
-    public static <E extends Event> BooleanRuleBuilder<E> on(Class<E> eventClass) {
-        return new BooleanRuleBuilder<>(eventClass);
+    protected RuleBuilder(
+            ValueType<T> valueType,
+            Class<E> eventClass,
+            Set<RegionTrigger<?>> existingTriggers,
+            SetMap<Class<? extends Event>,TriConsumer<T, Event, Region>> actions,
+            SetMap<Class<? extends Event>,BiConsumer<Event, Region>> absentActions
+    ) {
+        super(eventClass, existingTriggers);
+        this.type_ = valueType;
+        this.actions_ = actions;
+        this.absentActions_ = absentActions;
     }
 
-    protected RuleBuilder(RuleBuilder<E, ?> other, ValueType<T> type) {
-        super(other.eventClass_);
-        this.type_ = type;
-        this.action_ = other.action_;
-    }
-
-    protected RuleBuilder(Class<E> eventClass, ValueType<T> type) {
-        super(eventClass);
-        this.type_ = type;
+    protected RuleBuilder(ValueType<T> valueType, Class<E> eventClass, Set<RegionTrigger<?>> existingTriggers) {
+        this(valueType, eventClass, existingTriggers, new SetMap<>(), new SetMap<>());
     }
 
 
     //CHAIN OPERATIONS
-    public RuleBuilder<E, T> iff(Predicate<T> test) {
+    public B iff(TriPredicate<T, E, Region> test) {
         this.test_ = test;
-        return this;
+        return this.instance_;
     }
 
-    public RuleBuilder<E, T> iff(BiPredicate<E, T> test) {
-        this.testBi_ = test;
-        return this;
+    public B iff(BiPredicate<T, E> test) {
+        return this.iff((t, e, r) -> test.test(t, e));
     }
 
-    public RuleBuilder<E, T> iff(TriPredicate<E, T, Region> test) {
-        this.testTri_ = test;
-        return this;
+    public B iff(Predicate<T> test) {
+        return this.iff((t, e, r) -> test.test(t));
     }
 
-    public RuleBuilder<E, T> then(Consumer<E> action) {
+    public B then(TriConsumer<T, E, Region> action) {
         this.action_ = action;
-        return this;
+        return this.instance_;
     }
 
-    public RuleBuilder<E, T> then(BiConsumer<E, T> action) {
-        this.actionBi_ = action;
-        return this;
+    public B then(BiConsumer<T, E> action) {
+        return this.then((t, e, r) -> action.accept(t, e));
     }
 
-    public RuleBuilder<E, T> then(TriConsumer<E, T, Region> action) {
-        this.actionTri_ = action;
-        return this;
+    public B then(Consumer<E> action) {
+        return this.then((t, e, r) -> action.accept(e));
     }
 
-    public RuleBuilder<E, T> thenCancel() {
+    public B thenCancel() {
         if (!Cancellable.class.isAssignableFrom(this.eventClass_)) {
-            return this;
+            throw new IllegalStateException("Event " + this.eventClass_.getName() + " is not cancellable");
         }
-        this.then(e -> ((Cancellable) e).setCancelled(true));
-        return this;
+        return this.then(e -> ((Cancellable) e).setCancelled(true));
+    }
+
+    public B ifAbsent(BiConsumer<Event, Region> action) {
+        this.absentAction_ = action;
+        return this.instance_;
+    }
+    public B ifAbsent(Consumer<Event> action) {
+        return this.ifAbsent((e, r) -> action.accept(e));
+    }
+    public Rule<T> named(String name) {
+        this.name_ = name;
+        return this.build();
+    }
+    public Rule<T> done() {
+        return this.build();
     }
 
 
-    //GETTERS
-    protected TriPredicate<Event, T, Region> getTest() {
-        if (this.testTri_ != null) {
-            return (e, t, r) -> this.testTri_.test(this.eventClass_.cast(e), t, r);
-        }
-        if (this.testBi_ != null) {
-            return (e, t, r) -> this.testBi_.test(this.eventClass_.cast(e), t);
-        }
-        if (this.test_ != null) {
-            return (e, t, r) -> this.test_.test(t);
-        }
-        if (Boolean.class.isAssignableFrom(this.type_.getType())) {
-            return (e, t, r) -> (Boolean) t;
-        }
-        return (e, t, r) -> true;
-    }
-
-    protected TriConsumer<Event, T, Region> getAction() {
-        if (this.actionTri_ != null) {
-            return (e, t, r) -> this.actionTri_.accept(this.eventClass_.cast(e), t, r);
-        }
-        if (this.actionBi_ != null) {
-            return (e, t, r) -> this.actionBi_.accept(this.eventClass_.cast(e), t);
-        }
-        if (this.action_ != null) {
-            return (e, t, r) -> this.action_.accept(this.eventClass_.cast(e));
-        }
-        throw new IllegalStateException("Rule does nothing");
-    }
-
-
-    @Override
-    protected Rule<T> build(Predicate<E> extraCheck) {
-        PointGetter pg = null;
-        AreaGetter ag = null;
-        Exception exception = null;
-        try {
-            ag = this.getAreaGetter();
-        } catch (Exception e) {
-            exception = e;
-        }
-        try {
-            pg = this.getPointGetter();
-        } catch (Exception e) {
-            exception = e;
-        }
-        if (ag == null && pg == null) {
-            throw (exception != null) ? new RuntimeException(exception) : new IllegalStateException("Unable to build rule. Cannot infer location");
+    //IMPLEMENTATION
+    @Override protected RegionTrigger<E> buildTrigger() {
+        if (this.action_ == null) {
+            throw new IllegalStateException("Rule trigger does nothing");
         }
 
-        String name = this.getName();
-        Predicate<Event> validator = this.getValidator();
-        int order = (this.priority_ != null) ? this.priority_ : 0;
-        if (extraCheck != null) {
-            validator = validator.and(e -> extraCheck.test(this.eventClass_.cast(e)));
-        }
+        Function<E, Place> localizer = this.getLocalizer();
 
-        if (pg != null) {
-            if (name == null) {
-                return new ReflectiveRule<>(this.eventClass_, this.type_, pg, validator, order, this.bukkitPriority_, this.getTest(), this.getAction());
+        TriConsumer<T, Event, Region> action = (v, e, r) -> {
+            E ev = this.eventClass_.cast(e);
+            if (this.test_.test(v, ev, r)) {
+                this.action_.accept(v, ev, r);
             }
-            return new Rule<T>(name, this.eventClass_, this.type_, pg, validator, order, this.bukkitPriority_, this.getTest(), this.getAction());
+        };
+        this.actions_.putInto(this.eventClass_, action);
+        this.absentActions_.putInto(this.eventClass_, this.absentAction_);
+
+        return new RuleTriggerImpl<>(
+                this.eventClass_,
+                this.bukkitPriority_,
+                this.priority_,
+                localizer,
+                this.validator_
+        );
+    }
+    @Override protected Rule<T> buildListener(Set<RegionTrigger<?>> triggers) {
+        if (this.name_ == null) {
+            return new UnnamedRule<>(
+                    this.type_,
+                    triggers,
+                    new FinalAction<>(this.actions_),
+                    new FinalAbsentAction(this.absentActions_)
+            );
         }
-        if (name == null) {
-            return new ReflectiveRule<>(this.eventClass_, this.type_, ag, validator, order, this.bukkitPriority_, this.getTest(), this.getAction());
-        }
-        return new Rule<T>(name, this.eventClass_, this.type_, ag, validator, order, this.bukkitPriority_, this.getTest(), this.getAction());
+
+        return new RuleImpl<>(
+                this.name_,
+                this.type_,
+                triggers,
+                new FinalAction<>(this.actions_),
+                new FinalAbsentAction(this.absentActions_)
+        );
     }
 
 
-    //CLASSES
-    public static class BooleanRuleBuilder<E extends Event> extends RuleBuilder<E, Boolean> {
-
-        protected BooleanRuleBuilder(Class<E> eventClass) {
-            super(eventClass, ValueType.BOOL);
-            this.ifTrue();
+    //SPECIALIZATIONS
+    public static class Generic<E extends Event, T> extends RuleBuilder<E, T, Generic<E, T>> {
+        protected Generic(
+                ValueType<T> valueType, Class<E> eventClass,
+                Set<RegionTrigger<?>> existingTriggers,
+                SetMap<Class<? extends Event>, TriConsumer<T, Event, Region>> actions,
+                SetMap<Class<? extends Event>, BiConsumer<Event, Region>> absentActions
+        ) {
+            super(valueType, eventClass, existingTriggers, actions, absentActions);
         }
 
-        public <T> RuleBuilder<E, T> having(ValueType<T> type) {
-            return new RuleBuilder<>(this, type);
+        @Override @SuppressWarnings("unchecked")
+        public <E2 extends Event> Generic<E2, T> alsoOn(Class<E2> eventClass) {
+            return (Generic<E2, T>) super.alsoOn(eventClass);
         }
 
-        public RuleBuilder<E, Boolean> ifFalse() {
-            this.iff(b -> !b);
-            return this;
+        @Override
+        protected <E2 extends Event> Generic<E2, T> next(Class<E2> eventClass, Set<RegionTrigger<?>> existingTriggers) {
+            return new Generic<>(this.type_, eventClass, existingTriggers, this.actions_, this.absentActions_);
         }
-        public RuleBuilder<E, Boolean> ifTrue() {
-            this.iff(b -> b);
-            return this;
+    }
+    public static class Bool<E extends Event> extends RuleBuilder<E, Boolean, Bool<E>> {
+        protected Bool(
+                Class<E> eventClass,
+                Set<RegionTrigger<?>> existingTriggers,
+                SetMap<Class<? extends Event>, TriConsumer<Boolean, Event, Region>> actions,
+                SetMap<Class<? extends Event>, BiConsumer<Event, Region>> absentActions
+        ) {
+            super(ValueType.BOOL, eventClass, existingTriggers, actions, absentActions);
         }
 
-        @Override public BooleanRuleBuilder<E> when(Predicate<E> validator) {
-            super.when(validator);
-            return this;
+
+        public Bool<E> ifTrue() {
+            return this.iff((t, r, e) -> t);
         }
-        @Override public BooleanRuleBuilder<E> at(Function<E, Location> pointGetter) {
-            super.at(pointGetter);
-            return this;
+        public Bool<E> ifFalse() {
+            return this.iff((t, r, e) -> !t);
         }
-        @Override public BooleanRuleBuilder<E> in(Function<E, Area> areaGetter) {
-            super.in(areaGetter);
-            return this;
+
+        @Override @SuppressWarnings("unchecked")
+        public <E2 extends Event> Bool<E2> alsoOn(Class<E2> eventClass) {
+            return (Bool<E2>) super.alsoOn(eventClass);
+        }
+
+        @Override
+        protected <E2 extends Event> Bool<E2> next(Class<E2> eventClass, Set<RegionTrigger<?>> existingTriggers) {
+            return new Bool<>(eventClass, existingTriggers, this.actions_, this.absentActions_);
         }
     }
 
-    private static class ReflectiveRule<T> extends Rule<T> implements ReflectiveNameable {
 
-        private String name_;
+    //SUBTYPES
+    public static class Starter<T> {
 
-        public ReflectiveRule(@NotNull Class<? extends Event> eventClass, @NotNull ValueType<T> type, @NotNull PointGetter pointGetter, @NotNull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region> action) {
-            super("", eventClass, type, pointGetter, validator, priority, bukkitPriority, test, action);
-            this.name_ = null;
-        }
-        public ReflectiveRule(@NotNull Class<? extends Event> eventClass, @NotNull ValueType<T> type, @NotNull AreaGetter areaGetter, @NotNull Predicate<Event> validator, int priority, EventPriority bukkitPriority, TriPredicate<Event, T, Region> test, TriConsumer<Event, T, Region> action) {
-            super("", eventClass, type, areaGetter, validator, priority, bukkitPriority, test, action);
-            this.name_ = null;
+        private final ValueType<T> type_;
+
+        protected Starter(ValueType<T> type) {
+            this.type_ = type;
         }
 
-
-        @Override public void setName(String name) {
-            if (this.name_ != null) {
-                throw new IllegalStateException("Reflective rule is already named");
+        public <E extends Event> Generic<E, T> on(Class<E> eventClass) {
+            return new Generic<>(this.type_, eventClass, new HashSet<>(), new SetMap<>(), new SetMap<>());
+        }
+    }
+    protected record FinalAction<T>(Map<Class<? extends Event>, Set<TriConsumer<T, Event, Region>>> actionMap) implements TriConsumer<T, Event, Region> {
+        @Override
+        public void accept(T t, Event e, Region r) {
+            var actions = this.actionMap.get(e.getClass());
+            if (actions == null) { return; }
+            for (var action : actions) {
+                action.accept(t, e, r);
             }
-            this.name_ = name;
+        }
+    }
+    protected record FinalAbsentAction(Map<Class<? extends Event>, Set<BiConsumer<Event, Region>>> actionMap) implements BiConsumer<Event, Region> {
+        @Override
+        public void accept(Event e, Region r) {
+            var actions = this.actionMap.get(e.getClass());
+            if (actions == null) { return; }
+            for (var action : actions) {
+                action.accept(e, r);
+            }
+        }
+    }
+    protected static class UnnamedRule<T> implements Rule<T>, ReflectiveNameable<Rule<T>> {
+
+        //FIELDS
+
+        private final ValueType<T> type_;
+        private final Collection<RegionTrigger<?>> triggers_;
+        private final TriConsumer<T, Event, Region> action_;
+        private final BiConsumer<Event, Region> absentAction_;
+
+
+        //CONSTRUCTOR
+        public UnnamedRule(ValueType<T> type, Collection<RegionTrigger<?>> ruleTriggers, TriConsumer<T, Event, Region> action, BiConsumer<Event, Region> absentAction) {
+            this.triggers_ = ruleTriggers;
+            this.type_ = type;
+            this.action_ = action;
+            this.absentAction_ = absentAction;
         }
 
-        @Override public String getName() {
-            if (this.name_ == null) {
-                throw new IllegalStateException("Trying to access an unnamed reflective rule's name");
-            }
-            return this.name_;
+        //IMPLEMENTATION
+        @Override public String name() {
+            throw new IllegalStateException("Unnamed rule.");
         }
+        @Override public Collection<RegionTrigger<?>> triggers() {
+            return this.triggers_;
+        }
+        @Override public Rule<T> namedAs(String name) {
+            return new RuleImpl<>(name, this.valueType(), this.triggers_, this.action_, this.absentAction_);
+        }
+        @Override public ValueType<T> valueType() {
+            return this.type_;
+        }
+        @Override public void fire(T value, Event event, Region triggerer) {
+            this.action_.accept(value, event, triggerer);
+        }
+        @Override public void fireOnAbsent(Event event, Region triggerer) {
+            this.absentAction_.accept(event, triggerer);
+        }
+    }
+    protected record RuleTriggerImpl<E extends Event, T>(
+            Class<E> eventClass,
+            EventPriority bukkitPriority,
+            Priority priority,
+            Function<E, Place> localizer,
+            Predicate<E> validator
+    ) implements RegionTrigger<E> {
+        @Override public Place localize(E event) { return this.localizer.apply(event); }
+        @Override public boolean appliesTo(E event) { return this.validator.test(event); }
     }
 }

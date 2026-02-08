@@ -71,12 +71,6 @@ public class AbilityTriggeredEvent extends PlayerEvent {
     public boolean isAllowed() {
         return allowed_;
     }
-    public boolean isPointBased() {
-        return this.ability_.isPointBased();
-    }
-    public boolean isAreaBased() {
-        return this.ability_.isAreaBased();
-    }
 
 
     //SETTERS

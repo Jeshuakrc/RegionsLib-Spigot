@@ -1,24 +1,39 @@
 package com.kntrel.mc.regionLib.region;
 
 import com.kntrel.mc.regionLib.region.rule.Rule;
-import com.kntrel.mc.regionLib.util.PointGetter;
-import com.kntrel.util.TriPredicate;
+import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
-import org.apache.logging.log4j.util.TriConsumer;
 import org.bukkit.event.Event;
-import org.bukkit.event.EventPriority;
 import org.jetbrains.annotations.NotNull;
-import java.util.function.Predicate;
+import java.util.Collection;
+import java.util.Set;
 
-final class OrphanRule extends Rule<String> {
+final class OrphanRule implements Rule<String> {
 
-    private static final PointGetter POINT_GETTER = e -> null;
-    private static final Predicate<Event> VALIDATOR = e -> false;
-    private static final TriPredicate<Event, String, Region> TEST = (e, v, r) -> false;
-    private static final TriConsumer<Event, String, Region> ACTION = (e, v, r) -> {};
+    //FIELDS
+    private final String name_;
 
 
+    //CONSTRUCTOR
     public OrphanRule(@NotNull String name) {
-        super(name, null, ValueType.STRING, POINT_GETTER, VALIDATOR, Integer.MIN_VALUE, EventPriority.LOWEST, TEST, ACTION);
+        this.name_ = name;
+    }
+
+
+    //IMPLEMENTATION
+    @Override public ValueType<String> valueType() {
+        return ValueType.STRING;
+    }
+    @Override public String name() {
+        return this.name_;
+    }
+    @Override public Collection<RegionTrigger<?>> triggers() {
+        return Set.of();
+    }
+    @Override public void fire(String value, Event event, Region triggerer) {
+        // Do nothing
+    }
+    @Override public void fireOnAbsent(Event event, Region triggerer) {
+        // Do nothing
     }
 }

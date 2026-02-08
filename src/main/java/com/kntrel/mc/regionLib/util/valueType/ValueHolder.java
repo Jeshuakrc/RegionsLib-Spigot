@@ -7,7 +7,7 @@ public class ValueHolder<T> implements Comparable<ValueHolder<T>> {
     //API
     @SuppressWarnings("unchecked")
     public static <T> ValueHolder<T> of(@NotNull T value) {
-        return new ValueHolder<>((String) value, ValueType.of((Class<T>) value.getClass()));
+        return new ValueHolder<>(value, ValueType.of((Class<T>) value.getClass()));
     }
     public static <T> ValueHolder<T> of(@NotNull String value, @NotNull ValueType<T> type) {
         return new ValueHolder<>(value, type);

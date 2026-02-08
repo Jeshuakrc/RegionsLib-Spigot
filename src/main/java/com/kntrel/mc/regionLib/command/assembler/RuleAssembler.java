@@ -40,7 +40,7 @@ public class RuleAssembler implements TransformAssembler<Object, String, Rule<?>
             return builder.buildFuture();
         }
         rr.getAll().stream()
-                .map(Rule::getName)
+                .map(Rule::name)
                 .forEach(builder::suggest);
         return builder.buildFuture();
     }
