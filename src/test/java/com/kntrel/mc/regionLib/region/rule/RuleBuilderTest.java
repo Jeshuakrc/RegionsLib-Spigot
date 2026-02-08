@@ -5,13 +5,10 @@ import com.kntrel.mc.regionLib.testsupport.TestEvents;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.junit.jupiter.api.Test;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class RuleBuilderTest {
 

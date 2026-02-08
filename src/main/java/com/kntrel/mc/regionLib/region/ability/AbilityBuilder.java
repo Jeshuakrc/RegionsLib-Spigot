@@ -5,6 +5,7 @@ import com.kntrel.mc.regionLib.region.listen.Bounds;
 import com.kntrel.mc.regionLib.region.listen.build.ListenerBuilder;
 import com.kntrel.mc.regionLib.region.listen.build.ReflectiveNameable;
 import com.kntrel.util.Priority;
+import com.kntrel.util.SetMap;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
@@ -28,24 +29,27 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
 > {
 
     // CONSTANTS
-    private static final BiConsumer<Event, List<Region>> DEFAULT_ON_ALLOWED = (e, r) -> {
-    };
-    private static final BiConsumer<Event, List<Region>> DEFAULT_ON_DENIED = (e, r) -> {
-        if (e instanceof Cancellable) {
-            ((Cancellable) e).setCancelled(true);
-        }
-    };
+    private static <E extends Event> BiConsumer<E, List<Region>> defaultOnAllowed() {
+        return (e, r) -> {};
+    }
+    private static <E extends Event> BiConsumer<E, List<Region>> defaultOnDenied() {
+        return (e, r) -> {
+            if (e instanceof Cancellable can) { can.setCancelled(true); }
+        };
+    }
 
 
     // TRIGGER FIELDS
     private Function<E, Player> attributer = null;
+    private BiConsumer<E, List<Region>> onAllowed_ = defaultOnAllowed();
+    private BiConsumer<E, List<Region>> onDenied_ = defaultOnDenied();
 
 
     // ABILITY FIELDS
     private Ability extends_ = null;
     private String name_ = null;
-    private BiConsumer<Event, List<Region>> onAllowed_ = DEFAULT_ON_ALLOWED;
-    private BiConsumer<Event, List<Region>> onDenied_ = DEFAULT_ON_DENIED;
+    private SetMap<Class<? extends Event>, BiConsumer<Event, List<Region>>> onAllowedMap_;
+    private SetMap<Class<? extends Event>, BiConsumer<Event, List<Region>>> onDeniedMap_;
 
     //FACTORY
     public static <E extends Event> AbilityBuilder<E> on(Class<E> eventClass) {
@@ -54,11 +58,20 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
 
 
     //CONSTRUCTOR
-    private AbilityBuilder(Class<E> eventClass, Set<AbilityTrigger<?>> existingTriggers) {
+    private AbilityBuilder(
+            Class<E> eventClass,
+            Set<AbilityTrigger<?>> existingTriggers,
+            SetMap<Class<? extends Event>, BiConsumer<Event, List<Region>>> onAllowedMap,
+            SetMap<Class<? extends Event>, BiConsumer<Event, List<Region>>> onDeniedMap
+        ) {
         super(eventClass, existingTriggers);
+        this.onAllowedMap_ = onAllowedMap;
+        this.onDeniedMap_ = onDeniedMap;
     }
     private AbilityBuilder(Class<E> eventClass) {
         super(eventClass);
+        this.onAllowedMap_ = new SetMap<>();
+        this.onDeniedMap_ = new SetMap<>();
     }
 
 
@@ -72,16 +85,19 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
         this.extends_ = extendAbility;
         return this;
     }
-    public AbilityBuilder<E> ifAllowed(BiConsumer<Event, List<Region>> onAllowed) {
+    public AbilityBuilder<E> ifAllowed(BiConsumer<E, List<Region>> onAllowed) {
         this.onAllowed_ = onAllowed;
         return this;
     }
-    public AbilityBuilder<E> ifDenied(BiConsumer<Event, List<Region>> onDenied) {
+    public AbilityBuilder<E> ifDenied(BiConsumer<E, List<Region>> onDenied) {
         this.onDenied_ = onDenied;
         return this;
     }
-    public AbilityBuilder<E> ifDeniedCancelAnd(BiConsumer<Event, List<Region>> onDenied) {
-        this.onDenied_ = DEFAULT_ON_DENIED.andThen(onDenied);
+    public AbilityBuilder<E> ifDeniedCancelAnd(BiConsumer<E, List<Region>> onDenied) {
+        this.onDenied_ = (e, r) -> {
+            defaultOnDenied().accept(e, r);
+            onDenied.accept(e, r);
+        };
         return this;
     }
 
@@ -136,8 +152,12 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
 
 
     //IMPLEMENTATION
-    @Override
+    @Override @SuppressWarnings({ "rawtypes", "unchecked" })
     protected AbilityTrigger<?> buildTrigger() {
+
+        this.onAllowedMap_.putInto(this.eventClass_, (BiConsumer<Event, List<Region>>) this.onAllowed_);
+        this.onDeniedMap_.putInto(this.eventClass_, (BiConsumer<Event, List<Region>>) this.onDenied_);
+
         return new AbilityTriggerImpl<E>(
                 this.eventClass_,
                 this.priority_,
@@ -149,20 +169,34 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
 
     @Override
     protected Ability buildListener(Set<AbilityTrigger<?>> triggers) {
+
+        BiConsumer<Event, List<Region>> onAllowed = new FinalAction(this.onAllowedMap_),
+                                        onDenied = new FinalAction(this.onDeniedMap_);
+
         if (this.name_ == null) {
-            return new UnnamedAbility(triggers, this.extends_, this.onAllowed_, this.onDenied_);
+            return new UnnamedAbility(triggers, this.extends_, onAllowed, onDenied);
         }
 
-        return new AbilityImpl(this.name_, triggers, this.extends_, this.onAllowed_, this.onDenied_);
+        return new AbilityImpl(this.name_, triggers, this.extends_, onAllowed, onDenied);
     }
 
     @Override
     protected <E2 extends Event> AbilityBuilder<E2> next(Class<E2> eventClass, Set<AbilityTrigger<?>> existingTriggers) {
-        return new AbilityBuilder<>(eventClass, existingTriggers);
+        return new AbilityBuilder<>(eventClass, existingTriggers, this.onAllowedMap_, this.onDeniedMap_);
     }
 
 
     //SUBTYPES
+    private record FinalAction(SetMap<Class<? extends Event>, BiConsumer<Event, List<Region>>> actionMap) implements BiConsumer<Event, List<Region>> {
+        @Override
+        public void accept(Event e, List<Region> r) {
+            var actions = this.actionMap.get(e.getClass());
+            if (actions == null) { return; }
+            for (var action : actions) {
+                action.accept(e, r);
+            }
+        }
+    }
     private record AbilityTriggerImpl<E extends Event>(
             Class<E> eventClass,
             Priority priority,
@@ -197,7 +231,6 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
             return this.validator.test(event);
         }
     }
-
     private static class UnnamedAbility implements Ability, ReflectiveNameable<Ability> {
 
         //FIELDS
