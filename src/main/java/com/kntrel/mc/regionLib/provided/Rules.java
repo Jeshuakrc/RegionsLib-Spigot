@@ -1,5 +1,7 @@
-package com.kntrel.mc.regionLib.region.rule;
+package com.kntrel.mc.regionLib.provided;
 
+import com.kntrel.mc.regionLib.region.rule.DeclareRule;
+import com.kntrel.mc.regionLib.region.rule.Rule;
 import org.bukkit.Material;
 import org.bukkit.entity.Animals;
 import org.bukkit.event.block.BlockBurnEvent;

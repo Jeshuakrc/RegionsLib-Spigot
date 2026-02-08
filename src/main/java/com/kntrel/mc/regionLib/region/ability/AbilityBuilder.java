@@ -152,7 +152,7 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
 
 
     //IMPLEMENTATION
-    @Override @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Override @SuppressWarnings("unchecked")
     protected AbilityTrigger<?> buildTrigger() {
 
         this.onAllowedMap_.putInto(this.eventClass_, (BiConsumer<Event, List<Region>>) this.onAllowed_);
@@ -162,7 +162,7 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
                 this.eventClass_,
                 this.priority_,
                 this.getAttributer(),
-                this.localizer_,
+                this.getLocalizer(),
                 this.validator_
         );
     }
@@ -174,7 +174,7 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
                                         onDenied = new FinalAction(this.onDeniedMap_);
 
         if (this.name_ == null) {
-            return new UnnamedAbility(triggers, this.extends_, onAllowed, onDenied);
+            return new ReflectiveNameableAbility(triggers, this.extends_, onAllowed, onDenied);
         }
 
         return new AbilityImpl(this.name_, triggers, this.extends_, onAllowed, onDenied);
@@ -231,36 +231,44 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
             return this.validator.test(event);
         }
     }
-    private static class UnnamedAbility implements Ability, ReflectiveNameable<Ability> {
+    private static class ReflectiveNameableAbility implements Ability, ReflectiveNameable<Ability> {
 
         //FIELDS
         private final Set<AbilityTrigger<?>> triggers_;
         private final Ability super_;
         private final BiConsumer<Event, List<Region>> onAllowed_;
         private final BiConsumer<Event, List<Region>> onDenied_;
+        private String name_;
 
 
         //CONSTRUCTOR
-        public UnnamedAbility(Set<AbilityTrigger<?>> triggers, @Nullable Ability superAbility, BiConsumer<Event, List<Region>> onAllowed, BiConsumer<Event, List<Region>> onDenied) {
+        public ReflectiveNameableAbility(Set<AbilityTrigger<?>> triggers, @Nullable Ability superAbility, BiConsumer<Event, List<Region>> onAllowed, BiConsumer<Event, List<Region>> onDenied) {
             this.triggers_ = Set.copyOf(triggers);
             this.super_ = superAbility;
             this.onAllowed_ = onAllowed;
             this.onDenied_ = onDenied;
+            this.name_ = null;
         }
 
 
         //IMPLEMENTATION
         @Override public Optional<Ability> superAbility() { return Optional.ofNullable(this.super_); }
-        @Override public void onAllowed(Event event, List<Region> regions) { /* does nothing */ }
-        @Override public void onDenied(Event event, List<Region> regions) { /* does nothing */ }
+        @Override public void onAllowed(Event event, List<Region> regions) {
+            this.onAllowed_.accept(event, regions);
+        }
+        @Override public void onDenied(Event event, List<Region> regions) {
+            this.onDenied_.accept(event, regions);
+        }
         @Override public String name() {
-            throw new IllegalStateException("UnnamedAbility does not have a name.");
+            if (this.name_ != null) { return this.name_; }
+            throw new IllegalStateException("ReflectiveNameableAbility does not have a name.");
         }
         @Override public Collection<AbilityTrigger<?>> triggers() {
             return this.triggers_;
         }
         @Override public Ability namedAs(String name) {
-            return new AbilityImpl(name, this.triggers_, this.super_, this.onAllowed_, this.onDenied_);
+            this.name_ = name;
+            return this;
         }
     }
 }

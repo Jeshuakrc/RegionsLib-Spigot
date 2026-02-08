@@ -100,12 +100,6 @@ public abstract class ListenerBuilder<
 
 
     //GETTERS
-    protected Predicate<E> getValidator() {
-        if (this.validator_ == null) {
-            this.validator_ = e -> true;
-        }
-        return this.validator_;
-    }
     protected Function<E, Place> getLocalizer() {
         if (this.localizer_ != null) { return this.localizer_; }
         if (EntityEvent.class.isAssignableFrom(this.eventClass_)) {

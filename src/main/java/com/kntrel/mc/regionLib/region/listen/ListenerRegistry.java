@@ -8,6 +8,7 @@ import com.kntrel.util.tuple.Pair;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import java.util.*;
@@ -99,7 +100,7 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
                     eventKey.eventClass(),
                     VOID_LISTENER,
                     eventKey.priority(),
-                    (l, e) -> this.handle(e, eventKey),
+                    new Executor(eventKey, this),
                     this.plugin_,
                     true
             );
@@ -128,5 +129,11 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
         }
         @Override public L first() { return this.listener(); }
         @Override public T second() { return this.trigger(); }
+    }
+    private record Executor(EventKey eventKey, ListenerRegistry<?, ?> registry) implements EventExecutor {
+        @Override public void execute(@NotNull Listener listener, @NotNull Event event) {
+            if (!this.eventKey().eventClass().isInstance(listener)) { return; }
+            this.registry().handle(event, this.eventKey());
+        }
     }
 }

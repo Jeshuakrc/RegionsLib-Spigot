@@ -128,7 +128,6 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
         }
 
         Function<E, Place> localizer = this.getLocalizer();
-        Predicate<E> validator = this.getValidator();
 
         TriConsumer<T, Event, Region> action = (v, e, r) -> {
             E ev = this.eventClass_.cast(e);
@@ -144,7 +143,7 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
                 this.bukkitPriority_,
                 this.priority_,
                 localizer,
-                validator
+                this.validator_
         );
     }
     @Override protected Rule<T> buildListener(Set<RegionTrigger<?>> triggers) {
