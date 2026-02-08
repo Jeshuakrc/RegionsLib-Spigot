@@ -1,7 +1,7 @@
 package com.kntrel.mc.regionLib.region;
 
 import com.kntrel.mc.regionLib.region.rule.Rule;
-import com.kntrel.mc.regionLib.trigger.RegionTrigger;
+import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;

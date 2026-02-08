@@ -1,7 +1,7 @@
-package com.kntrel.mc.regionLib.trigger;
+package com.kntrel.mc.regionLib.region.listen;
 
 import com.kntrel.mc.regionLib.region.context.RegionContext;
-import com.kntrel.mc.regionLib.trigger.build.ReflectiveNameable;
+import com.kntrel.mc.regionLib.region.listen.build.ReflectiveNameable;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.Nullable;
 

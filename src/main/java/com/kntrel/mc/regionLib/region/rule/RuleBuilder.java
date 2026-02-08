@@ -1,10 +1,10 @@
 package com.kntrel.mc.regionLib.region.rule;
 
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.trigger.Bounds;
-import com.kntrel.mc.regionLib.trigger.RegionTrigger;
-import com.kntrel.mc.regionLib.trigger.build.ReflectiveNameable;
-import com.kntrel.mc.regionLib.trigger.build.ListenerBuilder;
+import com.kntrel.mc.regionLib.region.listen.Bounds;
+import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
+import com.kntrel.mc.regionLib.region.listen.build.ReflectiveNameable;
+import com.kntrel.mc.regionLib.region.listen.build.ListenerBuilder;
 import com.kntrel.util.Priority;
 import com.kntrel.util.SetMap;
 import com.kntrel.util.TriPredicate;

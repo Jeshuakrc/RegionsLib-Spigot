@@ -2,8 +2,8 @@ package com.kntrel.mc.regionLib.region.rule;
 
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.context.RegionContext;
-import com.kntrel.mc.regionLib.trigger.ReflectiveListernerRegistry;
-import com.kntrel.mc.regionLib.trigger.RegionTrigger;
+import com.kntrel.mc.regionLib.region.listen.ReflectiveListernerRegistry;
+import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
 import org.bukkit.event.Event;
 import java.util.List;
 

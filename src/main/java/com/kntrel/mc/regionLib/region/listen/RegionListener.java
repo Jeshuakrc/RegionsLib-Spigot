@@ -1,4 +1,4 @@
-package com.kntrel.mc.regionLib.trigger;
+package com.kntrel.mc.regionLib.region.listen;
 
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;

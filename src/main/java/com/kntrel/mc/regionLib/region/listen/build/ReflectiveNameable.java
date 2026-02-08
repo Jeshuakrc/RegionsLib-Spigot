@@ -1,4 +1,4 @@
-package com.kntrel.mc.regionLib.trigger.build;
+package com.kntrel.mc.regionLib.region.listen.build;
 
 public interface ReflectiveNameable<T> {
 

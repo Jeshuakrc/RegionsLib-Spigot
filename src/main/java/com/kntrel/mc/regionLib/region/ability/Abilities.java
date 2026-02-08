@@ -2,7 +2,7 @@ package com.kntrel.mc.regionLib.region.ability;
 
 import com.kntrel.mc.regionLib.event.BlockRightClickedEvent;
 import com.kntrel.mc.regionLib.event.CopperBlockInteractEvent;
-import com.kntrel.mc.regionLib.trigger.build.EnumTriggerBuilder;
+import com.kntrel.mc.regionLib.region.listen.build.EnumTriggerBuilder;
 import com.kntrel.mc.regionLib.util.Area;
 import com.kntrel.util.Priority;
 import org.bukkit.Material;

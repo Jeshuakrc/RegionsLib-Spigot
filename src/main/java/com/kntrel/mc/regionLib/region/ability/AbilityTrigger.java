@@ -1,6 +1,6 @@
 package com.kntrel.mc.regionLib.region.ability;
 
-import com.kntrel.mc.regionLib.trigger.RegionTrigger;
+import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 

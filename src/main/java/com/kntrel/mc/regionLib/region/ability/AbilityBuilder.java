@@ -1,10 +1,9 @@
 package com.kntrel.mc.regionLib.region.ability;
 
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.trigger.Bounds;
-import com.kntrel.mc.regionLib.trigger.RegionListener;
-import com.kntrel.mc.regionLib.trigger.build.ListenerBuilder;
-import com.kntrel.mc.regionLib.trigger.build.ReflectiveNameable;
+import com.kntrel.mc.regionLib.region.listen.Bounds;
+import com.kntrel.mc.regionLib.region.listen.build.ListenerBuilder;
+import com.kntrel.mc.regionLib.region.listen.build.ReflectiveNameable;
 import com.kntrel.util.Priority;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;

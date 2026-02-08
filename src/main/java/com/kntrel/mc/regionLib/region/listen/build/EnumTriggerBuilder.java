@@ -1,4 +1,4 @@
-package com.kntrel.mc.regionLib.trigger.build;
+package com.kntrel.mc.regionLib.region.listen.build;
 
 import org.bukkit.event.Event;
 import java.util.Arrays;

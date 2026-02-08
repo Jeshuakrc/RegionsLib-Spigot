@@ -1,7 +1,7 @@
 package com.kntrel.mc.regionLib.region.ability;
 
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.trigger.RegionListener;
+import com.kntrel.mc.regionLib.region.listen.RegionListener;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import java.util.List;

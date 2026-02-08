@@ -1,4 +1,4 @@
-package com.kntrel.mc.regionLib.trigger;
+package com.kntrel.mc.regionLib.region.listen;
 
 import com.kntrel.mc.regionLib.util.Area;
 import org.bukkit.Location;

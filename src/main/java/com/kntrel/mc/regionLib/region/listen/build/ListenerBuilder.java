@@ -1,8 +1,8 @@
-package com.kntrel.mc.regionLib.trigger.build;
+package com.kntrel.mc.regionLib.region.listen.build;
 
-import com.kntrel.mc.regionLib.trigger.Bounds;
-import com.kntrel.mc.regionLib.trigger.RegionTrigger;
-import com.kntrel.mc.regionLib.trigger.RegionListener;
+import com.kntrel.mc.regionLib.region.listen.Bounds;
+import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
+import com.kntrel.mc.regionLib.region.listen.RegionListener;
 import com.kntrel.mc.regionLib.util.Area;
 import com.kntrel.util.Priority;
 import org.bukkit.Location;
