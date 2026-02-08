@@ -56,7 +56,7 @@ public class RegionContext implements AttributedRegionRepository {
         this.config_ = config;
         this.plugin_ = plugin;
         this.hierarchyRepository_ = hierarchyRepFactory.apply(this);
-        this.abilityRegistry_ = new AbilityRegistry(this);
+        this.abilityRegistry_ = new AbilityRegistry(this, this.config_.permissionsOverlapMode);
         this.ruleRegistry_ = new RuleRegistry(this);
         this.displayController_ = new DisplayController(this, new BlockDisplayAreaDisplayer(this), this.config_.regionDisplayDurationSeconds);
         this.cache_ = new RegionCache(this.config_.cacheCapacity);
@@ -115,9 +115,6 @@ public class RegionContext implements AttributedRegionRepository {
     }
     public void registerAbility(Ability ability) {
         this.abilityRegistry_.register(ability);
-    }
-    public <E extends Event> AbilityBuilder<E> registerAbilityOn(Class<E> eventClass) {
-        return this.abilityRegistry_.registerOn(eventClass);
     }
     public void displayRegion(Region region, AreaDisplayer displayer, long seconds, Player player) {
         this.displayController_.display(region, displayer, seconds, player);

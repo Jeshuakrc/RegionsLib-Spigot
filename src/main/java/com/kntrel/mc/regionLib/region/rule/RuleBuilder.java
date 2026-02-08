@@ -111,7 +111,7 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
     public B ifAbsent(Consumer<Event> action) {
         return this.ifAbsent((e, r) -> action.accept(e));
     }
-    public Rule<T> underName(String name) {
+    public Rule<T> named(String name) {
         this.name_ = name;
         return this.build();
     }
@@ -164,10 +164,6 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
                 new FinalAbsentAction(this.absentActions_)
         );
     }
-
-
-    //HELPERS
-
 
 
     //SPECIALIZATIONS

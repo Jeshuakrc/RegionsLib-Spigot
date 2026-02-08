@@ -27,7 +27,6 @@ public abstract class ListenerBuilder<
 
     //LISTENER MEMBERS
     protected final Set<T> triggers_;
-    private String name_ = null;
 
 
     //CURRENT TRIGGER MEMBERS

@@ -9,6 +9,13 @@ import java.util.Optional;
 
 public interface Ability extends RegionListener<AbilityTrigger<?>> {
 
+    //FACTORY
+    static <E extends Event> AbilityBuilder<E> on(Class<E> eventClass) {
+        return AbilityBuilder.on(eventClass);
+    }
+
+
+    //CONTRACT
     default Optional<Ability> superAbility() { return Optional.empty(); }
     default void onAllowed(Event event, List<Region> regions) { /* nothing */ }
     default void onDenied(Event event, List<Region> regions) {
