@@ -11,8 +11,8 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.entity.*;
-import org.bukkit.event.Event;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityPlaceEvent;
@@ -111,8 +111,17 @@ public final class Abilities {
     
     //BlocBreakEvent
     @DeclareAbility
+    public static final Ability BREAK_BLOCKS =
+        on(BlockBreakEvent.class)
+            .by(BlockBreakEvent::getPlayer)
+            .prioritize(Priority.LOWEST)
+        .alsoOn(BlockDamageEvent.class)
+            .by(BlockDamageEvent::getPlayer)
+            .prioritize(Priority.LOWEST)
+        .done();
+
+    @DeclareAbility
     public static final Ability
-    BREAK_BLOCKS = on(BlockBreakEvent.class).by(BlockBreakEvent::getPlayer).prioritize(-1).done(),
     BREAK_CROPS = on(BlockBreakEvent.class).when(e -> Constants.PLANTABLE_BLOCKS.contains(e.getBlock().getType())).by(BlockBreakEvent::getPlayer).done(),
     BREAK_REDSTONE = on(BlockBreakEvent.class).when(e -> Constants.BREACKABLE_REDSTONE_BLOCKS.contains(e.getBlock().getType())).by(BlockBreakEvent::getPlayer).done(),
     EXTINGUISH_FIRE = on(BlockBreakEvent.class).when(e -> e.getBlock().getType().equals(Material.FIRE)).by(BlockBreakEvent::getPlayer).done();
@@ -121,7 +130,7 @@ public final class Abilities {
     //BlockPlaceEvent
     @DeclareAbility
     public static final Ability
-    PLACE_BLOCKS = on(BlockPlaceEvent.class).by(BlockPlaceEvent::getPlayer).prioritize(-1).done(),
+    PLACE_BLOCKS = on(BlockPlaceEvent.class).by(BlockPlaceEvent::getPlayer).prioritize(Priority.LOWEST).done(),
     PLANT = on(BlockPlaceEvent.class).when(e -> Constants.PLANTABLE_BLOCKS.contains(e.getBlock().getType())).by(BlockPlaceEvent::getPlayer).done(),
     PLACE_REDSTONE = on(BlockPlaceEvent.class).when(e -> Constants.BREACKABLE_REDSTONE_BLOCKS.contains(e.getBlock().getType())).by(BlockPlaceEvent::getPlayer).done();
 
