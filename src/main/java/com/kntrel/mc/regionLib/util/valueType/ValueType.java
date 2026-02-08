@@ -20,6 +20,9 @@ public abstract class ValueType<T> {
     public static final ValueType<Double> DOUBLE = ValueType.create(Double.class,
             s -> { try { return Double.valueOf(s); } catch (NumberFormatException e) { return .0; }}
     );
+    public static final ValueType<Float> FLOAT = ValueType.create(Float.class,
+            s -> { try { return Float.valueOf(s); } catch (NumberFormatException e) { return .0f; }}
+    );
     public static final ValueType<Boolean> BOOL = ValueType.create(Boolean.class, s -> {
         String val = s.trim();
         if (val.equalsIgnoreCase("true") || val.equalsIgnoreCase("t")) { return true; }
