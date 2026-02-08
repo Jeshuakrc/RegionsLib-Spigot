@@ -1,6 +1,6 @@
 package com.kntrel.mc.regionLib.region.listen.build;
 
-import com.kntrel.mc.regionLib.region.listen.Bounds;
+import com.kntrel.mc.regionLib.region.listen.Place;
 import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
 import com.kntrel.mc.regionLib.region.listen.RegionListener;
 import com.kntrel.mc.regionLib.util.Area;
@@ -32,7 +32,7 @@ public abstract class ListenerBuilder<
     //CURRENT TRIGGER MEMBERS
     protected final Class<E> eventClass_;
     protected final B instance_;
-    protected Function<E, Bounds> localizer_;
+    protected Function<E, Place> localizer_;
     protected Predicate<E> validator_ = e -> true;
     protected EventPriority bukkitPriority_ = EventPriority.NORMAL;
     protected Priority priority_ = Priority.NORMAL;
@@ -57,11 +57,11 @@ public abstract class ListenerBuilder<
         return this.instance_;
     }
     public B at(Function<E, Location> pointGetter) {
-        this.localizer_ = e -> Bounds.ofPoint(pointGetter.apply(e));
+        this.localizer_ = e -> Place.ofPoint(pointGetter.apply(e));
         return this.instance_;
     }
     public B in(Function<E, Area> areaGetter) {
-        this.localizer_ = e -> Bounds.ofArea(areaGetter.apply(e));
+        this.localizer_ = e -> Place.ofArea(areaGetter.apply(e));
         return this.instance_;
     }
     public B prioritize(Priority priority) {
@@ -106,19 +106,19 @@ public abstract class ListenerBuilder<
         }
         return this.validator_;
     }
-    protected Function<E, Bounds> getLocalizer() {
+    protected Function<E, Place> getLocalizer() {
         if (this.localizer_ != null) { return this.localizer_; }
         if (EntityEvent.class.isAssignableFrom(this.eventClass_)) {
             this.localizer_ = e -> {
                 Location loc = ((EntityEvent) e).getEntity().getLocation();
-                return Bounds.ofPoint(loc);
+                return Place.ofPoint(loc);
             };
             return this.localizer_;
         }
         if (BlockEvent.class.isAssignableFrom(this.eventClass_)) {
             this.localizer_ = e -> {
                 BlockEvent be = (BlockEvent) e;
-                return Bounds.ofArea(Area.ofBlock(be.getBlock()));
+                return Place.ofArea(Area.ofBlock(be.getBlock()));
             };
             return this.localizer_;
         }
@@ -126,14 +126,14 @@ public abstract class ListenerBuilder<
             this.localizer_ = e -> {
                 Block b = ((PlayerInteractEvent) e).getClickedBlock();
                 if (b == null) return null;
-                return Bounds.ofArea(new Area(b.getBoundingBox(), b.getWorld()));
+                return Place.ofArea(new Area(b.getBoundingBox(), b.getWorld()));
             };
             return this.localizer_;
         }
         if (PlayerEvent.class.isAssignableFrom(this.eventClass_)) {
             this.localizer_ = e -> {
                 Location loc = ((PlayerEvent) e).getPlayer().getLocation();
-                return Bounds.ofPoint(loc);
+                return Place.ofPoint(loc);
             };
             return this.localizer_;
         }

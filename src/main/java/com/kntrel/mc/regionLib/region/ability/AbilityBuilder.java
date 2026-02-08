@@ -1,7 +1,7 @@
 package com.kntrel.mc.regionLib.region.ability;
 
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.listen.Bounds;
+import com.kntrel.mc.regionLib.region.listen.Place;
 import com.kntrel.mc.regionLib.region.listen.build.ListenerBuilder;
 import com.kntrel.mc.regionLib.region.listen.build.ReflectiveNameable;
 import com.kntrel.util.Priority;
@@ -201,7 +201,7 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
             Class<E> eventClass,
             Priority priority,
             Function<E, Player> attributer,
-            Function<E, Bounds> localizer,
+            Function<E, Place> localizer,
             Predicate<E> validator
 
     ) implements AbilityTrigger<E> {
@@ -222,7 +222,7 @@ public class AbilityBuilder<E extends Event> extends ListenerBuilder<
         }
 
         @Override
-        public Bounds localize(E event) {
+        public Place localize(E event) {
             return this.localizer.apply(event);
         }
 

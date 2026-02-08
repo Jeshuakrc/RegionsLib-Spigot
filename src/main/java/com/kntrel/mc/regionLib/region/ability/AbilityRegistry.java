@@ -4,7 +4,7 @@ import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.repository.Condition;
-import com.kntrel.mc.regionLib.region.listen.Bounds;
+import com.kntrel.mc.regionLib.region.listen.Place;
 import com.kntrel.mc.regionLib.region.listen.ReflectiveListernerRegistry;
 import com.kntrel.util.tuple.Pair;
 import org.bukkit.entity.Player;
@@ -64,7 +64,7 @@ public class AbilityRegistry extends ReflectiveListernerRegistry<AbilityTrigger<
     }
 
     @Override
-    protected void handle(List<Region> regions, Event event, Ability ability, AbilityTrigger<?> trigger) {
+    protected void handle(List<Region> regions, Event event, Ability ability, AbilityTrigger<?> trigger, Place place) {
         if (regions.isEmpty()) { return; }
 
         Player causer = tryAttribute(ability.name(), trigger, event);
@@ -124,7 +124,7 @@ public class AbilityRegistry extends ReflectiveListernerRegistry<AbilityTrigger<
         Pair<Ability, AbilityTrigger<?>> definitive = findEffectiveTrigger(triggerEntries, event, eventClass, cache, superChain);
         if (definitive == null) { return; }
 
-        Bounds loc = tryLocalize(definitive.second(), event, definitive.first().name(), eventClass);
+        Place loc = tryLocalize(definitive.second(), event, definitive.first().name(), eventClass);
         if (loc == null) { return; }
 
         Condition cond = (loc.isArea())
@@ -134,7 +134,7 @@ public class AbilityRegistry extends ReflectiveListernerRegistry<AbilityTrigger<
 
         if (regions.isEmpty()) { return; }
 
-        this.handle(regions, event, definitive.first(), definitive.second());
+        this.handle(regions, event, definitive.first(), definitive.second(), loc);
     }
 
     private Pair<Ability, AbilityTrigger<?>> findEffectiveTrigger(
@@ -217,7 +217,7 @@ public class AbilityRegistry extends ReflectiveListernerRegistry<AbilityTrigger<
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private Bounds tryLocalize(AbilityTrigger trigger, Event event, String abilityName, Class<? extends Event> eventClass) {
+    private Place tryLocalize(AbilityTrigger trigger, Event event, String abilityName, Class<? extends Event> eventClass) {
         try {
             return trigger.localize(event);
         } catch (Throwable e) {

@@ -4,17 +4,17 @@ import com.kntrel.mc.regionLib.util.Area;
 import org.bukkit.Location;
 import org.jetbrains.annotations.Nullable;
 
-public class Bounds {
+public class Place {
 
     //FACTORY
-    public static Bounds ofArea(Area area) {
-        return new Bounds(area, null);
+    public static Place ofArea(Area area) {
+        return new Place(area, null);
     }
-    public static Bounds ofPoint(Location point) {
+    public static Place ofPoint(Location point) {
         if (point.getWorld() == null) {
             throw new IllegalArgumentException("Point location must have a world.");
         }
-        return new Bounds(null, point);
+        return new Place(null, point);
     }
 
 
@@ -24,7 +24,7 @@ public class Bounds {
 
 
     //CONSTRUCTORS
-    private Bounds(@Nullable Area area, @Nullable Location point) {
+    private Place(@Nullable Area area, @Nullable Location point) {
         this.area_ = area;
         this.point_ = point;
     }

@@ -12,7 +12,7 @@ public interface RegionTrigger<E extends Event> extends Comparable<RegionTrigger
 
     Priority priority();
 
-    Bounds localize(E event);
+    Place localize(E event);
 
     boolean appliesTo(E event);
 

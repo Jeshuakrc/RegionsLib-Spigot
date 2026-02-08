@@ -1,7 +1,7 @@
 package com.kntrel.mc.regionLib.region.rule;
 
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.region.listen.Bounds;
+import com.kntrel.mc.regionLib.region.listen.Place;
 import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
 import com.kntrel.mc.regionLib.region.listen.build.ReflectiveNameable;
 import com.kntrel.mc.regionLib.region.listen.build.ListenerBuilder;
@@ -127,7 +127,7 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
             throw new IllegalStateException("Rule trigger does nothing");
         }
 
-        Function<E, Bounds> localizer = this.getLocalizer();
+        Function<E, Place> localizer = this.getLocalizer();
         Predicate<E> validator = this.getValidator();
 
         TriConsumer<T, Event, Region> action = (v, e, r) -> {
@@ -293,10 +293,10 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
             Class<E> eventClass,
             EventPriority bukkitPriority,
             Priority priority,
-            Function<E, Bounds> localizer,
+            Function<E, Place> localizer,
             Predicate<E> validator
     ) implements RegionTrigger<E> {
-        @Override public Bounds localize(E event) { return this.localizer.apply(event); }
+        @Override public Place localize(E event) { return this.localizer.apply(event); }
         @Override public boolean appliesTo(E event) { return this.validator.test(event); }
     }
 }

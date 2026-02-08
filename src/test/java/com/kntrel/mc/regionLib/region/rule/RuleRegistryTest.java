@@ -5,6 +5,7 @@ import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
 import com.kntrel.mc.regionLib.testsupport.TestContextFactory;
 import com.kntrel.mc.regionLib.testsupport.TestEvents;
 import com.kntrel.mc.regionLib.testsupport.TestRegionReadRepository;
+import com.kntrel.mc.regionLib.util.valueType.ValueHolder;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.event.Event;
@@ -44,8 +45,8 @@ class RuleRegistryTest {
 
         Region regionWithValue = mock(Region.class);
         Region regionWithoutValue = mock(Region.class);
-        when(regionWithValue.getRuleValue(rule)).thenReturn(Optional.of(true));
-        when(regionWithoutValue.getRuleValue(rule)).thenReturn(Optional.empty());
+        when(regionWithValue.getRuleValue("valueRule")).thenReturn(Optional.of(ValueHolder.of(true)));
+        when(regionWithoutValue.getRuleValue("valueRule")).thenReturn(Optional.empty());
 
         TestRegionReadRepository repository = new TestRegionReadRepository();
         repository.setRegions(List.of(regionWithValue, regionWithoutValue));

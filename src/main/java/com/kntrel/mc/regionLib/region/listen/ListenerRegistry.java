@@ -75,7 +75,7 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
             }
 
             L listener = lt.first();
-            Bounds loc = trg.localize(event);
+            Place loc = trg.localize(event);
             if (loc == null) { continue; }
 
             RegionReadRepository repo = this.context_.getHotRegionRepository();
@@ -83,14 +83,14 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
                     ? repo.getIn(loc.getArea())
                     : repo.getAt(loc.getPoint());
 
-            this.handle(regions, event, listener, lt.second());
+            this.handle(regions, event, listener, lt.second(), loc);
         }
     }
-    protected abstract void handle(List<Region> regions, Event event, L listener, T trigger);
+    protected abstract void handle(List<Region> regions, Event event, L listener, T trigger, Place place);
 
 
     //HELPERS
-    private void registerTrigger(L listener, T trigger) {
+    protected void registerTrigger(L listener, T trigger) {
         TriggerKey<T, L> tk = new TriggerKey<>(listener, trigger);
         EventKey eventKey = new EventKey(trigger.eventClass(), trigger.bukkitPriority());
 
