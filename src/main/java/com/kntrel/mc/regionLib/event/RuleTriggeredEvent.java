@@ -63,11 +63,5 @@ public class RuleTriggeredEvent extends Event {
     public Event getTriggererEvent() {
         return this.event_;
     }
-    public boolean isPointBased() {
-        return this.rule_.isPointBased();
-    }
-    public boolean isAreaBased() {
-        return this.rule_.isAreaBased();
-    }
 
 }

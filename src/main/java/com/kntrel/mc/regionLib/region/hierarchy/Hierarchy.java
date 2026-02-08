@@ -58,7 +58,7 @@ public class Hierarchy {
                 .findFirst();
     }
     public Optional<Hierarchy.Group> getLowestGroupAllowedTo(Ability ability) {
-        return this.getLowestGroupAllowedTo(ability.getName());
+        return this.getLowestGroupAllowedTo(ability.name());
     }
     public Optional<Hierarchy.Group> getGroup(String name) {
         if (name == null) {
@@ -170,7 +170,7 @@ public class Hierarchy {
             return this.abilities_.contains(normalizeSpace(ability.toLowerCase()));
         }
         public boolean allowedTo(Ability ability) {
-            return this.allowedTo(ability.getName());
+            return this.allowedTo(ability.name());
         }
     }
 }

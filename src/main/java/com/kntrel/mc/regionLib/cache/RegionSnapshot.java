@@ -9,7 +9,6 @@ import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.RuleValue;
-import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import com.kntrel.util.Fingerprint64;
 import org.bukkit.World;
 import org.bukkit.util.BoundingBox;
@@ -131,7 +130,7 @@ public class RegionSnapshot {
                 source.getMaxZ(),
                 source.isDestroyed(),
                 source.getPermissions().stream().map(p -> new Permission(p.getPlayerId(), p.getGroup().getLevel())).toArray(Permission[]::new),
-                source.getRuleValues().stream().map(r -> new Entry(r.getRule().getName(), r.toString())).toArray(Entry[]::new),
+                source.getRuleValues().stream().map(r -> new Entry(r.getRule().name(), r.toString())).toArray(Entry[]::new),
                 source.getDataContainer().getAll().stream().map(d -> new Entry(d.getKey(), GSON.toJson(d.getValue()))).toArray(Entry[]::new)
         );
     }
