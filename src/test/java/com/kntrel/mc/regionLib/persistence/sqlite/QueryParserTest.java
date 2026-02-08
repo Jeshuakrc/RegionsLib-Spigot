@@ -379,7 +379,7 @@ class QueryParserTest {
             String sql = parser.parse(query);
 
             assertTrue(sql.contains("regionData.key = 'key1'"));
-            assertTrue(sql.contains("regionData.value = 'value1'"));
+            assertTrue(sql.contains("regionData.value = '\"value1\"'"));
             assertTrue(sql.contains("LEFT JOIN regionData ON region.id = regionData.region_id"));
         }
 

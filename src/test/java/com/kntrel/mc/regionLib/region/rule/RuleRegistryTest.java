@@ -37,9 +37,9 @@ class RuleRegistryTest {
 
         Rule<Boolean> rule = Rule.on(TestEvents.LocationEvent.class)
                 .at(TestEvents.LocationEvent::getLocation)
-                .when(event -> false)
-                .then((value, event, region) -> actionCount.incrementAndGet())
-                .ifAbsent((event, region) -> absentCount.incrementAndGet())
+                .ifTrue()
+                .then(e -> actionCount.incrementAndGet())
+                .ifAbsent(e -> absentCount.incrementAndGet())
                 .named("valueRule");
 
         Region regionWithValue = mock(Region.class);
