@@ -70,7 +70,7 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
         for (Pair<L, T> lt : triggerEntries) {
             RegionTrigger trg = lt.second();
             try {
-                if (trg.appliesTo(event)) { continue; }
+                if (!trg.appliesTo(event)) { continue; }
             } catch (Throwable e) {
                 this.context_.getServer().getLogger().severe("Trigger in listener'" + lt.first().name() + "' failed to validate. Event: " + event.getClass().getSimpleName() + ". Falling back as non-applicable.");
                 this.context_.getServer().getLogger().severe("Caused by: " + e);
@@ -113,7 +113,7 @@ public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>,
 
 
     //SUBTYPES
-    protected record EventKey(Class<? extends Event> eventClass, EventPriority priority) {
+    public record EventKey(Class<? extends Event> eventClass, EventPriority priority) {
         @Override public String toString() {
             return eventClass().getSimpleName() + "::" + priority().name();
         }

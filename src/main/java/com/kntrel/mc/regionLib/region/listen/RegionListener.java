@@ -15,7 +15,7 @@ public interface RegionListener<T extends RegionTrigger<?>> {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     static boolean triggersOn(RegionListener<?> listener, Event event) {
         for (RegionTrigger trigger : listener.triggers()) {
-            if (trigger.eventClass().isInstance(event)) { continue; }
+            if (!trigger.eventClass().isInstance(event)) { continue; }
             try {
                 if (trigger.appliesTo(event)) { return true; }
             } catch (ClassCastException ignored) {}

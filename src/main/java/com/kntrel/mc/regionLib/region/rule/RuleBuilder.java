@@ -14,6 +14,7 @@ import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.*;
@@ -35,7 +36,7 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
     }
 
     public static <E extends Event> Bool<E> on(Class<E> eventClass) {
-        return new Bool<>(eventClass, Set.of());
+        return new Bool<>(eventClass, new HashSet<>(), new SetMap<>(), new SetMap<>());
     }
 
     //LISTENER FIELDS
@@ -168,8 +169,13 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
 
     //SPECIALIZATIONS
     public static class Generic<E extends Event, T> extends RuleBuilder<E, T, Generic<E, T>> {
-        protected Generic(ValueType<T> valueType, Class<E> eventClass, Set<RegionTrigger<?>> existingTriggers) {
-            super(valueType, eventClass, existingTriggers);
+        protected Generic(
+                ValueType<T> valueType, Class<E> eventClass,
+                Set<RegionTrigger<?>> existingTriggers,
+                SetMap<Class<? extends Event>, TriConsumer<T, Event, Region>> actions,
+                SetMap<Class<? extends Event>, BiConsumer<Event, Region>> absentActions
+        ) {
+            super(valueType, eventClass, existingTriggers, actions, absentActions);
         }
 
         @Override @SuppressWarnings("unchecked")
@@ -179,12 +185,17 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
 
         @Override
         protected <E2 extends Event> Generic<E2, T> next(Class<E2> eventClass, Set<RegionTrigger<?>> existingTriggers) {
-            return new Generic<>(this.type_, eventClass, existingTriggers);
+            return new Generic<>(this.type_, eventClass, existingTriggers, this.actions_, this.absentActions_);
         }
     }
     public static class Bool<E extends Event> extends RuleBuilder<E, Boolean, Bool<E>> {
-        protected Bool(Class<E> eventClass, Set<RegionTrigger<?>> existingTriggers) {
-            super(ValueType.BOOL, eventClass, existingTriggers);
+        protected Bool(
+                Class<E> eventClass,
+                Set<RegionTrigger<?>> existingTriggers,
+                SetMap<Class<? extends Event>, TriConsumer<Boolean, Event, Region>> actions,
+                SetMap<Class<? extends Event>, BiConsumer<Event, Region>> absentActions
+        ) {
+            super(ValueType.BOOL, eventClass, existingTriggers, actions, absentActions);
         }
 
 
@@ -202,7 +213,7 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
 
         @Override
         protected <E2 extends Event> Bool<E2> next(Class<E2> eventClass, Set<RegionTrigger<?>> existingTriggers) {
-            return new Bool<>(eventClass, existingTriggers);
+            return new Bool<>(eventClass, existingTriggers, this.actions_, this.absentActions_);
         }
     }
 
@@ -217,7 +228,7 @@ public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T
         }
 
         public <E extends Event> Generic<E, T> on(Class<E> eventClass) {
-            return new Generic<>(this.type_, eventClass, Set.of());
+            return new Generic<>(this.type_, eventClass, new HashSet<>(), new SetMap<>(), new SetMap<>());
         }
     }
     protected record FinalAction<T>(Map<Class<? extends Event>, Set<TriConsumer<T, Event, Region>>> actionMap) implements TriConsumer<T, Event, Region> {
