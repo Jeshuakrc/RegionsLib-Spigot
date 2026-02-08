@@ -64,6 +64,8 @@ public class RegionContext implements AttributedRegionRepository {
         this.delegateRegionRepository_ = regionRepFactory.apply(this);
         this.hotRegionRepository_ = new HotRegionRepository(this.cache_, this.delegateRegionRepository_, this.config_.cellSize);
         this.regionRepository_ = new MainRegionRepository(new HotRegionRepositoryWrapper(this.hotRegionRepository_), this.delegateRegionRepository_, this.plugin_.getServer().getPluginManager(), this.cache_);
+
+        this.plugin_.getServer().getPluginManager().registerEvents(this.hotRegionRepository_, this.plugin_);
     }
     public RegionContext(RegionContextConfig config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
         this(plugin.getName(), config, plugin, regionRepFactory, hierarchyRepFactory);
