@@ -78,7 +78,9 @@ public final class RegionLib extends JavaPlugin {
             throw new RuntimeException("Failed to extract " + resourcePath + " to " + out, e);
         }
     }
-    public static void enable(@NotNull JavaPlugin plugin) {
+
+    @SuppressWarnings("unchecked")
+    public static void enable(@NotNull Plugin plugin) {
 
         //Handle already enabled
         if (OWNER_PLUGIN != null) {
