@@ -8,26 +8,48 @@ import org.bukkit.event.block.BlockEvent;
 
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Fired when a player interacts with a copper block and wax/scrape actions are evaluated.
+ */
 public class CopperBlockInteractEvent extends BlockEvent implements Cancellable {
     //EVENT-REQUIRED ================================================
     private static final HandlerList HANDLERS = new HandlerList();
+    /**
+     * Returns the static handler list for this event.
+     *
+     * @return handler list
+     */
     public static HandlerList getHandlerList() {
         return HANDLERS;
     }
     @Override
     @NotNull
+    /**
+     * Returns the handler list for this event instance.
+     *
+     * @return handler list
+     */
     public HandlerList getHandlers() {
         return HANDLERS;
     }
     //===============================================================
 
     //ENUMS
+    /**
+     * Oxidation stage for copper blocks.
+     */
     public enum Stage {
         NORMAL, EXPOSED, WEATHERED, OXIDIZED
     }
+    /**
+     * Copper block variant.
+     */
     public enum Type {
         NORMAL, CUT, CUT_STAIRS, CUT_SLAB
     }
+    /**
+     * The interaction action taken.
+     */
     public enum Action {
         NONE, WAX, SCRAP
     }
@@ -41,32 +63,74 @@ public class CopperBlockInteractEvent extends BlockEvent implements Cancellable 
     private boolean cancelled_;
 
     //SETTERS
+    /**
+     * Sets whether this event is cancelled.
+     *
+     * @param cancelled true to cancel
+     */
     public void setCancelled(boolean cancelled) {
         this.cancelled_ = cancelled;
     }
 
     //GETTERS
+    /**
+     * Returns whether the copper block was waxed before the interaction.
+     *
+     * @return true if waxed
+     */
     public boolean wasWaxed() {
         return this.waxed_;
     }
+    /**
+     * Returns the resolved interaction action.
+     *
+     * @return action enum
+     */
     public Action getAction() {
         return action_;
     }
+    /**
+     * Returns the copper block variant.
+     *
+     * @return copper type
+     */
     public Type getType() {
         return type_;
     }
+    /**
+     * Returns the oxidation stage.
+     *
+     * @return oxidation stage
+     */
     public Stage getStage() {
         return stage_;
     }
+    /**
+     * Returns the player who interacted.
+     *
+     * @return player instance
+     */
     public Player getPlayer() {
         return player_;
     }
+    /**
+     * Returns whether this event is cancelled.
+     *
+     * @return true if cancelled
+     */
     @Override
     public boolean isCancelled() {
         return cancelled_;
     }
 
     //CONSTRUCTOR
+    /**
+     * Creates a copper interaction event.
+     *
+     * @param who player who interacted
+     * @param copperBlock copper block being interacted with
+     * @param action requested action
+     */
     public CopperBlockInteractEvent(Player who, Block copperBlock, Action action) {
         super(copperBlock);
         this.player_ = who;

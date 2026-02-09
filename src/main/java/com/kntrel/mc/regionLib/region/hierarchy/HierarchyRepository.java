@@ -3,6 +3,9 @@ package com.kntrel.mc.regionLib.region.hierarchy;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Repository interface for storing and retrieving hierarchies.
+ */
 public interface HierarchyRepository {
 
     List<Hierarchy> getAll();

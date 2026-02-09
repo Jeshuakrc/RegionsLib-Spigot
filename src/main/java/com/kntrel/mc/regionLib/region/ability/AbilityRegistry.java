@@ -15,6 +15,9 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 
+/**
+ * Registry responsible for handling ability triggers and permission checks.
+ */
 public class AbilityRegistry extends ReflectiveListernerRegistry<AbilityTrigger<?>, Ability> {
 
     //FIELDS

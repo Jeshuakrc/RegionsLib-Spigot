@@ -18,6 +18,14 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+/**
+ * Base builder for region listeners.
+ *
+ * @param <E> event type
+ * @param <T> trigger type
+ * @param <L> listener type
+ * @param <B> builder type
+ */
 public abstract class ListenerBuilder<
         E extends Event,
         T extends RegionTrigger<?>,

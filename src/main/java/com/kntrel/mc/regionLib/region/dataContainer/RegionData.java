@@ -4,6 +4,9 @@ import com.google.gson.*;
 
 import java.lang.reflect.Type;
 
+/**
+ * Represents a single data entry stored in a region data container.
+ */
 public class RegionData {
 
     //FIELDS

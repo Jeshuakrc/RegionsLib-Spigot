@@ -19,6 +19,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.*;
 
+/**
+ * Base builder for constructing {@link Rule} instances.
+ *
+ * @param <E> event type
+ * @param <T> rule value type
+ * @param <B> builder type
+ */
 public abstract class RuleBuilder<E extends Event, T, B extends RuleBuilder<E, T, B>> extends ListenerBuilder<
         E,
         RegionTrigger<?>,

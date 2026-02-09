@@ -16,6 +16,9 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+/**
+ * Predicate-based condition used to query regions.
+ */
 public sealed interface Condition extends Predicate<Region> {
 
     //CONSTANTS

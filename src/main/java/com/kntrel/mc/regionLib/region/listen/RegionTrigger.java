@@ -4,6 +4,11 @@ import com.kntrel.util.Priority;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 
+/**
+ * Trigger definition for region listeners.
+ *
+ * @param <E> event type
+ */
 public interface RegionTrigger<E extends Event> extends Comparable<RegionTrigger<?>> {
 
     Class<E> eventClass();

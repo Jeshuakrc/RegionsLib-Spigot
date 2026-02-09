@@ -16,6 +16,9 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
 
+/**
+ * Fluent query builder for region repositories.
+ */
 public final class FluidRegionRepository {
 
     private FluidRegionRepository() {}

@@ -2,6 +2,9 @@ package com.kntrel.mc.regionLib.region.exception;
 
 import com.kntrel.mc.regionLib.region.Region;
 
+/**
+ * Base runtime exception for region-related operations.
+ */
 public abstract class RegionException extends RuntimeException {
 
     //FIELDS

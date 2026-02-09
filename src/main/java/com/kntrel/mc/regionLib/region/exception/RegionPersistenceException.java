@@ -2,6 +2,9 @@ package com.kntrel.mc.regionLib.region.exception;
 
 import com.kntrel.mc.regionLib.region.Region;
 
+/**
+ * Base exception for persistence-related region operations.
+ */
 public abstract class RegionPersistenceException extends RegionException {
     public RegionPersistenceException(Region region) {
         super(region);

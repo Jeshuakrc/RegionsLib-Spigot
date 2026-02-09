@@ -5,6 +5,11 @@ import org.bukkit.event.EventPriority;
 
 import java.util.Collection;
 
+/**
+ * Listener for region triggers.
+ *
+ * @param <T> trigger type
+ */
 public interface RegionListener<T extends RegionTrigger<?>> {
 
     String name();

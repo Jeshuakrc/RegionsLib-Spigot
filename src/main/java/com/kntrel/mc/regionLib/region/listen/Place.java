@@ -4,6 +4,9 @@ import com.kntrel.mc.regionLib.util.Area;
 import org.bukkit.Location;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Represents either a point or area location used by triggers.
+ */
 public class Place {
 
     //FACTORY
