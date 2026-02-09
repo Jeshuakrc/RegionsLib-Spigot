@@ -7,7 +7,17 @@ import com.kntrel.mc.regionLib.util.valueType.ValueType;
 import org.bukkit.event.Event;
 
 /**
- * Defines a region rule and its trigger behavior.
+ * Models a listener whose behavior depends on a value stored in a region.
+ *
+ * <p>A rule listens to one or more {@link RegionTrigger} instances and, when
+ * triggered inside a region, looks up the rule value in that region using the
+ * rule's name. Rules answer the question: "If something happens inside a region,
+ * use the rule value under this rule name to determine what to do."</p>
+ *
+ * <p>When a value is present, {@link #fire(Object, Event, Region)} is called
+ * with the stored value. When absent, {@link #fireOnAbsent(Event, Region)} is
+ * called. For built-in examples and registration, see
+ * {@link com.kntrel.mc.regionLib.provided.Rules}.</p>
  *
  * @param <T> rule value type
  */
