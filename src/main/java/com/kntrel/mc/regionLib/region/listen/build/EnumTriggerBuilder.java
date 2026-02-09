@@ -5,6 +5,13 @@ import java.util.Arrays;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+/**
+ * Builder for enum-based trigger filters.
+ *
+ * @param <E> event type
+ * @param <N> enum type
+ * @param <B> builder type
+ */
 public class EnumTriggerBuilder<E extends Event, N extends Enum<N>, B extends ListenerBuilder<E, ?, ?, B>> {
 
     private final B father_;

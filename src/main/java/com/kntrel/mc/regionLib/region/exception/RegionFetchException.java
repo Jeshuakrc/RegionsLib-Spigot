@@ -2,6 +2,9 @@ package com.kntrel.mc.regionLib.region.exception;
 
 
 
+/**
+ * Base runtime exception for region fetch operations.
+ */
 public abstract class RegionFetchException extends RuntimeException {
 
     //CONSTRUCTORS

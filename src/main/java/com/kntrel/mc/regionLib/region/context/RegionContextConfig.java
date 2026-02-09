@@ -4,6 +4,9 @@ import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.util.Grid;
 
 //SUBTYPES
+/**
+ * Configuration options for a {@link RegionContext}.
+ */
 public class RegionContextConfig {
 
     //CONSTANTS

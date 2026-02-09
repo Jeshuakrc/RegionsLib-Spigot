@@ -4,6 +4,9 @@ import com.kntrel.mc.regionLib.region.Region;
 import org.bukkit.entity.Entity;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Repository that allows saves to be attributed to an entity.
+ */
 public interface AttributedRegionRepository extends RegionRepository {
 
     //CONTRACT

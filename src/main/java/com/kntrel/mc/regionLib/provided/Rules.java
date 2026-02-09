@@ -20,10 +20,14 @@ import java.util.Iterator;
 
 import static com.kntrel.mc.regionLib.region.rule.Rule.*;
 
+/**
+ * Provides built-in rule definitions for common region behaviors.
+ */
 public final class Rules {
 
     private Rules() {}
 
+    /** Rule to control whether animals take damage. */
     @DeclareRule
     public static final Rule<Boolean> ANIMALS_TAKE_DAMAGE = on(EntityDamageEvent.class)
             .when(e -> e.getEntity() instanceof Animals)
@@ -32,6 +36,7 @@ public final class Rules {
             .thenCancel()
             .done();
 
+    /** Rule to control fire spread probability. */
     @DeclareRule
     public static final Rule<Float> FIRE_SPREAD_RATE = of(ValueType.FLOAT).on(BlockSpreadEvent.class)
             .when(e -> e.getSource().getType().equals(Material.FIRE))
@@ -42,6 +47,7 @@ public final class Rules {
             })
             .done();
 
+    /** Rule to control fire griefing behavior. */
     @DeclareRule
     public static final Rule<Boolean> FIRE_GRIEF = on(BlockBurnEvent.class)
                 .ifFalse()
@@ -54,6 +60,7 @@ public final class Rules {
                 })
             .done();
 
+    /** Rule to control explosion griefing behavior. */
     @DeclareRule
     public static final Rule<Boolean> EXPLOSION_GRIEF = on(EntityExplodeEvent.class)
             .in(e -> areaOfBlocks(e.blockList(), e.getEntity().getWorld()))

@@ -16,6 +16,9 @@ import org.joml.Vector3f;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Displays region boundaries using {@link org.bukkit.entity.BlockDisplay} entities.
+ */
 public class BlockDisplayAreaDisplayer implements AreaDisplayer {
 
     private final RegionContext ctx_;
