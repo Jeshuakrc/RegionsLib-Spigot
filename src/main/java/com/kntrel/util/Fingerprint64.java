@@ -1,5 +1,7 @@
 package com.kntrel.util;
 
+import java.util.UUID;
+
 public final class Fingerprint64 {
     private long h_;
 
@@ -28,7 +30,7 @@ public final class Fingerprint64 {
     public Fingerprint64 addBool(boolean b) {
         addLongRaw(b ? 1L : 0L); return this;
     }
-    public Fingerprint64 addUUID(java.util.UUID u) {
+    public Fingerprint64 addUUID(UUID u) {
         addLongRaw(u.getMostSignificantBits());
         addLongRaw(u.getLeastSignificantBits());
         return this;

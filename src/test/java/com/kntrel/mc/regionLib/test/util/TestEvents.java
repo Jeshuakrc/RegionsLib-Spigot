@@ -1,4 +1,4 @@
-package com.kntrel.mc.regionLib.testsupport;
+package com.kntrel.mc.regionLib.test.util;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;

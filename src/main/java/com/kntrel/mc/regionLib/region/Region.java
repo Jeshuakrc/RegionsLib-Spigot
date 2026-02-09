@@ -401,6 +401,9 @@ public class Region implements Comparable<Region> {
         return other.id_.equals(this.id_);
     }
     @Override public int hashCode() {
+        if (this.id_ == null) {
+            throw new IllegalStateException("Region has not identity yet. Must be assigned an ID.");
+        }
         return this.id_.hashCode();
     }
     @Override public int compareTo(@NotNull Region otherRegion) {

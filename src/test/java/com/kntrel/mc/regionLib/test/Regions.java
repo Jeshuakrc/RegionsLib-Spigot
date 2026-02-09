@@ -11,12 +11,11 @@ import java.util.stream.Stream;
 
 public final class Regions {
 
-    private static final World MOCK_WORLD = MockWorld.mockWorld();
-
     private Regions() {}
 
-    public static Region newRegion(RegionContext ctx,  Hierarchy hierarchy, String name) {
-        return new Region(ctx, new BoundingBox(0,0,0,1,1,1), MOCK_WORLD, name, hierarchy);
+    public static Region newRegion(RegionContext ctx, Hierarchy hierarchy, String name) {
+        World w = ctx.getServer().getWorlds().getFirst();
+        return new Region(ctx, new BoundingBox(0,0,0,1,1,1), w, name, hierarchy);
     }
 
     public static List<Region> newRegions(RegionContext ctx, Hierarchy hierarchy, String... names) {

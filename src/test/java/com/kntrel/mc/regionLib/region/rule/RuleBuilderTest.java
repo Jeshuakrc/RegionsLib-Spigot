@@ -1,9 +1,10 @@
 package com.kntrel.mc.regionLib.region.rule;
 
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.testsupport.TestEvents;
+import com.kntrel.mc.regionLib.test.util.TestEvents;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -11,6 +12,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class RuleBuilderTest {
+
+    private World world;
+    private Location location;
+
+    @BeforeEach
+    void setUp() {
+        world = mock(World.class);
+        location = new Location(world, 1, 2, 3);
+    }
 
     @Test
     void buildsRuleWithEventSpecificActionsAndAbsentHandlers() {
@@ -32,8 +42,7 @@ class RuleBuilderTest {
                 .named("testRule");
 
         Region region = mock(Region.class);
-        World world = mock(World.class);
-        TestEvents.LocationEvent primaryEvent = new TestEvents.LocationEvent(new Location(world, 1, 2, 3));
+        TestEvents.LocationEvent primaryEvent = new TestEvents.LocationEvent(location);
         TestEvents.SecondaryLocationEvent secondaryEvent = new TestEvents.SecondaryLocationEvent(new Location(world, 4, 5, 6));
 
         rule.fire(true, primaryEvent, region);

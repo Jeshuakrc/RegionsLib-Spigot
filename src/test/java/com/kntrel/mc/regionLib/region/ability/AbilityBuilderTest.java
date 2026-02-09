@@ -1,10 +1,11 @@
 package com.kntrel.mc.regionLib.region.ability;
 
 import com.kntrel.mc.regionLib.region.Region;
-import com.kntrel.mc.regionLib.testsupport.TestEvents;
+import com.kntrel.mc.regionLib.test.util.TestEvents;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,11 +15,20 @@ import static org.mockito.Mockito.*;
 
 class AbilityBuilderTest {
 
+    private Player player;
+    private World world;
+    private Location location;
+
+    @BeforeEach
+    void setUp() {
+        player = mock(Player.class);
+        world = mock(World.class);
+        location = new Location(world, 1, 2, 3);
+    }
+
     @Test
     void infersPlayerFromPlayerEvent() {
-        Player player = mock(Player.class);
-        World world = mock(World.class);
-        when(player.getLocation()).thenReturn(new Location(world, 1, 2, 3));
+        when(player.getLocation()).thenReturn(location);
 
         Ability ability = Ability.on(TestEvents.SimplePlayerEvent.class)
                 .when(event -> false)
@@ -34,10 +44,6 @@ class AbilityBuilderTest {
 
     @Test
     void infersPlayerFromGetPlayerMethod() {
-        Player player = mock(Player.class);
-        World world = mock(World.class);
-        Location location = new Location(world, 5, 6, 7);
-
         Ability ability = Ability.on(TestEvents.PlayerCarrierEvent.class)
                 .at(event -> location)
                 .when(event -> false)
@@ -64,10 +70,6 @@ class AbilityBuilderTest {
         AtomicInteger secondaryAllowedCount = new AtomicInteger();
         AtomicInteger primaryDeniedCount = new AtomicInteger();
         AtomicInteger secondaryDeniedCount = new AtomicInteger();
-
-        Player player = mock(Player.class);
-        World world = mock(World.class);
-        Location location = new Location(world, 1, 2, 3);
 
         Ability ability = Ability.on(TestEvents.SimplePlayerEvent.class)
                 .at(e -> location)

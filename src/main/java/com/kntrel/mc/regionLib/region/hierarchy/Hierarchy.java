@@ -13,8 +13,6 @@ public class Hierarchy {
     private final TreeMap<Integer, Hierarchy.Group> groups_;
     private int lowestLevel_, highestLevel_;
 
-    //STATIC FIELDS
-    private static final ArrayList<Hierarchy> hierarchies_ = new ArrayList<>();
 
     //CONSTRUCTORS
     public Hierarchy (Long id, String name) {
@@ -24,7 +22,6 @@ public class Hierarchy {
 
         this.setId(id);
         this.setName(name);
-        hierarchies_.add(this);
     }
 
     //SETTERS
