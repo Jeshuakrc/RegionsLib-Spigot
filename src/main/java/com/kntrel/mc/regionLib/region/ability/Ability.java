@@ -8,7 +8,18 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Defines a region ability and its listener behavior.
+ * Models a permission-style reaction for player-caused events inside regions.
+ *
+ * <p>An ability listens to {@link AbilityTrigger} instances, which are specialized
+ * {@link com.kntrel.mc.regionLib.region.listen.RegionTrigger} definitions that
+ * can attribute the event to a {@link org.bukkit.entity.Player}. Abilities answer
+ * the question: "When something happens inside a region, and it was caused by a
+ * player, is the player allowed to do it?"</p>
+ *
+ * <p>When allowed, {@link #onAllowed(Event, List)} is invoked. When denied,
+ * {@link #onDenied(Event, List)} is invoked (defaults to cancelling the event if
+ * it is {@link Cancellable}). For examples and registration, see
+ * {@link com.kntrel.mc.regionLib.provided.Abilities}.</p>
  */
 public interface Ability extends RegionListener<AbilityTrigger<?>> {
 

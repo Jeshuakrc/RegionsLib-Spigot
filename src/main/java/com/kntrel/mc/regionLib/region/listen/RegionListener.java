@@ -6,13 +6,29 @@ import org.bukkit.event.EventPriority;
 import java.util.Collection;
 
 /**
- * Listener for region triggers.
+ * Listener that subscribes to one or more {@link RegionTrigger} instances.
+ * Each listener is identified by a string name and reacts when any of its
+ * triggers signal within a region.
+ *
+ * <p>Specialized listeners include abilities and rules, which interpret trigger
+ * signals differently. See {@link com.kntrel.mc.regionLib.region.ability.Ability}
+ * and {@link com.kntrel.mc.regionLib.region.rule.Rule} for higher-level behavior.</p>
  *
  * @param <T> trigger type
  */
 public interface RegionListener<T extends RegionTrigger<?>> {
 
+    /**
+     * Returns the identifier for this listener.
+     *
+     * @return listener name
+     */
     String name();
+    /**
+     * Returns the triggers this listener subscribes to.
+     *
+     * @return trigger collection
+     */
     Collection<T> triggers();
 
 
