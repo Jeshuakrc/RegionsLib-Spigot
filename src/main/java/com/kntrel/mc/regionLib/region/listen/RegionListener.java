@@ -5,9 +5,28 @@ import org.bukkit.event.EventPriority;
 
 import java.util.Collection;
 
+/**
+ * A named subscriber to one or more {@link RegionTrigger} instances.
+ * <p>
+ * Region listeners are identified by a stable string name and provide a
+ * collection of triggers that determine which events should be routed to
+ * the listener.
+ *
+ * @param <T> trigger type
+ */
 public interface RegionListener<T extends RegionTrigger<?>> {
 
+    /**
+     * Returns the unique name for this listener.
+     *
+     * @return listener name
+     */
     String name();
+    /**
+     * Returns the triggers this listener subscribes to.
+     *
+     * @return collection of triggers
+     */
     Collection<T> triggers();
 
 

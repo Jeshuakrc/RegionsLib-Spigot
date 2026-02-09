@@ -9,6 +9,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+/**
+ * Default implementation of {@link Ability}.
+ */
 public class AbilityImpl implements Ability {
 
     //FIELDS

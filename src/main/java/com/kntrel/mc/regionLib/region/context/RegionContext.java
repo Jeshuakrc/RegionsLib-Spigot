@@ -24,6 +24,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.function.Function;
 
+/**
+ * Holds configuration, repositories, and registries for a region namespace.
+ */
 public class RegionContext implements AttributedRegionRepository {
 
     private static class HotRegionRepositoryWrapper implements RegionRepository {

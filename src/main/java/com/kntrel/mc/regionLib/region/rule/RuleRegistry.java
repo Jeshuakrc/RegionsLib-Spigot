@@ -10,6 +10,9 @@ import com.kntrel.mc.regionLib.util.valueType.ValueHolder;
 import org.bukkit.event.Event;
 import java.util.List;
 
+/**
+ * Registry that manages rule definitions and trigger handling.
+ */
 public class RuleRegistry extends ReflectiveListernerRegistry<RegionTrigger<?>, Rule<?>> {
 
     @SuppressWarnings("unchecked")

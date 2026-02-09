@@ -3,6 +3,9 @@ package com.kntrel.mc.regionLib.region.dataContainer;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Container for {@link RegionData} entries.
+ */
 public class RegionDataContainer {
 
     //FIELDS

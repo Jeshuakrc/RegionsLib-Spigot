@@ -21,6 +21,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+/**
+ * Fluent builder for creating {@link Ability} instances.
+ *
+ * @param <E> event type
+ */
 public class AbilityBuilder<E extends Event> extends ListenerBuilder<
         E,
         AbilityTrigger<?>,

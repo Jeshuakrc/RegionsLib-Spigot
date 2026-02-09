@@ -5,6 +5,9 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Represents a hierarchy of permission groups and ability access rules.
+ */
 public class Hierarchy {
 
     //FIELDS
@@ -15,6 +18,12 @@ public class Hierarchy {
 
 
     //CONSTRUCTORS
+    /**
+     * Creates a hierarchy with the provided id and name.
+     *
+     * @param id hierarchy id
+     * @param name hierarchy name
+     */
     public Hierarchy (Long id, String name) {
         this.groups_ = new TreeMap<>(Comparator.reverseOrder());
         this.lowestLevel_ = 0;
@@ -28,50 +37,117 @@ public class Hierarchy {
     private void setId(Long id) {
         this.id_ = id;
     }
+    /**
+     * Sets the hierarchy name.
+     *
+     * @param name hierarchy name
+     */
     public void setName(String name) {
         this.name_ = name;
     }
 
     //GETTERS
+    /**
+     * Returns the hierarchy id.
+     *
+     * @return hierarchy id
+     */
     public Long getId() {
         return id_;
     }
+    /**
+     * Returns the hierarchy name.
+     *
+     * @return hierarchy name
+     */
     public String getName() {
         return name_;
     }
+    /**
+     * Returns groups in this hierarchy.
+     *
+     * @return list of groups
+     */
     public List<Hierarchy.Group> getGroups() {
         return List.copyOf(this.groups_.values());
     }
+    /**
+     * Returns the group at a specific level.
+     *
+     * @param level group level
+     * @return optional group
+     */
     public Optional<Hierarchy.Group> getGroup(int level) {
         return Optional.ofNullable(this.groups_.get(level));
     }
+    /**
+     * Returns the nearest group at or below the level.
+     *
+     * @param level level to search
+     * @return optional group
+     */
     public Optional<Hierarchy.Group> getGroupAtOrBellow(int level) {
         return Optional.ofNullable(groups_.floorEntry(level)).map(Map.Entry::getValue);
     }
+    /**
+     * Returns the lowest group allowed to an ability name.
+     *
+     * @param ability ability name
+     * @return optional group
+     */
     public Optional<Hierarchy.Group> getLowestGroupAllowedTo(String ability) {
         return this.getGroups().stream()
                 .filter(g -> g.allowedTo(ability))
                 .sorted()
                 .findFirst();
     }
+    /**
+     * Returns the lowest group allowed to an ability.
+     *
+     * @param ability ability instance
+     * @return optional group
+     */
     public Optional<Hierarchy.Group> getLowestGroupAllowedTo(Ability ability) {
         return this.getLowestGroupAllowedTo(ability.name());
     }
+    /**
+     * Returns the group with the specified name.
+     *
+     * @param name group name
+     * @return optional group
+     */
     public Optional<Hierarchy.Group> getGroup(String name) {
         if (name == null) {
             return Optional.empty();
         }
         return this.groups_.values().stream().filter(g -> g.getName().equals(name)).findFirst();
     }
+    /**
+     * Returns the lowest group level in the hierarchy.
+     *
+     * @return lowest level
+     */
     public int getLowestLever() {
         return this.lowestLevel_;
     }
+    /**
+     * Returns the highest group level in the hierarchy.
+     *
+     * @return highest level
+     */
     public int getHighestLevel() {
         return this.highestLevel_;
     }
 
 
     //METHODS
+    /**
+     * Checks whether a group level is allowed to use an ability.
+     *
+     * @param ability ability to check
+     * @param level group level
+     * @return true if allowed
+     */
     public boolean checkAbility(Ability ability, int level) {
         if (level <= this.getLowestLever()) {
             return true;
@@ -89,13 +165,33 @@ public class Hierarchy {
 
         return true;
     }
+    /**
+     * Checks whether the ability is allowed for the lowest group.
+     *
+     * @param ability ability to check
+     * @return true if allowed
+     */
     public boolean checkAbility(Ability ability) {
         return this.checkAbility(ability, this.getHighestLevel() + 1);
     }
+    /**
+     * Checks whether a group is allowed to use an ability.
+     *
+     * @param ability ability to check
+     * @param group hierarchy group
+     * @return true if allowed
+     */
     public boolean checkAbility(Ability ability, Hierarchy.Group group) {
         if (!group.getHierarchy().equals(this)) { return false; }
         return checkAbility(ability, group.getLevel());
     }
+    /**
+     * Adds a group definition to the hierarchy.
+     *
+     * @param name group name
+     * @param level group level
+     * @param abilities ability names
+     */
     public void addGroup(String name, int level, Collection<String> abilities) {
         this.groups_.put(level, new Group(level, name, abilities, this));
 
@@ -120,6 +216,9 @@ public class Hierarchy {
     }
 
     //CLASSES
+    /**
+     * Represents a hierarchy group with a level and allowed abilities.
+     */
     public static class Group implements Comparable<Group> {
 
         //FIELDS
@@ -148,24 +247,57 @@ public class Hierarchy {
         }
 
         //GETTERS
+        /**
+         * Returns the group level.
+         *
+         * @return group level
+         */
         public int getLevel() {
             return level_;
         }
+        /**
+         * Returns the group name.
+         *
+         * @return group name
+         */
         public String getName() {
             return name_;
         }
+        /**
+         * Returns the parent hierarchy.
+         *
+         * @return hierarchy instance
+         */
         public Hierarchy getHierarchy() {
             return this.hierarchy_;
         }
 
         //Methods
         @Override
+        /**
+         * Compares groups by level.
+         *
+         * @param o other group
+         * @return comparison result
+         */
         public int compareTo(Group o) {
             return Integer.compare(level_, o.getLevel());
         }
+        /**
+         * Returns whether the group allows the ability name.
+         *
+         * @param ability ability name
+         * @return true if allowed
+         */
         public boolean allowedTo(String ability) {
             return this.abilities_.contains(normalizeSpace(ability.toLowerCase()));
         }
+        /**
+         * Returns whether the group allows the ability.
+         *
+         * @param ability ability instance
+         * @return true if allowed
+         */
         public boolean allowedTo(Ability ability) {
             return this.allowedTo(ability.name());
         }

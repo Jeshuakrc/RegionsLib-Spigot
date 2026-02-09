@@ -15,6 +15,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
+/**
+ * Listener registry that discovers listeners via reflection.
+ *
+ * @param <T> trigger type
+ * @param <L> listener type
+ */
 public abstract class ReflectiveListernerRegistry<T extends RegionTrigger<? extends Event>, L extends RegionListener<? extends T>>
 extends ListenerRegistry<T, L> {
 

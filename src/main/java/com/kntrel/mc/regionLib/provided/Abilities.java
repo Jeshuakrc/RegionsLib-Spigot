@@ -42,6 +42,9 @@ public final class Abilities {
 
 
     //CONSTANTS
+    /**
+     * Configuration constants used by built-in abilities.
+     */
     public static class Constants {
 
         private static Set<Material> PLANTABLE_BLOCKS = Set.of(
@@ -52,9 +55,19 @@ public final class Abilities {
         private static Set<Material> BREACKABLE_REDSTONE_BLOCKS = Set.of(Material.REDSTONE_WIRE);
 
 
+        /**
+         * Overrides the list of plantable materials.
+         *
+         * @param materials plantable materials
+         */
         public static void setPlantableBlocks(List<Material> materials) {
             PLANTABLE_BLOCKS = Set.copyOf(materials);
         }
+        /**
+         * Returns the configured plantable materials.
+         *
+         * @return plantable materials
+         */
         public static Set<Material> getPlantableBlocks() {
             return PLANTABLE_BLOCKS;
         }

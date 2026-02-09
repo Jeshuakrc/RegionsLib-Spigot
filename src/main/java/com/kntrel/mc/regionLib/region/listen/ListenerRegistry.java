@@ -13,6 +13,12 @@ import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
+/**
+ * Base registry for region listeners and event routing.
+ *
+ * @param <T> trigger type
+ * @param <L> listener type
+ */
 public abstract class ListenerRegistry<T extends RegionTrigger<? extends Event>, L extends RegionListener<? extends T>> {
 
     //ASSETS

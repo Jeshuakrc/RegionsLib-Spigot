@@ -3,6 +3,9 @@ package com.kntrel.mc.regionLib.region.repository;
 import com.kntrel.mc.regionLib.region.RegionField;
 import java.util.Optional;
 
+/**
+ * Represents a query definition for regions.
+ */
 public class Query {
 
     //FACTORY

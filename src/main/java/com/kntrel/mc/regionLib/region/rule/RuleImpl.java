@@ -9,6 +9,11 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+/**
+ * Default {@link Rule} implementation.
+ *
+ * @param <T> rule value type
+ */
 public class RuleImpl<T> implements Rule<T> {
 
     //FIELDS
