@@ -12,17 +12,20 @@ import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.RuleValue;
 import com.kntrel.mc.regionLib.test.mock.MockHierarchyRepository;
-import com.kntrel.mc.regionLib.test.mock.MockPlugin;
 import com.kntrel.mc.regionLib.test.util.MemoryRegionRepository;
 import com.kntrel.mc.regionLib.test.util.TestRegionContext;
 import com.mojang.brigadier.CommandDispatcher;
+import be.seeseemelk.mockbukkit.MockBukkit;
+import be.seeseemelk.mockbukkit.ServerMock;
+import be.seeseemelk.mockbukkit.entity.PlayerMock;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,16 +35,20 @@ public class RegionCommandTest {
 
     //FIELDS
     private BukkitCommvoker commvoker;
-    private Player sender;
+    private ServerMock server;
+    private PlayerMock sender;
     private RegionContext context;
     private World mockWorld;
+    private Plugin plugin;
 
 
     //SETUP
     @BeforeEach
     @SuppressWarnings("unchecked")
     public void setUp() {
-        Plugin plugin = new MockPlugin();
+        server = MockBukkit.mock();
+        plugin = MockBukkit.createMockPlugin();
+        mockWorld = server.addSimpleWorld("world");
 
         context = new TestRegionContext(
                 plugin,
@@ -82,15 +89,13 @@ public class RegionCommandTest {
         );
         commvoker.register(new RegionCommand());
 
-        UUID playerUUID = UUID.randomUUID();
-        Player senderPlayer = Mockito.mock(Player.class);
-        Mockito.when(senderPlayer.getUniqueId()).thenReturn(playerUUID);
-        
-        mockWorld = Mockito.mock(World.class);
-        Mockito.when(senderPlayer.getWorld()).thenReturn(mockWorld);
-        Mockito.when(mockWorld.getHighestBlockYAt(Mockito.anyInt(), Mockito.anyInt())).thenReturn(64);
+        sender = server.addPlayer(UUID.randomUUID(), "TestPlayer");
+        sender.teleport(new Location(mockWorld, 0, 64, 0));
+    }
 
-        sender = senderPlayer;
+    @AfterEach
+    void tearDown() {
+        MockBukkit.unmock();
     }
 
     // Tests
@@ -106,7 +111,7 @@ public class RegionCommandTest {
         assertEquals("testregion", regions.getFirst().getName());
     }
 
-    @Test741
+    @Test
     void testCreateRegionWithPlayer() {
         // Create a region for the player (without specifying world)
         assertDoesNotThrow(() -> commvoker.execute("region create -50,0,0,50,100,100 hierarchy myregion", sender));
@@ -184,9 +189,7 @@ public class RegionCommandTest {
         assertDoesNotThrow(() -> commvoker.execute("region create -100,0,0,100,100,100 hierarchy jointest", sender));
         
         // Create a mock player to join
-        Player joiner = Mockito.mock(Player.class);
-        Mockito.when(joiner.getName()).thenReturn("JoinPlayer");
-        Mockito.when(joiner.getUniqueId()).thenReturn(UUID.randomUUID());
+        Player joiner = server.addPlayer(UUID.randomUUID(), "JoinPlayer");
         
         // This test demonstrates the join mechanism - actual execution depends on command parsing
         List<Region> regions = context.getAll();
