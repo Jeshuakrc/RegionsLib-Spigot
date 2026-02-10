@@ -248,7 +248,7 @@ public sealed interface Condition extends Predicate<Region> {
     }
     record In(Area area) implements Positional {
         @Override public boolean test(Region region) {
-            return region.contains(this.area());
+            return region.overlaps(this.area());
         }
     }
     record InChunk(int x, int z, World world) implements Positional {

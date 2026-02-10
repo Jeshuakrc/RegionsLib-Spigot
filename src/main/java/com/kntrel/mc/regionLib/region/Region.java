@@ -619,7 +619,7 @@ public class Region implements Comparable<Region> {
 
     //SHAPE
     /**
-     * Returns whether the region contains a location.
+     * Returns whether a location point is contained in the region.
      *
      * @param location location to test
      * @return true if contained
@@ -641,7 +641,7 @@ public class Region implements Comparable<Region> {
         return this.getBoundingBox().contains(x,y,z);
     }
     /**
-     * Returns whether the region contains a bounding box.
+     * Returns whether the region fully contains a bounding box.
      *
      * @param boundingBox bounding box to test
      * @return true if contained
@@ -650,7 +650,7 @@ public class Region implements Comparable<Region> {
         return this.boundingBox_.contains(boundingBox);
     }
     /**
-     * Returns whether the region contains an area.
+     * Returns whether the region fully contains an area.
      *
      * @param area area to test
      * @return true if contained
@@ -658,6 +658,35 @@ public class Region implements Comparable<Region> {
     public boolean contains(Area area) {
         if (!this.getWorld().equals(area.getWorld())) { return false; }
         return this.contains((BoundingBox) area);
+    }
+    /**
+     * Returns whether the region overlaps with a bounding box.
+     *
+     * @param boundingBox bounding box to test
+     */
+    public boolean overlaps(BoundingBox boundingBox) {
+        return this.boundingBox_.overlaps(boundingBox);
+    }
+    /**
+     * Returns whether the region overlaps with an area.
+     * The check is the same as with {@link Region#overlaps(BoundingBox)}, but it also checks for a worlds match.
+     *
+     * @param area area to test
+     */
+    public boolean overlaps(Area area) {
+        if (!this.getWorld().equals(area.getWorld())) { return false; }
+        return this.overlaps((BoundingBox) area);
+    }
+
+    /**
+     * Returns whether the region overlaps with another region.
+     * The check is the same as with {@link Region#overlaps(BoundingBox)}, but it also checks for a worlds match.
+     *
+     * @param other region to test
+     */
+    public boolean overlaps(Region other) {
+        if (!this.getWorld().equals(other.getWorld())) { return false; }
+        return this.boundingBox_.overlaps(other.boundingBox_);
     }
     /**
      * Returns regions overlapping this region.
