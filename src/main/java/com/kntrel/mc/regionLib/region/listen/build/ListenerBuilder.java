@@ -7,12 +7,15 @@ import com.kntrel.mc.regionLib.util.Area;
 import com.kntrel.util.Priority;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockEvent;
 import org.bukkit.event.entity.EntityEvent;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.util.BoundingBox;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
@@ -112,8 +115,8 @@ public abstract class ListenerBuilder<
         if (this.localizer_ != null) { return this.localizer_; }
         if (EntityEvent.class.isAssignableFrom(this.eventClass_)) {
             this.localizer_ = e -> {
-                Location loc = ((EntityEvent) e).getEntity().getLocation();
-                return Place.ofPoint(loc);
+                Entity entity = ((EntityEvent) e).getEntity();
+                return Place.ofArea(Area.ofEntity(entity));
             };
             return this.localizer_;
         }
