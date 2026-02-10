@@ -90,13 +90,22 @@ public class SQLiteRegionRepository implements RegionRepository {
     @Override
     public void save(Region... regions) {
         Set<Long> newRegions = new HashSet<>();
+        Map<Long, RegionSnapshot> snapshots = new HashMap<>();
         for (Region r : regions) {
-            if (r.getId() != null) { continue; }
-            long id = this.idCount_.getAndIncrement();
+            Long id = r.getId();
+
+            if (id != null) {
+                long fid = id;
+                this.cache_.get(id).ifPresent(s -> snapshots.put(fid, s));
+                continue;
+            }
+
+            id = this.idCount_.getAndIncrement();
             r.setId(id);
             newRegions.add(id);
+
         }
-        this.writeExecutor_.execute(() -> this.saveInner(regions, newRegions));
+        this.writeExecutor_.execute(() -> this.saveInner(regions, newRegions, snapshots));
     }
 
 
@@ -132,7 +141,7 @@ public class SQLiteRegionRepository implements RegionRepository {
         }
         return out;
     }
-    private void saveInner(Region[] regions, Set<Long> newRegions) {
+    private void saveInner(Region[] regions, Set<Long> newRegions, Map<Long, RegionSnapshot> snapshots) {
         Patch<Object> patch = new Patch<>();
         for (Region r : regions) {
             RegionSnapshot oldSnapshot = null;
@@ -141,7 +150,7 @@ public class SQLiteRegionRepository implements RegionRepository {
             if (r.getId() == null) {
                 r.setId(this.idCount_.getAndIncrement());
             } else if (!newRegions.contains(r.getId())) {
-                oldSnapshot = this.cache_.get(r.getId()).orElse(null);
+                oldSnapshot = snapshots.get(r.getId());
                 if (oldSnapshot == null) {
                     List<RegionSnapshot> fetched = this.getInner(Query.builder(this).idIs(r.getId()).asQuery());
                     if (!fetched.isEmpty()) { oldSnapshot = fetched.getFirst(); }

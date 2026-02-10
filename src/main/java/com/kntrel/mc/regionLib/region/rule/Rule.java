@@ -11,7 +11,7 @@ import org.bukkit.event.Event;
  *
  * <p>A rule listens to one or more {@link RegionTrigger} instances and, when
  * triggered inside a region, looks up the rule value in that region using the
- * rule's name. Rules answer the question: "If something happens inside a region,
+ * rule's name. Rules model: "If something happens inside a region,
  * use the rule value under this rule name to determine what to do."</p>
  *
  * <p>When a value is present, {@link #fire(Object, Event, Region)} is called

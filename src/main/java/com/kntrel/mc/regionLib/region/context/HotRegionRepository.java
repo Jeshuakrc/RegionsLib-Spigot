@@ -112,7 +112,10 @@ class HotRegionRepository implements RegionReadRepository, Listener {
     @EventHandler public void handleChunkLoad(ChunkLoadEvent event) {
         Chunk chunk = event.getChunk();
         this.regionsInChunk(chunk)
-                .map(Region::getId)
+                .map(r -> {
+                    this.cache_.put(r);
+                    return r.getId();
+                })
                 .forEach(this::incrementHot);
         this.chunksInCellCount_.increment(this.cellOfChunk(chunk));
     }
@@ -145,7 +148,6 @@ class HotRegionRepository implements RegionReadRepository, Listener {
 
         this.cellsInRegionCount_.increment(id);         // keeping invariants
         this.regionMap_.put(id, region);
-        this.cache_.put(region);
     }
     private void unlinkFromCell(Grid.Cell cell, long id) {
         Set<Long> ids = this.cellRegionMap_.get(cell);
