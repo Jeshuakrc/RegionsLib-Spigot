@@ -134,12 +134,17 @@ public class RegionContext implements AttributedRegionRepository {
     public void stopDisplayRegion(Region region) {
         this.displayController_.stopDisplay(region);
     }
-    public Region create(BoundingBox initialBox, World world, String name, Hierarchy hierarchy) {
+    public Region create(@Nullable Entity creator, BoundingBox initialBox, World world, String name, Hierarchy hierarchy) {
         Hierarchy existent = this.hierarchyRepository_.get(hierarchy.getId()).orElse(null);
         if (existent == null) {
             throw new IllegalArgumentException("Hierarchy '" + hierarchy.getName() + "', id: " + hierarchy.getId() + ", is nonexistent in this region context");
         }
-        return new Region(this, initialBox, world, name, existent);
+        Region reg = new Region(this, initialBox, world, name, existent);
+        this.save(creator, reg);
+        return  reg;
+    }
+    public Region create(BoundingBox initialBox, World world, String name, Hierarchy hierarchy) {
+        return this.create(null, initialBox, world, name, hierarchy);
     }
 
 
