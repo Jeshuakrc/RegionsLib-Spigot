@@ -21,6 +21,7 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.jetbrains.annotations.Nullable;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 class HotRegionRepository implements RegionReadRepository, Listener {
@@ -34,19 +35,21 @@ class HotRegionRepository implements RegionReadRepository, Listener {
     private final HashCounter<Grid.Cell> chunksInCellCount_;
     private final HashCounter<Long> chunksInRegionCount_;
     private final HashCounter<Long> cellsInRegionCount_;
-
+    private final List<BiConsumer<Region, Chunk>> loadConsumers_, unloadConsumers_;
 
 
     //CONSTRUCTOR
     public HotRegionRepository(RegionCache cache, RegionRepository delegate, Grid.CellSize gridSize) {
         this.delegate_ = delegate;
         this.gridSize_ = gridSize;
+        this.cache_ = cache;
         this.regionMap_ = new HashMap<>();
         this.cellRegionMap_ = new HashMap<>();
-        this.cache_ = cache;
         this.chunksInCellCount_ = new HashCounter<>();
         this.chunksInRegionCount_ = new HashCounter<>();
         this.cellsInRegionCount_ = new HashCounter<>();
+        this.loadConsumers_ = new ArrayList<>();
+        this.unloadConsumers_ = new ArrayList<>();
     }
 
 
@@ -111,21 +114,22 @@ class HotRegionRepository implements RegionReadRepository, Listener {
     }
     @EventHandler public void handleChunkLoad(ChunkLoadEvent event) {
         Chunk chunk = event.getChunk();
-        this.regionsInChunk(chunk)
-                .map(r -> {
-                    this.cache_.put(r);
-                    return r.getId();
-                })
-                .forEach(this::incrementHot);
+        for (Region r : this.regionsInChunk(chunk)) {
+            this.cache_.put(r);
+            int previousCount = this.incrementHot(r.getId());
+            if (previousCount < 0) {
+                this.loadConsumers_.forEach(c -> c.accept(r, chunk));
+            }
+        }
         this.chunksInCellCount_.increment(this.cellOfChunk(chunk));
     }
     @EventHandler public void handleChunkUnload(ChunkUnloadEvent event) {
         Chunk chunk = event.getChunk();
         Grid.Cell cell = this.cellOfChunk(chunk);
-        if (isCellLoaded(cell)) {
-            this.regionsInChunk(chunk)
-                    .map(Region::getId)
-                    .forEach(this::decrementHot);
+        if (isCellLoaded(cell)) for (Region r : this.regionsInChunk(chunk)) {
+            if (this.decrementHot(r.getId())) {
+                this.unloadConsumers_.forEach(c -> c.accept(r, chunk));
+            }
         }
 
         if (this.chunksInCellCount_.decrementAndCheckZero(cell)) { this.unloadCell(cell); }
@@ -138,6 +142,15 @@ class HotRegionRepository implements RegionReadRepository, Listener {
     }
 
 
+    //API
+    public void onLoadedRegion(BiConsumer<Region, Chunk> action) {
+        this.loadConsumers_.add(action);
+    }
+    public void onUnloadedRegion(BiConsumer<Region, Chunk> action) {
+        this.unloadConsumers_.add(action);
+    }
+
+
     //PRIVATE
     private void linkToCell(Grid.Cell cell, Region region) {
         Set<Long> ids = this.cellRegionMap_.get(cell);
@@ -147,7 +160,7 @@ class HotRegionRepository implements RegionReadRepository, Listener {
         if (!ids.add(id)) { return; }                   // already linked
 
         this.cellsInRegionCount_.increment(id);         // keeping invariants
-        this.regionMap_.put(id, region);
+        boolean fresh = this.regionMap_.put(id, region) == null;
     }
     private void unlinkFromCell(Grid.Cell cell, long id) {
         Set<Long> ids = this.cellRegionMap_.get(cell);
@@ -159,11 +172,11 @@ class HotRegionRepository implements RegionReadRepository, Listener {
         this.regionMap_.remove(id);                                         // keeping invariants
         this.cache_.evict(id);
     }
-    private void incrementHot(long id) {
-        this.chunksInRegionCount_.incrementAndGet(id);
+    private int incrementHot(long id) {
+        return this.chunksInRegionCount_.getAndIncrement(id);
     }
-    private void decrementHot(long id) {
-        this.chunksInRegionCount_.decrementAndGet(id);
+    private boolean decrementHot(long id) {
+        return this.chunksInRegionCount_.decrementAndCheckEmptied(id);
     }
     private boolean isHot(long id) {
         return !this.chunksInRegionCount_.isZero(id);
@@ -225,11 +238,11 @@ class HotRegionRepository implements RegionReadRepository, Listener {
                 .filter(Optional::isPresent)
                 .map(Optional::get);
     }
-    private Stream<Region> regionsInChunk(Chunk chunk) {
+    private List<Region> regionsInChunk(Chunk chunk) {
         Grid.Cell cell = this.cellOfChunk(chunk);
         if (!this.isCellLoaded(cell)) { this.loadCell(cell); }
         Condition inChunk = Condition.inChunk(chunk);
-        return this.regionsInCell(cell).filter(inChunk);
+        return this.regionsInCell(cell).filter(inChunk).toList();
     }
     private Grid.Cell cellAt(double x, double z, World world) {
         int size = this.gridSize_.getSize();

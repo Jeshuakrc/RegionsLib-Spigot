@@ -1,6 +1,8 @@
 package com.kntrel.mc.regionLib.region.context;
 
 import com.kntrel.mc.regionLib.cache.RegionCache;
+import com.kntrel.mc.regionLib.event.RegionLoadEvent;
+import com.kntrel.mc.regionLib.event.RegionUnloadEvent;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.ability.AbilityRegistry;
@@ -67,6 +69,13 @@ public class RegionContext implements AttributedRegionRepository {
         this.regionRepository_ = new MainRegionRepository(new HotRegionRepositoryWrapper(this.hotRegionRepository_), this.delegateRegionRepository_, this.plugin_.getServer().getPluginManager(), this.cache_);
 
         this.plugin_.getServer().getPluginManager().registerEvents(this.hotRegionRepository_, this.plugin_);
+
+        this.hotRegionRepository_.onLoadedRegion((r, c) ->
+            this.plugin_.getServer().getPluginManager().callEvent(new RegionLoadEvent(r, c))
+        );
+        this.hotRegionRepository_.onUnloadedRegion((r, c) ->
+            this.plugin_.getServer().getPluginManager().callEvent(new RegionUnloadEvent(r, c))
+        );
     }
     public RegionContext(RegionContextConfig config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
         this(plugin.getName(), config, plugin, regionRepFactory, hierarchyRepFactory);
