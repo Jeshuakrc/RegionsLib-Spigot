@@ -3,7 +3,6 @@ package com.kntrel.mc.regionLib.persistence.sqlite;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

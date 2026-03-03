@@ -6,8 +6,10 @@ import com.kntrel.mc.commvoker.bukkit.requirement.RequiresPermission;
 import com.kntrel.mc.commvoker.command.Command;
 import com.kntrel.mc.commvoker.error.FailTrigger;
 import com.kntrel.mc.commvoker.exception.FailedCommandException;
+import com.kntrel.mc.regionLib.RegionLib;
 import com.kntrel.mc.regionLib.region.NamespaceRegionKey;
 import com.kntrel.mc.regionLib.region.Region;
+import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.RuleValue;
@@ -21,6 +23,7 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.util.BoundingBox;
 import org.bukkit.util.Vector;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Command("region")
 public class RegionCommand {
@@ -228,7 +231,7 @@ public class RegionCommand {
     }
 
     @Command("view {region}")
-    @RequiresPermission("regions.command.showlimit")
+    @RequiresPermission("regions.command.view")
     public void showLimit(@Sender Player player, Region region) {
         region.display(player);
     }
@@ -328,6 +331,29 @@ public class RegionCommand {
         saveWithSender(sender, disabled);
         return out;
     }
+
+    @Command("info {region}")
+    @RequiresPermission("regions.command.info")
+    public String info(Region region) {
+        return RegionInfo.of(region).toString();
+    }
+
+    @Command("info current")
+    @RequiresPermission("regions.command.info")
+    public String info(@Sender Player sender) {
+        RegionContext regionContext = RegionLib.getDefaultContext();
+        if (regionContext == null) { return ""; }
+        List<Region> regions = regionContext.getHotRegionRepository().getAt(sender.getLocation());
+        if (regions.isEmpty()) {
+            return "No regions at the current location.";
+        }
+        if (regions.size() > 1) {
+            String regs = regions.stream().map(r -> r.getId().toString()).collect(Collectors.joining(", "));
+            return "Several regions overlapping ar current location: \n\t" + regs;
+        }
+        return RegionInfo.of(regions.getFirst()).toString();
+    }
+
 
 
     //HELPERS
