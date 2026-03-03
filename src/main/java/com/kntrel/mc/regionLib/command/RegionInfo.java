@@ -59,7 +59,7 @@ record RegionInfo(
         if (!permissions.isEmpty()) {
             sb.append("Permissions:\n");
             for (Map.Entry<Hierarchy.Group, List<String>> perm : permissions.entrySet()) {
-                sb.append("  ").append(perm.getKey().getName()).append(": ");
+                sb.append("  ").append(perm.getKey().getName()).append(":\n");
                 for (String player : perm.getValue()) {
                     sb.append("    ").append(player).append("\n");
                 }
