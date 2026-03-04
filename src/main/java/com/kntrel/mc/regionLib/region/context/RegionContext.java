@@ -70,12 +70,8 @@ public class RegionContext implements AttributedRegionRepository {
 
         this.plugin_.getServer().getPluginManager().registerEvents(this.hotRegionRepository_, this.plugin_);
 
-        this.hotRegionRepository_.onLoadedRegion((r, c) ->
-            this.plugin_.getServer().getPluginManager().callEvent(new RegionLoadEvent(r, c))
-        );
-        this.hotRegionRepository_.onUnloadedRegion((r, c) ->
-            this.plugin_.getServer().getPluginManager().callEvent(new RegionUnloadEvent(r, c))
-        );
+        this.hotRegionRepository_.onLoadedRegion((r, c) -> callEventTask(new RegionLoadEvent(r, c)));
+        this.hotRegionRepository_.onUnloadedRegion((r, c) -> callEventTask(new RegionUnloadEvent(r, c)));
     }
     public RegionContext(RegionContextConfig config, Plugin plugin, Function<RegionContext, RegionRepository> regionRepFactory, Function<RegionContext, HierarchyRepository> hierarchyRepFactory) {
         this(plugin.getName(), config, plugin, regionRepFactory, hierarchyRepFactory);
@@ -163,5 +159,14 @@ public class RegionContext implements AttributedRegionRepository {
     }
     @Override public void save(@Nullable Entity doer, Region... regions) {
         this.regionRepository_.save(doer, regions);
+    }
+
+
+    //HELPERS
+    private void callEventTask(Event event) {
+        this.getServer().getScheduler().runTaskLater(
+                this.plugin_,
+                () -> this.getServer().getPluginManager().callEvent(event),
+                1);
     }
 }

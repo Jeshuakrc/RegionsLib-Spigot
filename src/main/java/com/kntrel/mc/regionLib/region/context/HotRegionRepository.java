@@ -114,14 +114,16 @@ class HotRegionRepository implements RegionReadRepository, Listener {
     }
     @EventHandler public void handleChunkLoad(ChunkLoadEvent event) {
         Chunk chunk = event.getChunk();
+        this.chunksInCellCount_.increment(this.cellOfChunk(chunk));
+        List<Region> loaded = new ArrayList<>();
         for (Region r : this.regionsInChunk(chunk)) {
             this.cache_.put(r);
             int previousCount = this.incrementHot(r.getId());
             if (previousCount < 0) {
-                this.loadConsumers_.forEach(c -> c.accept(r, chunk));
+                loaded.add(r);
             }
         }
-        this.chunksInCellCount_.increment(this.cellOfChunk(chunk));
+        this.loadConsumers_.forEach(c -> loaded.forEach(r -> c.accept(r, chunk)));
     }
     @EventHandler public void handleChunkUnload(ChunkUnloadEvent event) {
         Chunk chunk = event.getChunk();
