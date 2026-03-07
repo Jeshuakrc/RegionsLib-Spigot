@@ -3,7 +3,7 @@ package com.kntrel.mc.regionLib.region.rule;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.listen.RegionTrigger;
 import com.kntrel.mc.regionLib.util.valueType.ValueType;
-import org.apache.logging.log4j.util.TriConsumer;
+import com.kntrel.util.TriConsumer;
 import org.bukkit.event.Event;
 import java.util.Collection;
 import java.util.Set;

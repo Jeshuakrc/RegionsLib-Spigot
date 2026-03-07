@@ -129,11 +129,7 @@ public final class RegionLib extends JavaPlugin {
         );
         commvoker.register(new RegionCommand());
 
-        //Setting up custom logging handler
-        java.util.logging.Logger pluginLogger = plugin.getLogger();
-        pluginLogger.setLevel(Level.ALL);
-        pluginLogger.addHandler(new RegionLibLogHandler(plugin.getName()));
-        pluginLogger.setUseParentHandlers(false);
+        wireSlf4jToPluginLogger("com.kntrel", plugin);
     }
     public static void tryEnable(@NotNull Plugin plugin) {
         try { enable((JavaPlugin) plugin); } catch (IllegalStateException ignored) {}
@@ -189,4 +185,17 @@ public final class RegionLib extends JavaPlugin {
 
     @Override
     public void onDisable() {}
+
+
+    // ------------------------------- HELPERS --------------------------- //
+    private static void wireSlf4jToPluginLogger(String rootPackage, Plugin plugin) {
+        var pluginLogger = plugin.getLogger();
+        var pkgLogger = java.util.logging.Logger.getLogger(rootPackage);
+
+        pkgLogger.setParent(pluginLogger);
+        pkgLogger.setUseParentHandlers(true);
+
+        pluginLogger.setLevel(Level.ALL);
+        pkgLogger.setLevel(Level.ALL);
+    }
 }
