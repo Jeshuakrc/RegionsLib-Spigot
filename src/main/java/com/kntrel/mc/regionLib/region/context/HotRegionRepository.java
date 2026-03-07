@@ -119,7 +119,7 @@ class HotRegionRepository implements RegionReadRepository, Listener {
         for (Region r : this.regionsInChunk(chunk)) {
             this.cache_.put(r);
             int previousCount = this.incrementHot(r.getId());
-            if (previousCount < 0) {
+            if (previousCount < 1) {
                 loaded.add(r);
             }
         }
