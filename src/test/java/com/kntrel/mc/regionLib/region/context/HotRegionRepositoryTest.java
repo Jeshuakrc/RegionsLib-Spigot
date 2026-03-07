@@ -42,6 +42,41 @@ public class HotRegionRepositoryTest {
 
 
     //TESTS
+    @Test void testRegionTouchesAllCellsUponCreation() {
+
+        //Pre-Loading chunks
+        this.loadChunk(-1, -1);
+        this.loadChunk(-1, 0);
+        this.loadChunk(0, -1);
+        this.loadChunk(0, 0);
+
+        //Region touches cells (-1, -1), (-1, 0), (0, -1) and (0,0)
+        Region region = regionInChunks(-1, -1, 0, 0, this.regionContext, this.world, "region");
+
+        this.repository.save(region);
+
+        //Testing cell (0, 0)
+        List<Region> result = this.repository.getAt(4, 1, 4, this.world);
+        assertFalse(result.isEmpty());
+
+        //Testing cell (-1,-1)
+        result = this.repository.getAt(-4, 1, -4, this.world);
+        assertFalse(result.isEmpty());
+
+        //Testing cell (-1, 0)
+        result = this.repository.getAt(-4, 1, 4, this.world);
+        assertFalse(result.isEmpty());
+
+        //Testing cell (0,-1)
+        result = this.repository.getAt(4, 1, -4, this.world);
+        assertFalse(result.isEmpty());
+
+        //Sanity - the region was the created one
+        result = this.repository.getAll();
+        assertEquals(1, result.size());
+        assertEquals("region", result.getFirst().getName());
+    }
+
     @Test void testReturnsOnlyHotRegionsAfterLoadAndUnload() {
         Region regionA = regionInChunks(0, 0, 0, 0, this.regionContext, this.world, "Region A");
         Region regionB = regionInChunks(4, 4, 4, 4, this.regionContext, this.world, "Region B");

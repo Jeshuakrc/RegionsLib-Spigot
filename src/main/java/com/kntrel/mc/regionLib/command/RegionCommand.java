@@ -35,14 +35,13 @@ public class RegionCommand {
     public String create(FailTrigger ft, CommandSender sender, BoundingBox boundingBox, World world, Hierarchy hierarchy, String name) throws FailedCommandException {
         NamespaceRegionKey rk = NamespaceRegionKey.of(name);
         try {
-            Region region = new Region(
-                    rk.getRegionContext(),
+            Region region = rk.getRegionContext().create(
+                    (sender instanceof Entity e) ? e : null,
                     boundingBox,
                     world,
                     rk.name(),
                     hierarchy
             );
-            saveWithSender(sender, region);
         } catch (IllegalArgumentException e) {
             ft.fail(e.getMessage());
         }

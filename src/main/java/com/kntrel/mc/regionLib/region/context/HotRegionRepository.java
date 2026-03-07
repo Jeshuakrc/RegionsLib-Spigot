@@ -329,7 +329,6 @@ class HotRegionRepository implements RegionReadRepository, Listener {
         Deque<Condition> stack = new ArrayDeque<>();
         stack.push(condition);
         List<Condition.Positional> positionals = new ArrayList<>();
-        LOGGER.trace("Staging regions for condition {}.", condition.getClass().getSimpleName());
 
         while (!stack.isEmpty()) {
             Condition current = stack.pop();
@@ -370,7 +369,6 @@ class HotRegionRepository implements RegionReadRepository, Listener {
         return out;
     }
     private void insert(Region region) {
-        LOGGER.debug("Inserting region {} into hot repository links.", region.getId());
         RegionSnapshot bounds = new RegionSnapshot(region);
         World world = region.getWorld();
         for (Grid.Cell cell : cellsIn(bounds, world)) {
