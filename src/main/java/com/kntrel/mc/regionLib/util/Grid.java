@@ -4,6 +4,7 @@ import org.bukkit.World;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -12,14 +13,15 @@ import java.util.stream.StreamSupport;
 
 public class Grid implements Iterable<Grid.Cell> {
 
-    private final int minX_, minZ_, length_, size_;
+    private final int minX_, minZ_, length_, depth_, size_;
     private final World world_;
 
     public Grid(int minX, int minZ, int maxX, int maxZ, World world) {
         this.minX_ = minX;
         this.minZ_ = minZ;
         this.length_ = maxX - minX + 1;
-        this.size_ = this.length_ * (maxZ - minZ + 1);
+        this.depth_ = maxZ - minZ + 1;
+        this.size_ = this.length_ * this.depth_;
         this.world_ = world;
     }
 
@@ -38,8 +40,9 @@ public class Grid implements Iterable<Grid.Cell> {
     }
 
     public boolean contains(Cell cell) {
-        return cell.x() >= this.minX_ && cell.x() < this.minX_ + this.length_
-                && cell.z() >= this.minZ_ && cell.z() < this.minZ_ + this.size_ / this.length_;
+        return cell.world().getUID().equals(this.world_.getUID())
+                && cell.x() >= this.minX_ && cell.x() < this.minX_ + this.length_
+                && cell.z() >= this.minZ_ && cell.z() < this.minZ_ + this.depth_;
     }
 
     //SUBTYPES
@@ -53,8 +56,11 @@ public class Grid implements Iterable<Grid.Cell> {
 
         @Override
         public Cell next() {
-            int x = this.pos_ / Grid.this.length_,
-                    z = this.pos_ % Grid.this.length_;
+            if (!this.hasNext()) {
+                throw new NoSuchElementException();
+            }
+            int x = this.pos_ % Grid.this.length_,
+                    z = this.pos_ / Grid.this.length_;
             this.pos_++;
             return new Cell(Grid.this.minX_ + x, Grid.this.minZ_ + z, Grid.this.world_);
         }
