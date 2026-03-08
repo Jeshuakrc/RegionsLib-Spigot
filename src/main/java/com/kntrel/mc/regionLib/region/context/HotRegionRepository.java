@@ -371,7 +371,8 @@ class HotRegionRepository implements RegionReadRepository, Listener {
     private void insert(Region region) {
         RegionSnapshot bounds = new RegionSnapshot(region);
         World world = region.getWorld();
-        for (Grid.Cell cell : cellsIn(bounds, world)) {
+        Grid grid = cellsIn(bounds, world);
+        for (Grid.Cell cell : grid) {
             this.linkToCell(cell, region);
         }
         int chunks = (int) chunksIn(bounds, region.getWorld()).cellStream()

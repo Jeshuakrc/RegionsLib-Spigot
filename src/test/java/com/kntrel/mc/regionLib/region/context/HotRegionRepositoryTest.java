@@ -6,6 +6,7 @@ import com.kntrel.mc.regionLib.persistence.sqlite.MockRegionContext;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.test.mock.MockChunk;
+import com.kntrel.mc.regionLib.util.Area;
 import com.kntrel.mc.regionLib.util.Grid;
 import org.bukkit.Chunk;
 import org.bukkit.World;
@@ -75,6 +76,41 @@ public class HotRegionRepositoryTest {
         result = this.repository.getAll();
         assertEquals(1, result.size());
         assertEquals("region", result.getFirst().getName());
+    }
+
+    @Test void testRegionTouchesAllCellsUponCreation2() {
+
+        //This touches cells (2, -6) - (4, -5) | chunks (5, -12) - (8, -9)
+        BoundingBox bb = new BoundingBox(82.40, 53.62, -188.15, 142.40, 78.62, -128.15);
+        Region region = new Region(this.regionContext, bb, this.world, "region", this.regionContext.getHierarchyRepository().getAll().getFirst());
+
+        //Loading chunks
+        for (int i = 5; i < 9; i++) {
+            for (int j = -12; j < -8; j++) {
+                loadChunk(i, j);
+            }
+        }
+
+        this.repository.save(region);
+
+        //Assert region is present in every chunk
+        for (int x = 5; x < 9; x++) {
+            for (int z = -12; z < -8; z++) {
+                double minX = x << Constants.CHUNK_SHIFT, minZ = z << Constants.CHUNK_SHIFT;
+                Area area = new Area(
+                        minX,
+                        60,
+                        minZ,
+                        minX + Constants.CHUNK_SIZE,
+                        61,
+                        minZ + Constants.CHUNK_SIZE,
+                        this.world
+                );
+                List<Region> res = this.repository.getIn(area);
+                assertEquals(1, res.size(), "Chunk (" + x + ", " + z + ") doesn't contain the region");
+                assertEquals(region.getId(), res.getFirst().getId());
+            }
+        }
     }
 
     @Test void testReturnsOnlyHotRegionsAfterLoadAndUnload() {
