@@ -5,6 +5,7 @@ import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.util.Area;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerEvent;
@@ -14,25 +15,15 @@ import java.util.Optional;
 /**
  * Fired when a region ability is triggered for a player.
  */
-public class AbilityTriggeredEvent extends PlayerEvent {
+public class AbilityTriggeredEvent extends PlayerEvent implements Cancellable {
 
     //EVENT-REQUIRED ================================================
     private static final HandlerList HANDLERS = new HandlerList();
-    /**
-     * Returns the static handler list for this event.
-     *
-     * @return handler list
-     */
     public static HandlerList getHandlerList() {
         return HANDLERS;
     }
     @Override
     @NotNull
-    /**
-     * Returns the handler list for this event instance.
-     *
-     * @return handler list
-     */
     public HandlerList getHandlers() {
         return HANDLERS;
     }
@@ -45,6 +36,7 @@ public class AbilityTriggeredEvent extends PlayerEvent {
     private Location location_;
     private Area area_;
     private boolean allowed_;
+    private boolean cancelled_;
 
     //CONSTRUCTORS
     private AbilityTriggeredEvent(Ability ability, Player who, boolean allowed, Region region, Event event) {
@@ -55,6 +47,7 @@ public class AbilityTriggeredEvent extends PlayerEvent {
         this.event_ = event;
         this.location_ = null;
         this.area_ = null;
+        this.cancelled_ = false;
     }
     /**
      * Creates an ability trigger event for a location-based trigger.
@@ -134,6 +127,9 @@ public class AbilityTriggeredEvent extends PlayerEvent {
     public boolean isAllowed() {
         return allowed_;
     }
+    @Override public boolean isCancelled() {
+        return this.cancelled_;
+    }
 
 
     //SETTERS
@@ -144,5 +140,8 @@ public class AbilityTriggeredEvent extends PlayerEvent {
      */
     public void setAllowed(boolean allowed) {
         this.allowed_ = allowed;
+    }
+    @Override public void setCancelled(boolean b) {
+        this.cancelled_ = b;
     }
 }

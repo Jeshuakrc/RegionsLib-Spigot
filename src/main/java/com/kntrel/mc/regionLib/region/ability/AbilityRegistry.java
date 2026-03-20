@@ -1,5 +1,6 @@
 package com.kntrel.mc.regionLib.region.ability;
 
+import com.kntrel.mc.regionLib.event.AbilityTriggeredEvent;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.context.RegionContext;
@@ -93,6 +94,13 @@ public class AbilityRegistry extends ReflectiveListernerRegistry<AbilityTrigger<
                 yield false;
             }
         };
+
+        AbilityTriggeredEvent subEvent = (place.isArea())
+                ? new AbilityTriggeredEvent(ability, causer, allowed, regions.getFirst(), place.getArea(), event)
+                : new AbilityTriggeredEvent(ability, causer, allowed, regions.getFirst(), place.getPoint(), event);
+        this.plugin_.getServer().getPluginManager().callEvent(subEvent);
+        if (subEvent.isCancelled()) { return; }
+        allowed = subEvent.isAllowed();
 
         try {
             if (allowed) { ability.onAllowed(event, regions); }
