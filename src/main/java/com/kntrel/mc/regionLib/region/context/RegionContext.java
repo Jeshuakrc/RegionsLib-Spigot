@@ -51,6 +51,7 @@ public class RegionContext implements AttributedRegionRepository {
     private final RuleRegistry ruleRegistry_;
     private final DisplayController displayController_;
     private final RegionCache cache_;
+    private final PlayerSampler playerSampler_;
 
 
     //CONSTRUCTORS
@@ -67,6 +68,7 @@ public class RegionContext implements AttributedRegionRepository {
         this.delegateRegionRepository_ = regionRepFactory.apply(this);
         this.hotRegionRepository_ = new HotRegionRepository(this.cache_, this.delegateRegionRepository_, this.config_.cellSize);
         this.regionRepository_ = new MainRegionRepository(new HotRegionRepositoryWrapper(this.hotRegionRepository_), this.delegateRegionRepository_, this.plugin_.getServer().getPluginManager(), this.cache_);
+        this.playerSampler_ = new PlayerSampler(this, this.config_.playerSamplingPeriodTicks, this.config_.playerMovementTolerance);
 
         this.plugin_.getServer().getPluginManager().registerEvents(this.hotRegionRepository_, this.plugin_);
 
@@ -115,6 +117,9 @@ public class RegionContext implements AttributedRegionRepository {
     public RegionCache getCache() {
         return this.cache_;
     }
+    PlayerSampler getPlayerSampler() {
+        return this.playerSampler_;
+    }
 
 
     //API
@@ -123,6 +128,13 @@ public class RegionContext implements AttributedRegionRepository {
     }
     public void registerAbility(Ability ability) {
         this.abilityRegistry_.register(ability);
+    }
+    public List<Player> getPlayersWithin(Region region) {
+        Long regionId = region.getId();
+        return regionId == null ? List.of() : this.getPlayersWithin(regionId);
+    }
+    public List<Player> getPlayersWithin(long regionId) {
+        return this.playerSampler_.getPlayersWithin(regionId);
     }
     public void displayRegion(Region region, AreaDisplayer displayer, long seconds, Player player) {
         this.displayController_.display(region, displayer, seconds, player);
