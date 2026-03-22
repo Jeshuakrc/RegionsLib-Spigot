@@ -10,13 +10,17 @@ import com.kntrel.mc.regionLib.util.Grid;
 public class RegionContextConfig {
 
     //CONSTANTS
+    private static final long DEFAULT_PLAYER_SAMPLING_PERIOD_TICKS = 1L;
+    private static final double DEFAULT_PLAYER_MOVEMENT_TOLERANCE = 0D;
     private static final RegionContextConfig DEFAULT = new RegionContextConfig(
         4,
         32,
         Permission.OverlapMode.OLDEST,
         10,
         Grid.CellSize.SIZE_32,
-        1024
+        1024,
+        DEFAULT_PLAYER_SAMPLING_PERIOD_TICKS,
+        DEFAULT_PLAYER_MOVEMENT_TOLERANCE
     );
 
 
@@ -35,14 +39,30 @@ public class RegionContextConfig {
     public final int regionDisplayDurationSeconds;
     public final Grid.CellSize cellSize;
     public final int cacheCapacity;
+    public final long playerSamplingPeriodTicks;
+    public final double playerMovementTolerance;
 
     public RegionContextConfig(int minNameLength, int maxNameLength, Permission.OverlapMode permissionsOverlapMode, int regionDisplayDurationSeconds, Grid.CellSize cellSize, int cacheCapacity) {
+        this(minNameLength, maxNameLength, permissionsOverlapMode, regionDisplayDurationSeconds, cellSize, cacheCapacity, DEFAULT_PLAYER_SAMPLING_PERIOD_TICKS, DEFAULT_PLAYER_MOVEMENT_TOLERANCE);
+    }
+    public RegionContextConfig(int minNameLength, int maxNameLength, Permission.OverlapMode permissionsOverlapMode, int regionDisplayDurationSeconds, Grid.CellSize cellSize, int cacheCapacity, long playerSamplingPeriodTicks) {
+        this(minNameLength, maxNameLength, permissionsOverlapMode, regionDisplayDurationSeconds, cellSize, cacheCapacity, playerSamplingPeriodTicks, DEFAULT_PLAYER_MOVEMENT_TOLERANCE);
+    }
+    public RegionContextConfig(int minNameLength, int maxNameLength, Permission.OverlapMode permissionsOverlapMode, int regionDisplayDurationSeconds, Grid.CellSize cellSize, int cacheCapacity, long playerSamplingPeriodTicks, double playerMovementTolerance) {
+        if (playerSamplingPeriodTicks < 1L) {
+            throw new IllegalArgumentException("Player sampling period must be at least 1 tick.");
+        }
+        if (playerMovementTolerance < 0D) {
+            throw new IllegalArgumentException("Player movement tolerance cannot be negative.");
+        }
         this.minNameLength = minNameLength;
         this.maxNameLength = maxNameLength;
         this.permissionsOverlapMode = permissionsOverlapMode;
         this.regionDisplayDurationSeconds = regionDisplayDurationSeconds;
         this.cellSize = cellSize;
         this.cacheCapacity = cacheCapacity;
+        this.playerSamplingPeriodTicks = playerSamplingPeriodTicks;
+        this.playerMovementTolerance = playerMovementTolerance;
     }
 
 
@@ -54,6 +74,8 @@ public class RegionContextConfig {
         private int regionDisplayDurationSeconds = DEFAULT.regionDisplayDurationSeconds;
         private Grid.CellSize cellSize = DEFAULT.cellSize;
         private int cacheCapacity = DEFAULT.cacheCapacity;
+        private long playerSamplingPeriodTicks = DEFAULT.playerSamplingPeriodTicks;
+        private double playerMovementTolerance = DEFAULT.playerMovementTolerance;
 
         private Builder() {}
 
@@ -81,6 +103,14 @@ public class RegionContextConfig {
             this.cacheCapacity = cacheCapacity;
             return this;
         }
+        public Builder withPlayerSamplingPeriodTicks(long playerSamplingPeriodTicks) {
+            this.playerSamplingPeriodTicks = playerSamplingPeriodTicks;
+            return this;
+        }
+        public Builder withPlayerMovementTolerance(double playerMovementTolerance) {
+            this.playerMovementTolerance = playerMovementTolerance;
+            return this;
+        }
         public RegionContextConfig end() {
             return new RegionContextConfig(
                 this.minNameLength,
@@ -88,7 +118,9 @@ public class RegionContextConfig {
                 this.permissionsOverlapMode,
                 this.regionDisplayDurationSeconds,
                 this.cellSize,
-                this.cacheCapacity
+                this.cacheCapacity,
+                this.playerSamplingPeriodTicks,
+                this.playerMovementTolerance
             );
         }
     }

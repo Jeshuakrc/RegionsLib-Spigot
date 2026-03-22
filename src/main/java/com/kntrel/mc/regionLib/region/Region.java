@@ -447,6 +447,22 @@ public class Region implements Comparable<Region> {
                 .toList();
     }
     /**
+     * Returns players currently tracked within this region.
+     *
+     * @return players within this region
+     */
+    public List<Player> getPlayersWithin() {
+        return this.ctx_.getPlayersWithin(this);
+    }
+    /**
+     * Convenience alias for {@link #getPlayersWithin()}.
+     *
+     * @return players within this region
+     */
+    public List<Player> getPlayerWithin() {
+        return this.getPlayersWithin();
+    }
+    /**
      * Returns whether the region touches a chunk coordinate.
      *
      * @param x chunk X
