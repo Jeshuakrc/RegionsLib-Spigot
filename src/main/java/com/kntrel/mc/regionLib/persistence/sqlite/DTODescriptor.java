@@ -5,9 +5,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 class DTODescriptor {
 
@@ -27,6 +30,14 @@ class DTODescriptor {
         public Class<?> type() { return WRAPPERS.getOrDefault(this.component.getType(), this.component.getType()); }
         public Method accessor() { return this.component().getAccessor(); }
     }
+    record Projection(DTODescriptor descriptor, List<Column> columns) {
+        Projection {
+            columns = List.copyOf(columns);
+            if (columns.isEmpty()) {
+                throw new IllegalArgumentException("Projection must contain at least one column.");
+            }
+        }
+    }
 
 
     //FIELDS
@@ -34,7 +45,9 @@ class DTODescriptor {
     private final String tableName_;
     private final Constructor<?> constructor_;
     private final List<Column> columns_;
+    private final Map<String, Column> columnMap_;
     private final List<Column> idColumns_;
+    private final Projection fullProjection_;
     private final String updateSQL_, insertSQL_, deleteSQL_;
 
 
@@ -45,7 +58,9 @@ class DTODescriptor {
         this.tableName_ = findTableName(dtoClass);
         this.constructor_ = findConstructor(dtoClass);
         this.columns_ = findColumns(dtoClass, this.constructor_);
+        this.columnMap_ = indexColumns(this.columns_);
         this.idColumns_ = this.columns_.stream().filter(Column::isId).toList();
+        this.fullProjection_ = new Projection(this, this.columns_);
         this.insertSQL_ = buildInsert(this.tableName_, this.columns_);
         this.updateSQL_ = buildUpdate(this.tableName_, this.columns_);
         this.deleteSQL_ = buildDelete(this.tableName_, this.columns_);
@@ -67,6 +82,25 @@ class DTODescriptor {
     }
     public List<Column> getIdColumns() {
         return this.idColumns_;
+    }
+    public Optional<Column> getColumn(String name) {
+        return Optional.ofNullable(this.columnMap_.get(name));
+    }
+    public Projection fullProjection() {
+        return this.fullProjection_;
+    }
+    public Projection project(String... columnNames) {
+        return this.project(Arrays.asList(columnNames));
+    }
+    public Projection project(Iterable<String> columnNames) {
+        List<Column> columns = new ArrayList<>();
+        for (String columnName : columnNames) {
+            Column column = this.getColumn(columnName).orElseThrow(() ->
+                    new IllegalArgumentException("Unknown column '" + columnName + "' for DTO " + this.dtoClass_.getName())
+            );
+            columns.add(column);
+        }
+        return new Projection(this, columns);
     }
     public String getUpdateSQL() {
         return this.updateSQL_;
@@ -123,6 +157,16 @@ class DTODescriptor {
             ));
         }
         return List.copyOf(out);
+    }
+    private static Map<String, Column> indexColumns(List<Column> columns) {
+        Map<String, Column> out = new HashMap<>();
+        for (Column column : columns) {
+            Column previous = out.put(column.name(), column);
+            if (previous != null) {
+                throw new IllegalArgumentException("Duplicate column '" + column.name() + "' in DTO descriptor.");
+            }
+        }
+        return Map.copyOf(out);
     }
     private static String buildInsert(String tableName, List<Column> columns) {
         return    "INSERT INTO "

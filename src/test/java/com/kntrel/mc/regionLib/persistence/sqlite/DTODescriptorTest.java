@@ -125,4 +125,25 @@ public class DTODescriptorTest {
                 desc.getUpdateSQL()
         );
     }
+
+    @Test
+    void testProjectionHelpers() {
+        DTODescriptor desc = new DTODescriptor(MockPerson.class);
+
+        assertTrue(desc.getColumn("name").isPresent());
+        assertEquals("name", desc.getColumn("name").orElseThrow().name());
+        assertTrue(desc.getColumn("unknown").isEmpty());
+
+        DTODescriptor.Projection full = desc.fullProjection();
+        assertEquals(desc.getColumns(), full.columns());
+
+        DTODescriptor.Projection projected = desc.project("country", "id", "name");
+        assertEquals(3, projected.columns().size());
+        assertEquals("country", projected.columns().get(0).name());
+        assertEquals("id", projected.columns().get(1).name());
+        assertEquals("name", projected.columns().get(2).name());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> desc.project("missing_column"));
+        assertTrue(ex.getMessage().contains("missing_column"));
+    }
 }

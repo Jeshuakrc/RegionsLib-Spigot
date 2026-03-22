@@ -25,12 +25,22 @@ class DataBase {
 
     //API
     public <T> List<T> query(String sql, Class<T> dtoClass, int limit) throws SQLException {
-        try (PreparedStatement stmt = this.conn_.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
-            return this.buildDTOs(rs, dtoClass, limit);
-        }
+        DTODescriptor descriptor = this.getDescriptor(dtoClass);
+        List<Object[]> rows = this.queryRows(sql, dtoClass, limit);
+        return this.buildDTOs(rows, dtoClass, descriptor);
     }
     public <T> List<T> query(String sql, Class<T> dtoClass) throws SQLException {
         return this.query(sql, dtoClass, -1);
+    }
+    public List<Object[]> queryRows(String sql, Class<?> dtoClass, int limit, String... columns) throws SQLException {
+        DTODescriptor descriptor = this.getDescriptor(dtoClass);
+        DTODescriptor.Projection projection = this.resolveProjection(descriptor, columns);
+        try (PreparedStatement stmt = this.conn_.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+            return this.buildRows(rs, projection, limit);
+        }
+    }
+    public List<Object[]> queryRows(String sql, Class<?> dtoClass, String... columns) throws SQLException {
+        return this.queryRows(sql, dtoClass, -1, columns);
     }
     public <T> Optional<T> queryOne(String sql, Class<T> dtoClass) throws SQLException {
         List<T> r = this.query(sql, dtoClass, 1);
@@ -96,12 +106,15 @@ class DataBase {
     private DTODescriptor getDescriptor(Class<?> dtoClass) {
         return this.cache_.computeIfAbsent(dtoClass, DTODescriptor::new);
     }
-    @SuppressWarnings("unchecked")
-    private <T> List<T> buildDTOs(ResultSet rs, Class<T> dtoClass, int limit) throws SQLException {
-        DTODescriptor descriptor = this.getDescriptor(dtoClass);
-        List<DTODescriptor.Column> cols = descriptor.getColumns();
-        List<T> dtos = new ArrayList<>();
-
+    private DTODescriptor.Projection resolveProjection(DTODescriptor descriptor, String... columns) {
+        if (columns == null || columns.length < 1) {
+            return descriptor.fullProjection();
+        }
+        return descriptor.project(columns);
+    }
+    private List<Object[]> buildRows(ResultSet rs, DTODescriptor.Projection projection, int limit) throws SQLException {
+        List<DTODescriptor.Column> cols = projection.columns();
+        List<Object[]> rows = new ArrayList<>();
         while (rs.next()) {
             if (limit >= 0 && limit-- == 0) { break; }
             Object[] args = new Object[cols.size()];
@@ -110,8 +123,17 @@ class DataBase {
                 Object value = rs.getObject(column.name(), column.type());
                 args[index++] = value;
             }
+            rows.add(args);
+        }
+
+        return rows;
+    }
+    @SuppressWarnings("unchecked")
+    private <T> List<T> buildDTOs(List<Object[]> rows, Class<T> dtoClass, DTODescriptor descriptor) {
+        List<T> dtos = new ArrayList<>(rows.size());
+        for (Object[] row : rows) {
             try {
-                T dto = (T) descriptor.getConstructor().newInstance(args);
+                T dto = (T) descriptor.getConstructor().newInstance(row);
                 dtos.add(dto);
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException("Failed to instantiate DTO of type " + dtoClass.getName(), e);

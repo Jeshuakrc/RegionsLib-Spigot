@@ -83,6 +83,44 @@ public class DataBaseTest {
     }
 
     @Test
+    void testProjectedQuery() {
+        assertDoesNotThrow(() -> {
+            String sql = "CREATE TABLE test_table (id INTEGER PRIMARY KEY, name TEXT);";
+            try (PreparedStatement stmt = conn_.prepareStatement(sql)) {
+                stmt.execute();
+            }
+
+            sql = "INSERT INTO test_table (name) VALUES ('First Name');";
+            try (PreparedStatement stmt = conn_.prepareStatement(sql)) {
+                stmt.executeUpdate();
+            }
+            sql = "INSERT INTO test_table (name) VALUES ('Second Name');";
+            try (PreparedStatement stmt = conn_.prepareStatement(sql)) {
+                stmt.executeUpdate();
+            }
+
+            List<Object[]> namesOnly = dataBase_.queryRows(
+                    "SELECT id, name FROM test_table ORDER BY id ASC;",
+                    TestDTO.class,
+                    "name"
+            );
+            assertEquals(2, namesOnly.size());
+            assertArrayEquals(new Object[] { "First Name" }, namesOnly.get(0));
+            assertArrayEquals(new Object[] { "Second Name" }, namesOnly.get(1));
+
+            List<Object[]> reordered = dataBase_.queryRows(
+                    "SELECT id, name FROM test_table ORDER BY id ASC;",
+                    TestDTO.class,
+                    1,
+                    "name",
+                    "id"
+            );
+            assertEquals(1, reordered.size());
+            assertArrayEquals(new Object[] { "First Name", 1 }, reordered.getFirst());
+        });
+    }
+
+    @Test
     void testInserts() {
         List<DTOSnapshot> snapshots = DTOSnapshots(20);
         assertDoesNotThrow(() -> {
