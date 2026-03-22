@@ -3,6 +3,8 @@ package com.kntrel.mc.regionLib.region.repository;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.util.Area;
+import com.kntrel.util.tuple.Pair;
+import com.kntrel.util.tuple.Triplet;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -23,6 +25,75 @@ public interface RegionReadRepository {
      * @return list of matching regions
      */
     List<Region> get(Query query);
+    /**
+     * Executes a projected query for one or more region fields.
+     *
+     * @param query query definition
+     * @param fields projected fields to return in order
+     * @return ordered projected rows
+     */
+    default List<Object[]> get(Query query, RegionField<?>... fields) {
+        if (fields.length < 1) {
+            throw new IllegalArgumentException("Projected region queries must request at least one field.");
+        }
+        return this.get(query).stream()
+                .map(region -> {
+                    Object[] row = new Object[fields.length];
+                    for (int i = 0; i < fields.length; i++) {
+                        row[i] = fields[i].extract(region);
+                    }
+                    return row;
+                })
+                .toList();
+    }
+    /**
+     * Executes a projected query for a single region field.
+     *
+     * @param query query definition
+     * @param field projected field
+     * @return field values
+     * @param <T> field type
+     */
+    @SuppressWarnings("unchecked")
+    default <T> List<T> get(Query query, RegionField<T> field) {
+        return this.get(query, new RegionField<?>[] { field }).stream()
+                .map(row -> (T) row[0])
+                .toList();
+    }
+    /**
+     * Executes a projected query for two region fields.
+     *
+     * @param query query definition
+     * @param first first projected field
+     * @param second second projected field
+     * @return projected pairs
+     * @param <A> first field type
+     * @param <B> second field type
+     */
+    @SuppressWarnings("unchecked")
+    default <A, B> List<Pair<A, B>> get(Query query, RegionField<A> first, RegionField<B> second) {
+        return this.get(query, new RegionField<?>[] { first, second }).stream()
+                .map(row -> Pair.of((A) row[0], (B) row[1]))
+                .toList();
+    }
+    /**
+     * Executes a projected query for three region fields.
+     *
+     * @param query query definition
+     * @param first first projected field
+     * @param second second projected field
+     * @param third third projected field
+     * @return projected triplets
+     * @param <A> first field type
+     * @param <B> second field type
+     * @param <C> third field type
+     */
+    @SuppressWarnings("unchecked")
+    default <A, B, C> List<Triplet<A, B, C>> get(Query query, RegionField<A> first, RegionField<B> second, RegionField<C> third) {
+        return this.get(query, new RegionField<?>[] { first, second, third }).stream()
+                .map(row -> Triplet.of((A) row[0], (B) row[1], (C) row[2]))
+                .toList();
+    }
 
 
     //DEFAULT

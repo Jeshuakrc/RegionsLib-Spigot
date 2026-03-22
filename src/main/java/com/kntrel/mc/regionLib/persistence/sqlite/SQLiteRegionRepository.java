@@ -3,6 +3,7 @@ package com.kntrel.mc.regionLib.persistence.sqlite;
 import com.kntrel.mc.regionLib.cache.RegionCache;
 import com.kntrel.mc.regionLib.cache.RegionSnapshot;
 import com.kntrel.mc.regionLib.region.Region;
+import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.repository.Query;
 import com.kntrel.mc.regionLib.region.repository.RegionRepository;
@@ -86,6 +87,26 @@ public class SQLiteRegionRepository implements RegionRepository {
         List<RegionSnapshot> snapshots = this.getInner(query);
         return snapshots.stream().map(s -> s.toRegion(this.context_)).toList();
     }
+    @Override
+    public List<Object[]> get(Query query, RegionField<?>... fields) {
+        if (fields.length < 1) {
+            throw new IllegalArgumentException("Projected region queries must request at least one field.");
+        }
+
+        String sql = this.queryParser_.parse(query, fields);
+        String[] columns = Arrays.stream(fields)
+                .map(RegionField::getName)
+                .toArray(String[]::new);
+
+        try {
+            List<Object[]> rows = this.dataBase_.queryRows(sql, DTO.Region.class, columns);
+            return rows.stream()
+                    .map(row -> this.decodeRow(row, fields))
+                    .toList();
+        } catch (SQLException e) {
+            throw new RegionSQLFetchException(sql, e);
+        }
+    }
 
     @Override
     public void save(Region... regions) {
@@ -140,6 +161,20 @@ public class SQLiteRegionRepository implements RegionRepository {
             }
         }
         return out;
+    }
+    private Object[] decodeRow(Object[] row, RegionField<?>[] fields) {
+        Object[] out = new Object[row.length];
+        for (int i = 0; i < row.length; i++) {
+            out[i] = this.decodeValue(fields[i], row[i]);
+        }
+        return out;
+    }
+    private Object decodeValue(RegionField<?> field, Object value) {
+        if (field == RegionField.WORLD) {
+            if (value == null) { return null; }
+            return this.context_.getServer().getWorld(UUID.fromString(String.valueOf(value)));
+        }
+        return value;
     }
     private void saveInner(Region[] regions, Set<Long> newRegions, Map<Long, RegionSnapshot> snapshots) {
         Patch<Object> patch = new Patch<>();

@@ -29,7 +29,10 @@ class QueryParser {
 
     //API
     public String parse(Query query) {
-        StringBuilder sql = new StringBuilder(SELECT_CLAUSE);
+        return this.parse(query, new RegionField<?>[0]);
+    }
+    public String parse(Query query, RegionField<?>... fields) {
+        StringBuilder sql = new StringBuilder(buildSelectClause(fields));
         Set<String> joins = new HashSet<>();
 
         // Collect required joins from condition
@@ -67,6 +70,14 @@ class QueryParser {
 
 
     //HELPERS
+    private static String buildSelectClause(RegionField<?>... fields) {
+        if (fields == null || fields.length < 1) {
+            return SELECT_CLAUSE;
+        }
+        return "SELECT DISTINCT "
+             + String.join(", ", Arrays.stream(fields).map(f -> "region." + f.getName()).toList())
+             + " FROM region";
+    }
     private String buildWhereClause(Query query) {
         List<String> clauses = new ArrayList<>();
 

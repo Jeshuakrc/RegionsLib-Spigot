@@ -5,6 +5,7 @@ import com.kntrel.mc.regionLib.cache.RegionSnapshot;
 import com.kntrel.mc.regionLib.event.RegionCreateEvent;
 import com.kntrel.mc.regionLib.event.RegionUpdatedEvent;
 import com.kntrel.mc.regionLib.region.Region;
+import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.repository.AttributedRegionRepository;
 import com.kntrel.mc.regionLib.region.repository.Query;
 import com.kntrel.mc.regionLib.region.repository.RegionReadRepository;
@@ -41,6 +42,9 @@ class MainRegionRepository implements AttributedRegionRepository {
         List<Region> out = this.readDelegate_.get(query);
         out.forEach(this.cache_::put);
         return out;
+    }
+    @Override public List<Object[]> get(Query query, RegionField<?>... fields) {
+        return this.readDelegate_.get(query, fields);
     }
     @Override public void save(@Nullable Entity doer, Region... region) {
         Region[] inspected = Arrays.stream(region).filter(r -> this.inspect(doer, r)).toArray(Region[]::new);

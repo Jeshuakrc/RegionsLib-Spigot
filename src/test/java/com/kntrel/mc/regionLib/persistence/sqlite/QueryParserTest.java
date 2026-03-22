@@ -50,6 +50,11 @@ class QueryParserTest {
         if (rest.isEmpty()) { return base + ";"; }
         return base + " " + rest + ";";
     }
+    private static String projectedSelect(String columns, String rest) {
+        String base = "SELECT DISTINCT " + columns + " FROM region";
+        if (rest.isEmpty()) { return base + ";"; }
+        return base + " " + rest + ";";
+    }
 
     @Nested
     @DisplayName("Basic Query Tests")
@@ -124,6 +129,37 @@ class QueryParserTest {
 
             assertEquals(
                     regionSelect("WHERE region.destroyed = 0 ORDER BY region.name DESC"),
+                    sql
+            );
+        }
+
+        @Test
+        @DisplayName("Parse projected query with single field")
+        void testProjectedQuerySingleField() {
+            Query query = Query.builder(null).asQuery();
+            String sql = parser.parse(query, RegionField.ID);
+
+            assertEquals(
+                    projectedSelect("region.id", "WHERE region.destroyed = 0"),
+                    sql
+            );
+        }
+
+        @Test
+        @DisplayName("Parse projected query with multiple fields")
+        void testProjectedQueryMultipleFields() {
+            Query query = Query.builder(null)
+                    .and(Condition.equal(RegionField.NAME, "TestRegion"))
+                    .orderBy(RegionField.ID)
+                    .limit(5)
+                    .asQuery();
+            String sql = parser.parse(query, RegionField.ID, RegionField.NAME, RegionField.WORLD);
+
+            assertEquals(
+                    projectedSelect(
+                            "region.id, region.name, region.world",
+                            "WHERE region.name = 'TestRegion' AND region.destroyed = 0 ORDER BY region.id ASC LIMIT 5"
+                    ),
                     sql
             );
         }

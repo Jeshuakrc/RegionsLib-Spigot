@@ -18,6 +18,8 @@ import com.kntrel.mc.regionLib.region.repository.RegionRepository;
 import com.kntrel.mc.regionLib.test.Regions;
 import com.kntrel.mc.regionLib.test.mock.MockHierarchyRepository;
 import com.kntrel.mc.regionLib.test.mock.MockServer;
+import com.kntrel.util.tuple.Pair;
+import com.kntrel.util.tuple.Triplet;
 import org.bukkit.Server;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.NotNull;
@@ -430,6 +432,44 @@ public class SQLiteRegionRepositoryTest {
                 .isEnabled()
                 .get();
         assertEquals(3, result.size());
+    }
+
+    @Test
+    void testFieldProjectionContract() {
+        Hierarchy hierarchy = this.hierarchyRepository.getAll().getFirst();
+        Region alpha = Regions.newRegion(this.regionContext, hierarchy, "Alpha");
+        alpha.enabled(false);
+        Region beta = Regions.newRegion(this.regionContext, hierarchy, "Beta");
+        Region gamma = Regions.newRegion(this.regionContext, hierarchy, "Gamma");
+
+        this.regionRepository.save(alpha, beta, gamma);
+
+        RegionRepository repo = this.regionContext.getRegionRepository();
+        Query query = repo.where()
+                .orderBy(RegionField.ID)
+                .asQuery();
+
+        List<Long> ids = repo.get(query, RegionField.ID);
+        assertEquals(List.of(alpha.getId(), beta.getId(), gamma.getId()), ids);
+
+        List<Pair<Long, String>> idNames = repo.get(query, RegionField.ID, RegionField.NAME);
+        assertEquals(3, idNames.size());
+        assertEquals(alpha.getId(), idNames.get(0).first());
+        assertEquals("Alpha", idNames.get(0).second());
+        assertEquals(beta.getId(), idNames.get(1).first());
+        assertEquals("Beta", idNames.get(1).second());
+
+        List<Triplet<Long, String, Boolean>> triples = repo.get(query, RegionField.ID, RegionField.NAME, RegionField.ENABLED);
+        assertEquals(3, triples.size());
+        assertEquals(alpha.getId(), triples.get(0).first());
+        assertEquals("Alpha", triples.get(0).second());
+        assertFalse(triples.get(0).third());
+        assertTrue(triples.get(1).third());
+
+        List<Object[]> rows = repo.get(query, new RegionField<?>[] { RegionField.NAME, RegionField.WORLD });
+        assertEquals(3, rows.size());
+        assertArrayEquals(new Object[] { "Alpha", alpha.getWorld() }, rows.get(0));
+        assertArrayEquals(new Object[] { "Beta", beta.getWorld() }, rows.get(1));
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.kntrel.mc.regionLib.cache.RegionCache;
 import com.kntrel.mc.regionLib.event.RegionLoadEvent;
 import com.kntrel.mc.regionLib.event.RegionUnloadEvent;
 import com.kntrel.mc.regionLib.region.Region;
+import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.ability.AbilityRegistry;
 import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
@@ -35,6 +36,7 @@ public class RegionContext implements AttributedRegionRepository {
         private final HotRegionRepository inner_;
         HotRegionRepositoryWrapper(HotRegionRepository inner) { this.inner_ = inner; }
         @Override public List<Region> get(Query query) { return this.inner_.get(query); }
+        @Override public List<Object[]> get(Query query, RegionField<?>... fields) { return this.inner_.get(query, fields); }
         @Override public void save(Region... regions) { this.inner_.save(regions); }
     }
 
@@ -168,6 +170,9 @@ public class RegionContext implements AttributedRegionRepository {
     //IMPLEMENTATION
     @Override public List<Region> get(Query query) {
         return this.regionRepository_.get(query);
+    }
+    @Override public List<Object[]> get(Query query, RegionField<?>... fields) {
+        return this.regionRepository_.get(query, fields);
     }
     @Override public void save(@Nullable Entity doer, Region... regions) {
         this.regionRepository_.save(doer, regions);
