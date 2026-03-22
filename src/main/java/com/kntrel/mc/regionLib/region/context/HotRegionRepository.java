@@ -22,7 +22,20 @@ import org.bukkit.event.world.ChunkUnloadEvent;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.*;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -31,9 +44,12 @@ class HotRegionRepository implements RegionReadRepository, Listener {
     //CONSTANTS
     private static final Logger LOGGER = LoggerFactory.getLogger(HotRegionRepository.class);
 
+    private record AliasSync(Region alias, Region canonical) {}
+
 
     //FIELDS
     private final RegionRepository delegate_;
+    private final RegionIdentityRegistry identityRegistry_;
     private final Grid.CellSize gridSize_;
     private final RegionCache cache_;
     private final Map<Long, Region> regionMap_;
@@ -45,8 +61,9 @@ class HotRegionRepository implements RegionReadRepository, Listener {
 
 
     //CONSTRUCTOR
-    public HotRegionRepository(RegionCache cache, RegionRepository delegate, Grid.CellSize gridSize) {
+    public HotRegionRepository(RegionCache cache, RegionIdentityRegistry identityRegistry, RegionRepository delegate, Grid.CellSize gridSize) {
         this.delegate_ = delegate;
+        this.identityRegistry_ = identityRegistry;
         this.gridSize_ = gridSize;
         this.cache_ = cache;
         this.regionMap_ = new HashMap<>();
@@ -58,6 +75,9 @@ class HotRegionRepository implements RegionReadRepository, Listener {
         this.unloadConsumers_ = new ArrayList<>();
         LOGGER.debug("Initialized HotRegionRepository (gridSize={})", this.gridSize_.getSize());
     }
+    public HotRegionRepository(RegionCache cache, RegionRepository delegate, Grid.CellSize gridSize) {
+        this(cache, new RegionIdentityRegistry(), delegate, gridSize);
+    }
 
 
     //IMPLEMENTATION
@@ -66,7 +86,7 @@ class HotRegionRepository implements RegionReadRepository, Listener {
                 query.includesDestroyed(), query.getLimit(), query.getOrdering().isPresent());
         if (query.includesDestroyed()) {
             LOGGER.trace("Query includes destroyed regions. Delegating directly.");
-            return this.delegate_.get(query);
+            return this.delegate_.get(query).stream().map(this::canonicalize).toList();
         }
 
         Condition condition = query.getCondition();
@@ -98,43 +118,88 @@ class HotRegionRepository implements RegionReadRepository, Listener {
     }
     void save(Region... regions) {
         LOGGER.debug("Saving {} region(s).", regions.length);
+
+        List<Region> prepared = new ArrayList<>(regions.length);
         List<Region> toInsert = new ArrayList<>(regions.length);
-        for (Region r : regions) {
-            if (r.getId() == null) {
-                toInsert.add(r);
+        List<AliasSync> aliases = new ArrayList<>();
+        Set<Long> seenExisting = new HashSet<>();
+        Set<Region> seenNew = Collections.newSetFromMap(new IdentityHashMap<>());
+
+        for (Region input : regions) {
+            Region region = input;
+            Long id = input.getId();
+            if (id != null) {
+                region = this.identityRegistry_.canonicalize(input);
+                if (region != input) {
+                    RegionStateSync.mergeIntoCanonical(region, input);
+                    aliases.add(new AliasSync(input, region));
+                }
+                if (!seenExisting.add(region.getId())) {
+                    continue;
+                }
+            } else if (!seenNew.add(region)) {
                 continue;
             }
-            if (r.isDestroyed()) {
-                LOGGER.trace("Region {} is destroyed. Removing from hot repository.", r.getId());
-                this.remove(r);
+
+            prepared.add(region);
+
+            if (region.getId() == null) {
+                toInsert.add(region);
                 continue;
             }
-            RegionSnapshot previous = this.cache_.get(r.getId()).orElse(null);
+            if (region.isDestroyed()) {
+                LOGGER.trace("Region {} is destroyed. Removing from hot repository.", region.getId());
+                this.remove(region);
+                continue;
+            }
+
+            RegionSnapshot previous = this.persistedStateOf(region);
             if (previous == null) {
-                LOGGER.debug("Region {} snapshot not in cache. Reading from delegate.", r.getId());
-                previous = this.delegate_.get(r.getId()).map(RegionSnapshot::new).orElse(null);
-            }
-            if (previous == null) {     //Theoretically we shouldn't get here.
-                LOGGER.warn("Region {} had no previous snapshot. Rebuilding links via remove/insert.", r.getId());
-                this.remove(r);
-                this.insert(r);
+                LOGGER.warn("Region {} had no previous snapshot. Rebuilding links via remove/insert.", region.getId());
+                this.remove(region);
+                this.insert(region);
                 continue;
             }
-            this.repair(previous, r);
+            this.repair(previous, region);
         }
 
-        this.delegate_.save(regions);
-        LOGGER.trace("Delegate save completed for {} region(s).", regions.length);
+        if (prepared.isEmpty()) {
+            return;
+        }
 
-        for (Region r : toInsert) {
-            if (r.getId() == null) {    //Sanity check that the delegate actually assigned and ID
+        this.delegate_.save(prepared.toArray(Region[]::new));
+        LOGGER.trace("Delegate save completed for {} region(s).", prepared.size());
+
+        for (Region region : toInsert) {
+            if (region.getId() == null) {
                 throw new RuntimeException("Delegate RegionRepository didn't assign and ID to a fresh region.");
             }
-            this.insert(r);
+            this.identityRegistry_.canonicalize(region);
+            this.insert(region);
         }
-        for (Region r : regions) {
-            this.regionMap_.computeIfPresent(r.getId(), (l, b) -> r);
+
+        Map<Long, RegionSnapshot> persisted = new HashMap<>(prepared.size() * 2);
+        for (Region region : prepared) {
+            if (region.getId() == null) {
+                throw new RuntimeException("Saved region did not retain its ID.");
+            }
+            this.regionMap_.computeIfPresent(region.getId(), (l, b) -> region);
+            RegionSnapshot snapshot = new RegionSnapshot(region);
+            region.rememberState(snapshot);
+            this.cache_.put(snapshot);
+            persisted.put(region.getId(), snapshot);
         }
+
+        for (AliasSync alias : aliases) {
+            Long id = alias.canonical().getId();
+            RegionSnapshot snapshot = (id == null) ? null : persisted.get(id);
+            if (snapshot == null) {
+                continue;
+            }
+            RegionStateSync.overwrite(alias.alias(), alias.canonical());
+            alias.alias().rememberState(snapshot);
+        }
+
         LOGGER.debug("Save flow completed (insertedFresh={}, trackedWarm={}).", toInsert.size(), this.regionMap_.size());
     }
     @EventHandler public void handleChunkLoad(ChunkLoadEvent event) {
@@ -142,13 +207,13 @@ class HotRegionRepository implements RegionReadRepository, Listener {
         LOGGER.trace("Handling chunk load ({}, {}, world={}).", chunk.getX(), chunk.getZ(), chunk.getWorld().getName());
         this.chunksInCellCount_.increment(this.cellOfChunk(chunk));
         List<Region> loaded = new ArrayList<>();
-        for (Region r : this.regionsInChunk(chunk)) {
-            this.cache_.put(r);
-            int previousCount = this.incrementHot(r.getId());
+        for (Region region : this.regionsInChunk(chunk)) {
+            this.cacheRememberedState(region);
+            int previousCount = this.incrementHot(region.getId());
             if (previousCount < 1) {
-                loaded.add(r);
+                loaded.add(region);
             }
-            LOGGER.debug("Chunk load touched region {} (previousHotCount={}).", r.getId(), previousCount);
+            LOGGER.debug("Chunk load touched region {} (previousHotCount={}).", region.getId(), previousCount);
         }
         this.loadConsumers_.forEach(c -> loaded.forEach(r -> c.accept(r, chunk)));
         LOGGER.trace("Chunk load completed with {} newly hot region(s).", loaded.size());
@@ -190,19 +255,20 @@ class HotRegionRepository implements RegionReadRepository, Listener {
 
     //PRIVATE
     private void linkToCell(Grid.Cell cell, Region region) {
+        region = this.canonicalize(region);
         Set<Long> ids = this.cellRegionMap_.get(cell);
         if (ids == null) {
             LOGGER.trace("Skipping link; cell {} is not loaded.", cell);
             return;
-        }                                                   // not loaded
+        }
 
         long id = region.getId();
         if (!ids.add(id)) {
             LOGGER.trace("Skipping link; region {} is already linked to cell {}.", id, cell);
             return;
-        }                                                   // already linked
+        }
 
-        this.cellsInRegionCount_.increment(id);             // keeping invariants
+        this.cellsInRegionCount_.increment(id);
         boolean fresh = this.regionMap_.put(id, region) == null;
         LOGGER.trace("Linked region {} to cell {} (freshWarmRegion={}).", id, cell, fresh);
     }
@@ -211,19 +277,19 @@ class HotRegionRepository implements RegionReadRepository, Listener {
         if (ids == null) {
             LOGGER.trace("Skipping unlink; cell {} is not loaded.", cell);
             return;
-        }                                                                   // not loaded
+        }
 
         if (!ids.remove(id)) {
             LOGGER.trace("Skipping unlink; region {} is not linked to cell {}.", id, cell);
             return;
-        }                                                                   // wasn't linked
+        }
 
         int remainingCells = this.cellsInRegionCount_.decrementAndGet(id);
         if (remainingCells > 0) {
             LOGGER.trace("Unlinked region {} from cell {} (remainingCells={}).", id, cell, remainingCells);
             return;
-        }                                                                   // stop here if region is still on other loaded cells
-        this.regionMap_.remove(id);                                         // keeping invariants
+        }
+        this.regionMap_.remove(id);
         this.cache_.evict(id);
         LOGGER.trace("Unlinked region {} from last loaded cell {}. Evicted warm/cache entries.", id, cell);
     }
@@ -246,21 +312,20 @@ class HotRegionRepository implements RegionReadRepository, Listener {
                 chunk.getWorld()
         );
     }
-
     private void loadCell(Grid.Cell cell) {
         if (this.cellRegionMap_.containsKey(cell)) {
             LOGGER.trace("Skipping cell load; {} already loaded.", cell);
             return;
-        }                                                       // already loaded
+        }
 
-        this.cellRegionMap_.put(cell, new HashSet<>());         // loading
+        this.cellRegionMap_.put(cell, new HashSet<>());
 
-        double  minX = cell.x() << this.gridSize_.shiftBy(),
-                minZ = cell.z() << this.gridSize_.shiftBy(),
-                maxX = minX + this.gridSize_.getSize(),
-                maxZ = minZ + this.gridSize_.getSize();
+        double minX = cell.x() << this.gridSize_.shiftBy(),
+               minZ = cell.z() << this.gridSize_.shiftBy(),
+               maxX = minX + this.gridSize_.getSize(),
+               maxZ = minZ + this.gridSize_.getSize();
 
-        List<Region> regions = this.delegate_.where()           // querying
+        List<Region> regions = this.delegate_.where()
                 .lessThan(RegionField.MIN_X, maxX)
                 .greaterThan(RegionField.MAX_X, minX)
                 .lessThan(RegionField.MIN_Z, maxZ)
@@ -268,7 +333,7 @@ class HotRegionRepository implements RegionReadRepository, Listener {
                 .equal(RegionField.WORLD, cell.world())
                 .get();
 
-        regions.forEach(r -> this.linkToCell(cell, r));         // linking
+        regions.forEach(region -> this.linkToCell(cell, region));
         LOGGER.trace("Loaded cell {} with {} candidate region(s).", cell, regions.size());
     }
     private void unloadCell(Grid.Cell cell) {
@@ -276,27 +341,35 @@ class HotRegionRepository implements RegionReadRepository, Listener {
         if (ids == null) {
             LOGGER.trace("Skipping cell unload; {} already unloaded.", cell);
             return;
-        }                                                       // already unloaded
+        }
         LOGGER.debug("Unloading cell {} with {} linked region id(s).", cell, ids.size());
 
-        this.chunksInCellCount_.clear(cell);                    // sanity
-        for (long id : ids.toArray(Long[]::new)) {              // unlinking regions
-            unlinkFromCell(cell, id);
+        this.chunksInCellCount_.clear(cell);
+        for (long id : ids.toArray(Long[]::new)) {
+            this.unlinkFromCell(cell, id);
         }
 
-        this.cellRegionMap_.remove(cell);                       // unloading
+        this.cellRegionMap_.remove(cell);
     }
     private boolean isCellLoaded(Grid.Cell cell) {
         return this.cellRegionMap_.containsKey(cell);
     }
     private Optional<Region> regionOfId(long id) {
-        Region reg = this.regionMap_.get(id);
-        if (reg != null) { return Optional.of(reg); }
-        return this.delegate_.get(id);
+        Region region = this.regionMap_.get(id);
+        if (region != null) {
+            return Optional.of(region);
+        }
+        region = this.identityRegistry_.get(id).orElse(null);
+        if (region != null) {
+            return Optional.of(region);
+        }
+        return this.delegate_.get(id).map(this::canonicalize);
     }
     private Stream<Region> regionsInCell(Grid.Cell cell) {
         Set<Long> regs = this.cellRegionMap_.get(cell);
-        if (regs == null) { return Stream.empty(); }
+        if (regs == null) {
+            return Stream.empty();
+        }
         return regs.stream()
                 .map(this::regionOfId)
                 .filter(Optional::isPresent)
@@ -306,7 +379,9 @@ class HotRegionRepository implements RegionReadRepository, Listener {
         Grid.Cell cell = this.cellOfChunk(chunk);
         LOGGER.trace("Resolving regions in chunk ({}, {}, world={}) via cell {}.",
                 chunk.getX(), chunk.getZ(), chunk.getWorld().getName(), cell);
-        if (!this.isCellLoaded(cell)) { this.loadCell(cell); }
+        if (!this.isCellLoaded(cell)) {
+            this.loadCell(cell);
+        }
         Condition inChunk = Condition.inChunk(chunk);
         List<Region> regions = this.regionsInCell(cell).filter(inChunk).toList();
         LOGGER.trace("Resolved {} region(s) in chunk ({}, {}, world={}).",
@@ -336,13 +411,14 @@ class HotRegionRepository implements RegionReadRepository, Listener {
                 cmp.conditions().forEach(stack::push);
                 continue;
             }
-            if (current instanceof Condition.Positional pos) { positionals.add(pos); }
-
+            if (current instanceof Condition.Positional pos) {
+                positionals.add(pos);
+            }
         }
 
         if (positionals.isEmpty()) {
             LOGGER.trace("No positional filters detected. Using all warm regions (count={}).", this.regionMap_.size());
-            return regionMap_.values();
+            return this.regionMap_.values();
         }
 
         Set<Region> out = new HashSet<>();
@@ -384,8 +460,10 @@ class HotRegionRepository implements RegionReadRepository, Listener {
     private void remove(Region region) {
         long id = region.getId();
         LOGGER.debug("Removing region {} from hot repository.", id);
-        RegionSnapshot bounds = this.cache_.get(id).orElse(null);
-        if (bounds == null) { bounds = delegate_.get(id).map(RegionSnapshot::new).orElse(new RegionSnapshot(region)); }
+        RegionSnapshot bounds = this.persistedStateOf(region);
+        if (bounds == null) {
+            bounds = new RegionSnapshot(region);
+        }
 
         World world = region.getWorld();
         for (Grid.Cell cell : cellsIn(bounds, world)) {
@@ -426,6 +504,39 @@ class HotRegionRepository implements RegionReadRepository, Listener {
         this.chunksInRegionCount_.incrementBy(region.getId(), newChunksCount - oldChunksCount);
         LOGGER.trace("Repaired region {} (newLoadedChunks={}, oldLoadedChunks={}, delta={}).",
                 region.getId(), newChunksCount, oldChunksCount, newChunksCount - oldChunksCount);
+    }
+    private Region canonicalize(Region region) {
+        return this.identityRegistry_.canonicalize(region);
+    }
+    private RegionSnapshot persistedStateOf(Region region) {
+        Long id = region.getId();
+        if (id == null) {
+            return null;
+        }
+
+        RegionSnapshot snapshot = region.getRememberedState().orElse(null);
+        if (snapshot != null) {
+            this.cache_.put(snapshot);
+            return snapshot;
+        }
+
+        snapshot = this.cache_.get(id).orElse(null);
+        if (snapshot != null) {
+            return snapshot;
+        }
+
+        Region loaded = this.delegate_.get(id).orElse(null);
+        if (loaded == null) {
+            return null;
+        }
+
+        snapshot = loaded.getRememberedState().orElseGet(() -> new RegionSnapshot(loaded));
+        this.cache_.put(snapshot);
+        return snapshot;
+    }
+    private void cacheRememberedState(Region region) {
+        RegionSnapshot snapshot = region.getRememberedState().orElseGet(() -> new RegionSnapshot(region));
+        this.cache_.put(snapshot);
     }
 
     //HELPERS

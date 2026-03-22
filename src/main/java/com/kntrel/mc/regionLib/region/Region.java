@@ -1,6 +1,7 @@
 package com.kntrel.mc.regionLib.region;
 
 import com.kntrel.mc.regionLib.Constants;
+import com.kntrel.mc.regionLib.cache.RegionSnapshot;
 import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.context.RegionContext;
@@ -41,6 +42,7 @@ public class Region implements Comparable<Region> {
     private BoundingBox boundingBox_;
     private Hierarchy hierarchy_;
     private final Map<String, ValueHolder<?>> rulesValues_ = new HashMap<>();
+    private RegionSnapshot rememberedState_;
 
 
     //CONSTRUCTORS
@@ -400,6 +402,14 @@ public class Region implements Comparable<Region> {
      */
     public List<Permission> getPermissions() {
         return List.copyOf(this.permissions_);
+    }
+    /**
+     * Returns the last snapshot this region was loaded or saved from, if known.
+     *
+     * @return optional remembered snapshot
+     */
+    public Optional<RegionSnapshot> getRememberedState() {
+        return Optional.ofNullable(this.rememberedState_).map(RegionSnapshot::clone);
     }
     /**
      * Returns permissions for a specific player.
@@ -900,6 +910,20 @@ public class Region implements Comparable<Region> {
         this.rulesValues_.clear();
         this.dataContainer_.clear();
         this.isDestroyed_ = true;
+    }
+    /**
+     * Records the provided snapshot as this region's remembered persisted state.
+     *
+     * @param snapshot remembered snapshot
+     */
+    public void rememberState(RegionSnapshot snapshot) {
+        this.rememberedState_ = snapshot.clone();
+    }
+    /**
+     * Records this region's current state as its remembered persisted state.
+     */
+    public void rememberCurrentState() {
+        this.rememberState(new RegionSnapshot(this));
     }
 
     //FIELDS

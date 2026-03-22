@@ -111,22 +111,29 @@ public class SQLiteRegionRepository implements RegionRepository {
     @Override
     public void save(Region... regions) {
         Set<Long> newRegions = new HashSet<>();
-        Map<Long, RegionSnapshot> snapshots = new HashMap<>();
-        for (Region r : regions) {
-            Long id = r.getId();
+        Map<Long, RegionSnapshot> previousSnapshots = new HashMap<>();
+        List<RegionSnapshot> currentSnapshots = new ArrayList<>(regions.length);
 
-            if (id != null) {
-                long fid = id;
-                this.cache_.get(id).ifPresent(s -> snapshots.put(fid, s));
-                continue;
+        for (Region region : regions) {
+            Long id = region.getId();
+            if (id == null) {
+                id = this.idCount_.getAndIncrement();
+                region.setId(id);
+                newRegions.add(id);
+            } else {
+                RegionSnapshot oldSnapshot = region.getRememberedState().orElse(null);
+                if (oldSnapshot == null) {
+                    oldSnapshot = this.cache_.get(id).orElse(null);
+                }
+                if (oldSnapshot != null) {
+                    previousSnapshots.put(id, oldSnapshot);
+                }
             }
 
-            id = this.idCount_.getAndIncrement();
-            r.setId(id);
-            newRegions.add(id);
-
+            currentSnapshots.add(new RegionSnapshot(region));
         }
-        this.writeExecutor_.execute(() -> this.saveInner(regions, newRegions, snapshots));
+
+        this.writeExecutor_.execute(() -> this.saveInner(currentSnapshots, newRegions, previousSnapshots));
     }
 
 
@@ -176,22 +183,23 @@ public class SQLiteRegionRepository implements RegionRepository {
         }
         return value;
     }
-    private void saveInner(Region[] regions, Set<Long> newRegions, Map<Long, RegionSnapshot> snapshots) {
+    private void saveInner(List<RegionSnapshot> currentSnapshots, Set<Long> newRegions, Map<Long, RegionSnapshot> previousSnapshots) {
         Patch<Object> patch = new Patch<>();
-        for (Region r : regions) {
+        for (RegionSnapshot currentSnapshot : currentSnapshots) {
             RegionSnapshot oldSnapshot = null;
 
-            //Is a new region
-            if (r.getId() == null) {
-                r.setId(this.idCount_.getAndIncrement());
-            } else if (!newRegions.contains(r.getId())) {
-                oldSnapshot = snapshots.get(r.getId());
+            if (!newRegions.contains(currentSnapshot.id())) {
+                oldSnapshot = previousSnapshots.get(currentSnapshot.id());
                 if (oldSnapshot == null) {
-                    List<RegionSnapshot> fetched = this.getInner(Query.builder(this).idIs(r.getId()).asQuery());
+                    List<RegionSnapshot> fetched = this.getInner(
+                            Query.builder(this)
+                                    .idIs(currentSnapshot.id())
+                                    .includeDestroyed()
+                                    .asQuery()
+                    );
                     if (!fetched.isEmpty()) { oldSnapshot = fetched.getFirst(); }
                 }
             }
-            RegionSnapshot currentSnapshot = new RegionSnapshot(r);
             patch.merge(computePatch(oldSnapshot, currentSnapshot));
         }
 
@@ -200,7 +208,7 @@ public class SQLiteRegionRepository implements RegionRepository {
         try {
             this.dataBase_.write(patch.inserts(), patch.updates(), patch.deletes());
         } catch (SQLException e) {
-            throw new RegionSQLSaveException(regions[0], e);
+            throw new RegionSQLSaveException(currentSnapshots.getFirst().toRegion(this.context_), e);
         }
     }
     private List<RegionSnapshot> getInner(Query query) {

@@ -281,6 +281,7 @@ public class RegionSnapshot {
         for (RegionSnapshot.Permission perm : snapshot.permissions()) {
             r.addPermission(perm.playerUUID(), perm.level());
         }
+        r.rememberState(snapshot);
 
         return r;
     }
