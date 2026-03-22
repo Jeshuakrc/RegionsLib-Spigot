@@ -283,6 +283,20 @@ class QueryParserTest {
         }
 
         @Test
+        @DisplayName("Parse IsIn condition with String values")
+        void testIsInConditionWithStrings() {
+            Query query = Query.builder(null)
+                    .and(Condition.isIn(RegionField.NAME, List.of("Alpha", "Gamma")))
+                    .asQuery();
+            String sql = parser.parse(query);
+
+            assertEquals(
+                    regionSelect("WHERE region.name IN ('Alpha', 'Gamma') AND region.destroyed = 0"),
+                    sql
+            );
+        }
+
+        @Test
         @DisplayName("Parse GreaterThan condition with numeric value")
         void testGreaterThanConditionNumeric() {
             Query query = Query.builder(null)
@@ -850,6 +864,20 @@ class QueryParserTest {
             sql = parser.parse(query);
 
             assertEquals(expected, sql);
+        }
+
+        @Test
+        @DisplayName("Parse IsIn condition with empty list")
+        void testIsInConditionWithEmptyList() {
+            Query query = Query.builder(null)
+                    .and(Condition.isIn(RegionField.ID, List.of()))
+                    .asQuery();
+            String sql = parser.parse(query);
+
+            assertEquals(
+                    regionSelect("WHERE 1=0 AND region.destroyed = 0"),
+                    sql
+            );
         }
 
         @Test

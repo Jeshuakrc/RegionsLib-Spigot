@@ -223,13 +223,10 @@ class MainRegionRepository implements AttributedRegionRepository {
         List<Region> out = new ArrayList<>(ids.size());
         for (int start = 0; start < ids.size(); start += LOAD_BY_ID_BATCH_SIZE) {
             int end = Math.min(start + LOAD_BY_ID_BATCH_SIZE, ids.size());
-            List<Condition> conditions = ids.subList(start, end).stream()
-                    .<Condition>map(id -> Condition.equal(RegionField.ID, id))
-                    .toList();
-            Condition condition = (conditions.size() == 1)
-                    ? conditions.getFirst()
-                    : Condition.OR(conditions);
-            out.addAll(this.readDelegate_.get(new Query(condition, true)));
+            out.addAll(this.readDelegate_.get(new Query(
+                    Condition.isIn(RegionField.ID, ids.subList(start, end)),
+                    true
+            )));
         }
         return out;
     }

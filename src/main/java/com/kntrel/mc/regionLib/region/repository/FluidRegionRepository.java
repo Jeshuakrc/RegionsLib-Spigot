@@ -3,6 +3,7 @@ package com.kntrel.mc.regionLib.region.repository;
 import com.google.gson.JsonElement;
 import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionField;
+import java.util.Collection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -65,6 +66,10 @@ public final class FluidRegionRepository {
         //FLUID CONDITIONS
         public <T> QueryBuilder equal(RegionField<T> field, T value) {
             this.current_.add(Condition.equal(field, value));
+            return this;
+        }
+        public <T> QueryBuilder isIn(RegionField<T> field, Collection<T> values) {
+            this.current_.add(Condition.isIn(field, values));
             return this;
         }
         public QueryBuilder isTrue(RegionField<Boolean> field) {
@@ -171,6 +176,9 @@ public final class FluidRegionRepository {
         }
         public QueryBuilder idIs(Long id) {
             return this.equal(RegionField.ID, id);
+        }
+        public QueryBuilder idIsIn(Collection<Long> ids) {
+            return this.isIn(RegionField.ID, ids);
         }
         public QueryBuilder isEnabled() {
             return this.isTrue(RegionField.ENABLED);

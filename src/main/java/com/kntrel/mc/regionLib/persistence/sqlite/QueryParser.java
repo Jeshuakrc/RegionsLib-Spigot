@@ -147,6 +147,7 @@ class QueryParser {
             case Condition.Not not -> "NOT (" + parseCondition(not.condition()) + ")";
 
             case Condition.Equal<?> equal -> parseEqual(equal);
+            case Condition.IsIn<?> isIn -> parseIsIn(isIn);
 
             case Condition.Comparative<?> comparative -> parseComparative(comparative);
 
@@ -206,6 +207,49 @@ class QueryParser {
             case Condition.LessThanEqual<?> lte -> compare(lte.field(), lte.value(), "<=");
         };
     }
+    private static String parseIsIn(Condition.IsIn<?> isIn) {
+        String fieldName = "region." + isIn.field().getName();
+        List<String> literals = new ArrayList<>();
+        boolean hasNull = false;
+
+        for (Object value : isIn.values()) {
+            if (value == null) {
+                hasNull = true;
+                continue;
+            }
+
+            String literal = sqlLiteral(value);
+            if (literal != null) {
+                literals.add(literal);
+            }
+        }
+
+        if (hasNull && literals.isEmpty()) {
+            return fieldName + " IS NULL";
+        }
+        if (!hasNull && literals.isEmpty()) {
+            return "1=0";
+        }
+
+        StringBuilder sql = new StringBuilder();
+        if (hasNull) {
+            sql.append(fieldName).append(" IS NULL");
+        }
+        if (!literals.isEmpty()) {
+            if (hasNull) {
+                sql.append(" OR ");
+            }
+            sql.append(fieldName)
+                    .append(" IN (")
+                    .append(String.join(", ", literals))
+                    .append(")");
+        }
+
+        if (hasNull && !literals.isEmpty()) {
+            return "(" + sql + ")";
+        }
+        return sql.toString();
+    }
 
     private static String parseEqual(Condition.Equal<?> equal) {
         RegionField<?> field = equal.field();
@@ -219,10 +263,10 @@ class QueryParser {
 
         return switch (value) {
             case Boolean boolValue -> fieldName + " " + (boolValue ? "!=" : "=") + " 0";
-            case World world -> fieldName + " = '" + escapeSqlString(world.getUID().toString()) + "'";
-            case String strValue -> fieldName + " = '" + escapeSqlString(strValue) + "'";
-            case Number numValue -> fieldName + " = " + numValue;
-            default -> "";
+            default -> {
+                String literal = sqlLiteral(value);
+                yield literal == null ? "" : fieldName + " = " + literal;
+            }
         };
     }
 
@@ -236,6 +280,15 @@ class QueryParser {
         }
 
         return "";
+    }
+    private static String sqlLiteral(Object value) {
+        return switch (value) {
+            case World world -> "'" + escapeSqlString(world.getUID().toString()) + "'";
+            case String strValue -> "'" + escapeSqlString(strValue) + "'";
+            case Number numValue -> String.valueOf(numValue);
+            case Boolean boolValue -> boolValue ? "1" : "0";
+            default -> null;
+        };
     }
 
     private static String escapeSqlString(String str) {

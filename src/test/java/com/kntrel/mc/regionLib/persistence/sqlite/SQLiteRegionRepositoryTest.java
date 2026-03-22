@@ -473,6 +473,25 @@ public class SQLiteRegionRepositoryTest {
     }
 
     @Test
+    void testIsInConditionQuery() {
+        Hierarchy hierarchy = this.hierarchyRepository.getAll().getFirst();
+        Region alpha = Regions.newRegion(this.regionContext, hierarchy, "Alpha");
+        Region beta = Regions.newRegion(this.regionContext, hierarchy, "Beta");
+        Region gamma = Regions.newRegion(this.regionContext, hierarchy, "Gamma");
+
+        this.regionRepository.save(alpha, beta, gamma);
+
+        List<Region> result = this.regionRepository.where()
+                .isIn(RegionField.NAME, List.of("Alpha", "Gamma"))
+                .orderBy(RegionField.NAME)
+                .get();
+
+        assertEquals(2, result.size());
+        assertEquals("Alpha", result.get(0).getName());
+        assertEquals("Gamma", result.get(1).getName());
+    }
+
+    @Test
     void testCachedSaves() {
         RegionRepository repo = new RegionRepository() {
             @Override

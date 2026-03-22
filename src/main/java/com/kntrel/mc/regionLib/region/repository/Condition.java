@@ -12,7 +12,11 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
+import java.util.Collections;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -31,6 +35,10 @@ public sealed interface Condition extends Predicate<Region> {
     static Condition.Or OR(Condition... conditions) { return new Condition.Or(conditions); }
     static Condition.Or OR(List<Condition> conditions) { return new Condition.Or(conditions); }
     static <T> Condition.Equal<T> equal(RegionField<T> field, T value) { return new Condition.Equal<>(field, value); }
+    static <T> Condition isIn(RegionField<T> field, Collection<T> values) {
+        if (values == null || values.isEmpty()) { return FALSE; }
+        return new Condition.IsIn<>(field, values);
+    }
     static Condition isTrue(RegionField<Boolean> field) { return new Condition.Equal<>(field, true); }
     static Condition isFalse(RegionField<Boolean> field) { return new Condition.Equal<>(field, false); }
     static <T> Condition notEqual(RegionField<T> field, T value) { return new Condition.Not(new Condition.Equal<>(field, value)); }
@@ -157,6 +165,14 @@ public sealed interface Condition extends Predicate<Region> {
             if (val == null && this.value() == null) { return true; }
             if (val == null || this.value() == null) { return false; }
             return val.equals(this.value());
+        }
+    }
+    record IsIn<T>(RegionField<T> field, Set<T> values) implements Condition {
+        public IsIn(RegionField<T> field, Collection<T> values) {
+            this(field, Collections.unmodifiableSet(new LinkedHashSet<>(values)));
+        }
+        @Override public boolean test(Region region) {
+            return this.values().contains(region.getField(this.field()));
         }
     }
     record GreaterThan<T extends Comparable<T>>(RegionField<T> field, T value) implements Comparative<T> {
