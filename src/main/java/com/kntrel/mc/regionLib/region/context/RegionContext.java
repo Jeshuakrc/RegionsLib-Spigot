@@ -53,6 +53,7 @@ public class RegionContext implements AttributedRegionRepository {
     private final RuleRegistry ruleRegistry_;
     private final DisplayController displayController_;
     private final RegionCache cache_;
+    private final RegionIdentityRegistry identityRegistry_;
     private final PlayerSampler playerSampler_;
 
 
@@ -66,10 +67,17 @@ public class RegionContext implements AttributedRegionRepository {
         this.ruleRegistry_ = new RuleRegistry(this);
         this.displayController_ = new DisplayController(this, new BlockDisplayAreaDisplayer(this), this.config_.regionDisplayDurationSeconds);
         this.cache_ = new RegionCache(this.config_.cacheCapacity);
+        this.identityRegistry_ = new RegionIdentityRegistry();
 
         this.delegateRegionRepository_ = regionRepFactory.apply(this);
-        this.hotRegionRepository_ = new HotRegionRepository(this.cache_, this.delegateRegionRepository_, this.config_.cellSize);
-        this.regionRepository_ = new MainRegionRepository(new HotRegionRepositoryWrapper(this.hotRegionRepository_), this.delegateRegionRepository_, this.plugin_.getServer().getPluginManager(), this.cache_);
+        this.hotRegionRepository_ = new HotRegionRepository(this.cache_, this.identityRegistry_, this.delegateRegionRepository_, this.config_.cellSize);
+        this.regionRepository_ = new MainRegionRepository(
+                new HotRegionRepositoryWrapper(this.hotRegionRepository_),
+                this.delegateRegionRepository_,
+                this.plugin_.getServer().getPluginManager(),
+                this.cache_,
+                this.identityRegistry_
+        );
         this.playerSampler_ = new PlayerSampler(this, this.config_.playerSamplingPeriodTicks, this.config_.playerMovementTolerance);
 
         this.plugin_.getServer().getPluginManager().registerEvents(this.hotRegionRepository_, this.plugin_);
@@ -118,6 +126,9 @@ public class RegionContext implements AttributedRegionRepository {
     }
     public RegionCache getCache() {
         return this.cache_;
+    }
+    RegionIdentityRegistry getIdentityRegistry() {
+        return this.identityRegistry_;
     }
     PlayerSampler getPlayerSampler() {
         return this.playerSampler_;
