@@ -1,7 +1,11 @@
 package com.kntrel.mc.regionLib.region.context;
 
 import com.kntrel.mc.regionLib.region.ability.Permission;
+import com.kntrel.mc.regionLib.region.display.RegionDisplayer;
+import com.kntrel.mc.regionLib.region.display.BlockDisplayRegionDisplayer;
 import com.kntrel.mc.regionLib.util.Grid;
+import java.util.Objects;
+import java.util.function.Function;
 
 //SUBTYPES
 /**
@@ -12,6 +16,7 @@ public class RegionContextConfig {
     //CONSTANTS
     private static final long DEFAULT_PLAYER_SAMPLING_PERIOD_TICKS = 1L;
     private static final double DEFAULT_PLAYER_MOVEMENT_TOLERANCE = 0D;
+    private static final Function<RegionContext, RegionDisplayer> DEFAULT_REGION_DISPLAYER_FACTORY = BlockDisplayRegionDisplayer::new;
     private static final RegionContextConfig DEFAULT = new RegionContextConfig(
         4,
         32,
@@ -20,7 +25,8 @@ public class RegionContextConfig {
         Grid.CellSize.SIZE_32,
         1024,
         DEFAULT_PLAYER_SAMPLING_PERIOD_TICKS,
-        DEFAULT_PLAYER_MOVEMENT_TOLERANCE
+        DEFAULT_PLAYER_MOVEMENT_TOLERANCE,
+        DEFAULT_REGION_DISPLAYER_FACTORY
     );
 
 
@@ -41,14 +47,18 @@ public class RegionContextConfig {
     public final int cacheCapacity;
     public final long playerSamplingPeriodTicks;
     public final double playerMovementTolerance;
+    public final Function<RegionContext, RegionDisplayer> regionDisplayerFactory;
 
     public RegionContextConfig(int minNameLength, int maxNameLength, Permission.OverlapMode permissionsOverlapMode, int regionDisplayDurationSeconds, Grid.CellSize cellSize, int cacheCapacity) {
-        this(minNameLength, maxNameLength, permissionsOverlapMode, regionDisplayDurationSeconds, cellSize, cacheCapacity, DEFAULT_PLAYER_SAMPLING_PERIOD_TICKS, DEFAULT_PLAYER_MOVEMENT_TOLERANCE);
+        this(minNameLength, maxNameLength, permissionsOverlapMode, regionDisplayDurationSeconds, cellSize, cacheCapacity, DEFAULT_PLAYER_SAMPLING_PERIOD_TICKS, DEFAULT_PLAYER_MOVEMENT_TOLERANCE, DEFAULT_REGION_DISPLAYER_FACTORY);
     }
     public RegionContextConfig(int minNameLength, int maxNameLength, Permission.OverlapMode permissionsOverlapMode, int regionDisplayDurationSeconds, Grid.CellSize cellSize, int cacheCapacity, long playerSamplingPeriodTicks) {
-        this(minNameLength, maxNameLength, permissionsOverlapMode, regionDisplayDurationSeconds, cellSize, cacheCapacity, playerSamplingPeriodTicks, DEFAULT_PLAYER_MOVEMENT_TOLERANCE);
+        this(minNameLength, maxNameLength, permissionsOverlapMode, regionDisplayDurationSeconds, cellSize, cacheCapacity, playerSamplingPeriodTicks, DEFAULT_PLAYER_MOVEMENT_TOLERANCE, DEFAULT_REGION_DISPLAYER_FACTORY);
     }
     public RegionContextConfig(int minNameLength, int maxNameLength, Permission.OverlapMode permissionsOverlapMode, int regionDisplayDurationSeconds, Grid.CellSize cellSize, int cacheCapacity, long playerSamplingPeriodTicks, double playerMovementTolerance) {
+        this(minNameLength, maxNameLength, permissionsOverlapMode, regionDisplayDurationSeconds, cellSize, cacheCapacity, playerSamplingPeriodTicks, playerMovementTolerance, DEFAULT_REGION_DISPLAYER_FACTORY);
+    }
+    public RegionContextConfig(int minNameLength, int maxNameLength, Permission.OverlapMode permissionsOverlapMode, int regionDisplayDurationSeconds, Grid.CellSize cellSize, int cacheCapacity, long playerSamplingPeriodTicks, double playerMovementTolerance, Function<RegionContext, RegionDisplayer> regionDisplayerFactory) {
         if (playerSamplingPeriodTicks < 1L) {
             throw new IllegalArgumentException("Player sampling period must be at least 1 tick.");
         }
@@ -63,6 +73,7 @@ public class RegionContextConfig {
         this.cacheCapacity = cacheCapacity;
         this.playerSamplingPeriodTicks = playerSamplingPeriodTicks;
         this.playerMovementTolerance = playerMovementTolerance;
+        this.regionDisplayerFactory = Objects.requireNonNull(regionDisplayerFactory, "Region displayer factory cannot be null.");
     }
 
 
@@ -76,6 +87,7 @@ public class RegionContextConfig {
         private int cacheCapacity = DEFAULT.cacheCapacity;
         private long playerSamplingPeriodTicks = DEFAULT.playerSamplingPeriodTicks;
         private double playerMovementTolerance = DEFAULT.playerMovementTolerance;
+        private Function<RegionContext, RegionDisplayer> regionDisplayerFactory = DEFAULT.regionDisplayerFactory;
 
         private Builder() {}
 
@@ -111,6 +123,14 @@ public class RegionContextConfig {
             this.playerMovementTolerance = playerMovementTolerance;
             return this;
         }
+        public Builder withRegionDisplayerFactory(Function<RegionContext, RegionDisplayer> regionDisplayerFactory) {
+            this.regionDisplayerFactory = Objects.requireNonNull(regionDisplayerFactory, "Region displayer factory cannot be null.");
+            return this;
+        }
+        public Builder withRegionDisplayer(RegionDisplayer regionDisplayer) {
+            RegionDisplayer displayer = Objects.requireNonNull(regionDisplayer, "Region displayer cannot be null.");
+            return this.withRegionDisplayerFactory(ctx -> displayer);
+        }
         public RegionContextConfig end() {
             return new RegionContextConfig(
                 this.minNameLength,
@@ -120,7 +140,8 @@ public class RegionContextConfig {
                 this.cellSize,
                 this.cacheCapacity,
                 this.playerSamplingPeriodTicks,
-                this.playerMovementTolerance
+                this.playerMovementTolerance,
+                this.regionDisplayerFactory
             );
         }
     }

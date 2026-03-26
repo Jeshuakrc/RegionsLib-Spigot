@@ -1,6 +1,7 @@
 package com.kntrel.mc.regionLib.region.display;
 
 import com.kntrel.mc.regionLib.region.context.RegionContext;
+import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.util.Area;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -19,21 +20,22 @@ import java.util.Map;
 /**
  * Displays region boundaries using {@link org.bukkit.entity.BlockDisplay} entities.
  */
-public class BlockDisplayAreaDisplayer implements AreaDisplayer {
+public class BlockDisplayRegionDisplayer implements RegionDisplayer {
 
     private final RegionContext ctx_;
     private final Map<Long, BlockDisplay[]> displayMap_;
     private long nextId_;
 
 
-    public BlockDisplayAreaDisplayer(RegionContext regionContext) {
+    public BlockDisplayRegionDisplayer(RegionContext regionContext) {
         this.ctx_ = regionContext;
         this.displayMap_ = new HashMap<>();
         this.nextId_ = Long.MIN_VALUE;
     }
 
 
-    @Override public DisplayToken display(Area area, @Nullable Player player) {
+    @Override public DisplayToken display(Region region, @Nullable Player player) {
+        Area area = Area.ofRegion(region);
 
         Location origin = (player != null)
                 ? player.getLocation()
@@ -67,8 +69,8 @@ public class BlockDisplayAreaDisplayer implements AreaDisplayer {
         return new DisplayToken(this, id);
     }
 
-    @Override public DisplayToken display(Area area) {
-        return this.display(area, null);
+    @Override public DisplayToken display(Region region) {
+        return this.display(region, null);
     }
 
     @Override public void stop(DisplayToken token) {
@@ -81,7 +83,7 @@ public class BlockDisplayAreaDisplayer implements AreaDisplayer {
     }
 
 
-    //PRIVATE
+    //PRIVATEgit 
     private static BlockDisplay spawnFace(Location corner, Location origin, BlockFace facing, Vector2f size, boolean visible) {
         assert corner.getWorld() != null;
 

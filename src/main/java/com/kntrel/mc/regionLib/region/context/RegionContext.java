@@ -7,8 +7,7 @@ import com.kntrel.mc.regionLib.region.Region;
 import com.kntrel.mc.regionLib.region.RegionField;
 import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.ability.AbilityRegistry;
-import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
-import com.kntrel.mc.regionLib.region.display.BlockDisplayAreaDisplayer;
+import com.kntrel.mc.regionLib.region.display.RegionDisplayer;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.hierarchy.HierarchyRepository;
 import com.kntrel.mc.regionLib.region.repository.AttributedRegionRepository;
@@ -25,6 +24,7 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.util.BoundingBox;
 import org.jetbrains.annotations.Nullable;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -65,7 +65,11 @@ public class RegionContext implements AttributedRegionRepository {
         this.hierarchyRepository_ = hierarchyRepFactory.apply(this);
         this.abilityRegistry_ = new AbilityRegistry(this, this.config_.permissionsOverlapMode);
         this.ruleRegistry_ = new RuleRegistry(this);
-        this.displayController_ = new DisplayController(this, new BlockDisplayAreaDisplayer(this), this.config_.regionDisplayDurationSeconds);
+        RegionDisplayer defaultDisplayer = Objects.requireNonNull(
+                this.config_.regionDisplayerFactory.apply(this),
+                "Region displayer factory returned null."
+        );
+        this.displayController_ = new DisplayController(this, defaultDisplayer, this.config_.regionDisplayDurationSeconds);
         this.cache_ = new RegionCache(this.config_.cacheCapacity);
         this.identityRegistry_ = new RegionIdentityRegistry();
 
@@ -149,10 +153,10 @@ public class RegionContext implements AttributedRegionRepository {
     public List<Player> getPlayersWithin(long regionId) {
         return this.playerSampler_.getPlayersWithin(regionId);
     }
-    public void displayRegion(Region region, AreaDisplayer displayer, long seconds, Player player) {
+    public void displayRegion(Region region, RegionDisplayer displayer, long seconds, Player player) {
         this.displayController_.display(region, displayer, seconds, player);
     }
-    public void displayRegion(Region region, AreaDisplayer displayer, Player player) {
+    public void displayRegion(Region region, RegionDisplayer displayer, Player player) {
         this.displayController_.display(region, displayer, player);
     }
     public void displayRegion(Region region, long second, Player player) {

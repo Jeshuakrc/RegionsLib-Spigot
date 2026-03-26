@@ -6,7 +6,7 @@ import com.kntrel.mc.regionLib.region.ability.Ability;
 import com.kntrel.mc.regionLib.region.ability.Permission;
 import com.kntrel.mc.regionLib.region.context.RegionContext;
 import com.kntrel.mc.regionLib.region.dataContainer.RegionDataContainer;
-import com.kntrel.mc.regionLib.region.display.AreaDisplayer;
+import com.kntrel.mc.regionLib.region.display.RegionDisplayer;
 import com.kntrel.mc.regionLib.region.hierarchy.Hierarchy;
 import com.kntrel.mc.regionLib.region.rule.Rule;
 import com.kntrel.mc.regionLib.region.rule.RuleRegistry;
@@ -857,7 +857,7 @@ public class Region implements Comparable<Region> {
      * @param displayer displayer to use
      * @param player player to display to
      */
-    public void display(AreaDisplayer displayer, Player player) {
+    public void display(RegionDisplayer displayer, Player player) {
         this.ctx_.displayRegion(this, displayer, player);
     }
     /**
@@ -876,7 +876,7 @@ public class Region implements Comparable<Region> {
      * @param seconds duration in seconds
      * @param player player to display to
      */
-    public void display(AreaDisplayer displayer, long seconds, Player player) {
+    public void display(RegionDisplayer displayer, long seconds, Player player) {
         this.ctx_.displayRegion(this, displayer, seconds, player);
     }
     /**
