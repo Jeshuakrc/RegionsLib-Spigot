@@ -6,6 +6,7 @@ import com.kntrel.mc.regionLib.util.Area;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -48,12 +49,12 @@ public class BlockDisplayRegionDisplayer implements RegionDisplayer {
         boolean visible = player == null;
 
         BlockDisplay[] entities = new BlockDisplay[] {
-            spawnFace(area.getCornerLocation(Area.Corner.UP_NORTH_WEST), origin, BlockFace.UP, ySize, visible),
-            spawnFace(area.getCornerLocation(Area.Corner.DOWN_NORTH_WEST), origin, BlockFace.DOWN, ySize, visible),
-            spawnFace(area.getCornerLocation(Area.Corner.DOWN_NORTH_WEST), origin, BlockFace.WEST, xSize, visible),
-            spawnFace(area.getCornerLocation(Area.Corner.DOWN_NORTH_EAST), origin, BlockFace.EAST, xSize, visible),
-            spawnFace(area.getCornerLocation(Area.Corner.DOWN_NORTH_WEST), origin, BlockFace.NORTH, zSize, visible),
-            spawnFace(area.getCornerLocation(Area.Corner.DOWN_SOUTH_WEST), origin, BlockFace.SOUTH, zSize, visible),
+            this.spawnFace(region, area.getCornerLocation(Area.Corner.UP_NORTH_WEST), origin, BlockFace.UP, ySize, visible),
+            this.spawnFace(region, area.getCornerLocation(Area.Corner.DOWN_NORTH_WEST), origin, BlockFace.DOWN, ySize, visible),
+            this.spawnFace(region, area.getCornerLocation(Area.Corner.DOWN_NORTH_WEST), origin, BlockFace.WEST, xSize, visible),
+            this.spawnFace(region, area.getCornerLocation(Area.Corner.DOWN_NORTH_EAST), origin, BlockFace.EAST, xSize, visible),
+            this.spawnFace(region, area.getCornerLocation(Area.Corner.DOWN_NORTH_WEST), origin, BlockFace.NORTH, zSize, visible),
+            this.spawnFace(region, area.getCornerLocation(Area.Corner.DOWN_SOUTH_WEST), origin, BlockFace.SOUTH, zSize, visible),
         };
 
         if (!visible) {
@@ -83,8 +84,11 @@ public class BlockDisplayRegionDisplayer implements RegionDisplayer {
     }
 
 
-    //PRIVATEgit 
-    private static BlockDisplay spawnFace(Location corner, Location origin, BlockFace facing, Vector2f size, boolean visible) {
+    //PRIVATE
+    protected BlockData getFaceBlockData(Region region, BlockFace facing) {
+        return Material.CYAN_STAINED_GLASS.createBlockData();
+    }
+    private BlockDisplay spawnFace(Region region, Location corner, Location origin, BlockFace facing, Vector2f size, boolean visible) {
         assert corner.getWorld() != null;
 
         Vector3f tr = new Vector3f(
@@ -108,7 +112,7 @@ public class BlockDisplayRegionDisplayer implements RegionDisplayer {
         }
 
         return corner.getWorld().spawn(origin, BlockDisplay.class, d -> {
-            d.setBlock(Material.CYAN_STAINED_GLASS.createBlockData());
+            d.setBlock(this.getFaceBlockData(region, facing));
             d.setPersistent(false);
             d.setViewRange(8f);
             d.setTransformation(new Transformation(tr, rot, scale, new Quaternionf()));
