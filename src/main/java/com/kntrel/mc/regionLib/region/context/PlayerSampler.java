@@ -216,7 +216,11 @@ class PlayerSampler implements Listener {
         }
     }
     private Map<Long, Region> regionsAt(Player player) {
-        return this.context_.getHotRegionRepository().getAt(player.getLocation()).stream()
+        return this.context_.getHotRegionRepository().where()
+                .at(player.getLocation())
+                .isEnabled()
+                .get()
+                .stream()
                 .filter(region -> region.getId() != null)
                 .collect(Collectors.toMap(Region::getId, Function.identity(), (left, right) -> left, HashMap::new));
     }
